@@ -1,0 +1,3 @@
+{"snapshot_date": "2026-07-07", "register_slug": "other-wp", "change": "baseline", "entry_id": "-", "entity_name": "-", "member_state": "-", "wp_url": "", "detail": "baseline established with 2 entries"}
+{"snapshot_date": "2026-07-14", "register_slug": "other-wp", "change": "added", "entry_id": "c9", "entity_name": "New Issuer Ltd", "member_state": "MT", "wp_url": "https://new.example/wp.pdf", "detail": ""}
+{"snapshot_date": "2026-07-14", "register_slug": "other-wp", "change": "removed", "entry_id": "a2", "entity_name": "SKYGATE Network GmbH", "member_state": "AT", "wp_url": "WWW.SKYGATETOKEN.AT", "detail": "entry no longer present in the register export"}
