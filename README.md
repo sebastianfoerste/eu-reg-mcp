@@ -1,5 +1,7 @@
 # eu-reg-mcp
 
+[![CI](https://github.com/sebastianfoerste/eu-reg-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/sebastianfoerste/eu-reg-mcp/actions/workflows/ci.yml)
+
 An MCP server that gives AI agents **cited, review-gated grounding in EU regulation**. Agents answering crypto or AI-compliance questions can check a live official register and cite pinpoint provisions instead of guessing.
 
 Five tools:
@@ -42,7 +44,7 @@ uv pip install 'eu-reg-mcp[lint] @ git+https://github.com/sebastianfoerste/eu-re
 uv pip install 'eu-reg-mcp[classify] @ git+https://github.com/sebastianfoerste/eu-reg-mcp'
 ```
 
-Note: the linter and classifier packages are source-available under their own licenses (portfolio display, reference, and evaluation use), not MIT — see their repositories before production use. Without the extras, both tools return an install hint instead of failing.
+The linter and classifier are separate packages from their own repositories, MIT-licensed like this server. Without the extras, both tools return an install hint instead of failing.
 
 ## Try it
 

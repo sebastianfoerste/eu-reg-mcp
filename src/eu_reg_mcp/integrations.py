@@ -1,9 +1,10 @@
 """Optional integrations with the linter and classifier packages.
 
-Both packages are source-available (not MIT); they install via the `lint` and
-`classify` extras and degrade to an install hint when absent. Findings from
-either tool are candidate flags requiring human legal review, never confirmed
-deficiencies or legal conclusions — that framing is part of the contract.
+Both packages are MIT-licensed and live in their own repositories. They
+install via the `lint` and `classify` extras and degrade to an install hint
+when absent. Findings from either tool are candidate flags requiring human
+legal review, never confirmed deficiencies or legal conclusions — that
+framing is part of the contract.
 """
 
 from __future__ import annotations
@@ -29,8 +30,8 @@ def lint_whitepaper(whitepaper_json: str) -> dict[str, Any]:
             "available": False,
             "hint": (
                 "micar-lint is not installed. Install the optional extra: "
-                "`uv pip install 'eu-reg-mcp[lint]'` (source-available license; "
-                "see github.com/sebastianfoerste/micar-whitepaper-linter)."
+                "`uv pip install 'eu-reg-mcp[lint]'` "
+                "(see github.com/sebastianfoerste/micar-whitepaper-linter)."
             ),
         }
     try:
@@ -73,8 +74,8 @@ def classify_ai_system(profile_json: str) -> dict[str, Any]:
             "available": False,
             "hint": (
                 "eu-ai-act-classifier is not installed. Install the optional "
-                "extra: `uv pip install 'eu-reg-mcp[classify]'` (source-available "
-                "license; see github.com/sebastianfoerste/eu-ai-act-classifier)."
+                "extra: `uv pip install 'eu-reg-mcp[classify]'` "
+                "(see github.com/sebastianfoerste/eu-ai-act-classifier)."
             ),
         }
     if not profile_json.strip():
