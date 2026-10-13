@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 license = { file = "LICENSE" }
 authors = [{ name = "Sebastian Förste" }]
-dependencies = ["mcp>=1.2"]
+dependencies = ["mcp>=1.2,<2"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]

@@ -221,7 +221,7 @@ lint = [
 [package.metadata]
 requires-dist = [
     { name = "eu-ai-act-classifier", marker = "extra == 'classify'", git = "https://github.com/sebastianfoerste/eu-ai-act-classifier" },
-    { name = "mcp", specifier = ">=1.2" },
+    { name = "mcp", specifier = ">=1.2,<2" },
     { name = "micar-whitepaper-linter", marker = "extra == 'lint'", git = "https://github.com/sebastianfoerste/micar-whitepaper-linter" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
 ]
