@@ -18,10 +18,12 @@ Register data comes from the [MiCAR Register Observatory](https://github.com/seb
 
 ## Install
 
+Both setups below start the server with the `lint` and `classify` extras, so all five tools work. They need [uv](https://docs.astral.sh/uv/) installed; no API key and no further configuration.
+
 **Claude Code**
 
 ```bash
-claude mcp add eu-reg -- uvx --from git+https://github.com/sebastianfoerste/eu-reg-mcp eu-reg-mcp
+claude mcp add eu-reg -- uvx --from 'eu-reg-mcp[lint,classify] @ git+https://github.com/sebastianfoerste/eu-reg-mcp' eu-reg-mcp
 ```
 
 **Claude Desktop** (`claude_desktop_config.json`)
@@ -31,20 +33,17 @@ claude mcp add eu-reg -- uvx --from git+https://github.com/sebastianfoerste/eu-r
   "mcpServers": {
     "eu-reg": {
       "command": "uvx",
-      "args": ["--from", "git+https://github.com/sebastianfoerste/eu-reg-mcp", "eu-reg-mcp"]
+      "args": [
+        "--from",
+        "eu-reg-mcp[lint,classify] @ git+https://github.com/sebastianfoerste/eu-reg-mcp",
+        "eu-reg-mcp"
+      ]
     }
   }
 }
 ```
 
-The three register tools work with no configuration and no API key. The lint and classify tools need their optional extras:
-
-```bash
-uv pip install 'eu-reg-mcp[lint] @ git+https://github.com/sebastianfoerste/eu-reg-mcp'
-uv pip install 'eu-reg-mcp[classify] @ git+https://github.com/sebastianfoerste/eu-reg-mcp'
-```
-
-The linter and classifier are separate packages from their own repositories, MIT-licensed like this server. Without the extras, both tools return an install hint instead of failing.
+The extras install the linter and classifier from their own repositories; both are MIT-licensed like this server. To run only the three register tools, drop `[lint,classify]` from the `--from` value; the lint and classify tools then return an install hint instead of failing.
 
 ## Try it
 
