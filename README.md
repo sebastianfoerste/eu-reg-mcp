@@ -4,6 +4,8 @@
 
 An MCP server that gives AI agents **cited, review-gated grounding in EU regulation**. Agents answering crypto or AI-compliance questions can check a live official register and cite pinpoint provisions instead of guessing.
 
+**What is MCP?** The [Model Context Protocol](https://modelcontextprotocol.io) is an open-source standard for connecting AI applications such as Claude to outside tools and data; its own documentation compares it to a USB-C port for AI applications. This repository is one such tool provider: once it is connected, the assistant can check the ESMA MiCAR register or run the white paper linter itself and quote the result with its source, instead of answering from memory.
+
 Five tools:
 
 | Tool | What it does | Needs |
@@ -52,6 +54,61 @@ Ask an agent with this server connected:
 - "Is `<entity>` on the MiCAR register, and what format is its white paper?"
 - "What changed on the MiCAR register recently — any removals?"
 - "Classify this AI system under the EU AI Act" (paste a system profile; call with an empty string to get the schema).
+
+### A real tool call
+
+Captured on 2026-10-13 from a local run: the server was installed with the uvx command above (pointed at a local checkout) and driven by a minimal MCP client. The client sent this request:
+
+```json
+{"method":"tools/call","params":{"name":"micar_register_summary","arguments":{}},"jsonrpc":"2.0","id":2}
+```
+
+The server answered with this result text, unchanged. It reflects the 2026-10-12 register snapshot; the counts move every week.
+
+```json
+{
+  "snapshot_date": "2026-10-12",
+  "registers": [
+    {
+      "register": "other-wp",
+      "title": "White papers — other crypto-assets (Title II)",
+      "entries": 1040,
+      "fetched": true
+    },
+    {
+      "register": "emt-wp",
+      "title": "White papers — e-money tokens (Title IV)",
+      "entries": 50,
+      "fetched": true
+    },
+    {
+      "register": "art-wp",
+      "title": "White papers — asset-referenced tokens (Title III)",
+      "entries": 0,
+      "fetched": true
+    },
+    {
+      "register": "casps",
+      "title": "Authorised crypto-asset service providers (CASPs)",
+      "entries": 370,
+      "fetched": true
+    },
+    {
+      "register": "ncasp",
+      "title": "Non-compliant entities flagged by NCAs",
+      "entries": 173,
+      "fetched": true
+    }
+  ],
+  "whitepaper_format_coverage": {
+    "unspecified": 653,
+    "pdf": 264,
+    "xhtml/html": 171,
+    "none": 2
+  },
+  "notice": "Facts from the public ESMA interim MiCAR register (Art. 109 MiCAR) as mirrored by the MiCAR Register Observatory. No legal assessment of any entity; not legal advice."
+}
+```
 
 ## Guardrails
 
