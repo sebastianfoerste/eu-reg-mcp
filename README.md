@@ -2,6 +2,8 @@
 
 [![CI](https://github.com/sebastianfoerste/eu-reg-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/sebastianfoerste/eu-reg-mcp/actions/workflows/ci.yml)
 
+<!-- mcp-name: io.github.sebastianfoerste/eu-reg-mcp -->
+
 An MCP server that gives AI agents **cited, review-gated grounding in EU regulation**. Agents answering crypto or AI-compliance questions can check a live official register and cite pinpoint provisions instead of guessing.
 
 Five tools:
