@@ -65,8 +65,10 @@ def lint_micar_whitepaper(whitepaper_json: str) -> dict[str, Any]:
 def classify_eu_ai_act_system(profile_json: str = "") -> dict[str, Any]:
     """Classify an AI system's EU AI Act risk tier with pinpoint citations.
 
-    Pass a SystemProfile as JSON; pass an empty string to get the schema.
-    Requires the optional `classify` extra; degrades to an install hint.
+    Pass a SystemProfile as JSON; pass an empty string to get its JSON
+    schema and an example profile. Invalid fields come back as validation
+    errors with the schema. Requires the optional `classify` extra; degrades
+    to an install hint.
     """
     return integrations.classify_ai_system(profile_json)
 

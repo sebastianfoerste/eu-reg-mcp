@@ -57,7 +57,7 @@ Ask an agent with this server connected:
 
 - "Is `<entity>` on the MiCAR register, and what format is its white paper?"
 - "What changed on the MiCAR register recently — any removals?"
-- "Classify this AI system under the EU AI Act" (paste a system profile; call with an empty string to get the schema).
+- "Classify this AI system under the EU AI Act" (paste a system profile; an empty call returns the profile's JSON schema and an example, and invalid fields come back as validation errors).
 
 ## Guardrails
 
