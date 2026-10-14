@@ -14,11 +14,11 @@ Five tools:
 | `lint_micar_whitepaper` | Deterministic Annex I–III lint of a draft white paper: cited candidate findings | `lint` extra |
 | `classify_eu_ai_act_system` | EU AI Act risk-tier classification with pinpoint Art. 5 / Annex III / GPAI citations | `classify` extra |
 
-Register data comes from the [MiCAR Register Observatory](https://github.com/sebastianfoerste/micar-register-observatory), which snapshots the public ESMA register weekly (Art. 109 VO (EU) 2023/1114). The server reads the observatory's published snapshot and changelog from GitHub (cached for an hour), not ESMA directly, and every register answer carries its snapshot date. The linter is [micar-whitepaper-linter](https://github.com/sebastianfoerste/micar-whitepaper-linter) (36 rules mapped to Annex I–III); the classifier is [eu-ai-act-classifier](https://github.com/sebastianfoerste/eu-ai-act-classifier).
+Register data comes from the [MiCAR Register Observatory](https://github.com/sebastianfoerste/micar-register-observatory), which snapshots ESMA's public interim register weekly: crypto-asset white papers and authorised CASPs (Art. 109 of Regulation (EU) 2023/1114, MiCAR) and the list of non-compliant entities. The server reads the observatory's published snapshot and changelog from GitHub (cached for an hour), not ESMA directly, and every register answer carries its snapshot date. The linter is [micar-whitepaper-linter](https://github.com/sebastianfoerste/micar-whitepaper-linter) (36 rules mapped to Annex I–III); the classifier is [eu-ai-act-classifier](https://github.com/sebastianfoerste/eu-ai-act-classifier).
 
 ## Install
 
-One command installs the server with both optional tools and starts it. It needs [uv](https://docs.astral.sh/uv/); `uvx` fetches Python 3.13 if you do not have it. The first start is slower while uv installs the linter and classifier from their repositories.
+One command installs the server with both optional tools and starts it. It needs [uv](https://docs.astral.sh/uv/); uv downloads a compatible Python (3.13 or newer) if none is installed. The first start is slower while uv installs the linter and classifier from their repositories.
 
 ```bash
 uvx --from 'eu-reg-mcp[classify,lint] @ git+https://github.com/sebastianfoerste/eu-reg-mcp' eu-reg-mcp
@@ -73,4 +73,4 @@ make install-all && make test # with the classify and lint extras
 make smoke                    # install this checkout with uvx and list tools over MCP stdio
 ```
 
-Tests run offline against fixtures. `make smoke` runs `scripts/smoke_list_tools.py`; CI runs it on every push and pull request, and weekly against a fresh install. The server itself is MIT-licensed.
+Tests run offline against fixtures. `make smoke` runs `scripts/smoke_list_tools.py`; CI runs it on pushes to main, on pull requests, weekly on Mondays and on manual dispatch; each run installs fresh with uvx and ignores uv.lock. The server itself is MIT-licensed.
