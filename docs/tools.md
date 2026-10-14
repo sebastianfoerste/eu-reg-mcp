@@ -22,7 +22,10 @@ Register data comes from the [MiCAR Register Observatory](https://github.com/seb
 
 The linter is [micar-whitepaper-linter](https://github.com/sebastianfoerste/micar-whitepaper-linter) (36 rules mapped to Annex I–III); the classifier is [eu-ai-act-classifier](https://github.com/sebastianfoerste/eu-ai-act-classifier). Both are separate packages from their own repositories, MIT-licensed like this server. Without the extras, both tools return an install hint instead of failing.
 
+The README's Try it command installs both extras. To install only one, name it in the `--from` value, for example:
+
 ```bash
-uv pip install 'eu-reg-mcp[lint] @ git+https://github.com/sebastianfoerste/eu-reg-mcp'
-uv pip install 'eu-reg-mcp[classify] @ git+https://github.com/sebastianfoerste/eu-reg-mcp'
+uvx --from 'eu-reg-mcp[lint] @ git+https://github.com/sebastianfoerste/eu-reg-mcp' eu-reg-mcp
 ```
+
+`uv pip install` adds the extras only to the environment it runs in, not to a server that uvx starts.
