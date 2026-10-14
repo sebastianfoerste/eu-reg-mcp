@@ -68,7 +68,9 @@ Every response carries its framing: register results are **facts from a public r
 ```bash
 git clone https://github.com/sebastianfoerste/eu-reg-mcp
 cd eu-reg-mcp
-make install && make test
+make install && make test     # core tests; classifier and linter tests skip
+make install-all && make test # with the classify and lint extras
+make smoke                    # install this checkout with uvx and list tools over MCP stdio
 ```
 
-Tests run offline against fixtures. The server itself is MIT-licensed.
+Tests run offline against fixtures. `make smoke` runs `scripts/smoke_list_tools.py`; CI runs it on every push and pull request, and weekly against a fresh install. The server itself is MIT-licensed.

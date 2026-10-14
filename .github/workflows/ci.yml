@@ -4,6 +4,12 @@ on:
   push:
     branches: [main]
   pull_request:
+  schedule:
+    # Weekly, Monday after the observatory's register refresh. A fresh install
+    # resolves the newest dependencies, so this catches upstream releases that
+    # break the documented install (mcp 2.0.0 removed mcp.server.fastmcp).
+    - cron: "41 7 * * 1"
+  workflow_dispatch:
 
 jobs:
   test:
@@ -13,3 +19,30 @@ jobs:
       - uses: astral-sh/setup-uv@v5
       - run: uv sync --extra dev
       - run: uv run pytest -q
+
+  test-extras:
+    name: test (classify + lint extras)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync --locked --extra dev --extra classify --extra lint
+      # Fail rather than let the classifier and linter tests skip silently.
+      - run: >-
+          uv run python -c "import shutil, eu_ai_act_classifier.local_api;
+          assert shutil.which('micar-lint'), 'micar-lint not on PATH'"
+      - run: uv run pytest -q -rs
+
+  install-smoke:
+    name: install smoke (uvx + MCP stdio client)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      # Installs this ref the way the README does (uvx, both extras, fresh
+      # resolution that ignores uv.lock), starts the server over stdio, lists
+      # its tools and calls classify, lint and the live register summary.
+      - run: >-
+          uv run --no-project --with 'mcp>=1.2,<2'
+          python scripts/smoke_list_tools.py --check-register --
+          uvx --refresh --from '.[classify,lint]' eu-reg-mcp
