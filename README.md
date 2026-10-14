@@ -2,33 +2,20 @@
 
 [![CI](https://github.com/sebastianfoerste/eu-reg-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/sebastianfoerste/eu-reg-mcp/actions/workflows/ci.yml)
 
-An MCP server that gives AI agents **cited, review-gated grounding in EU regulation**. Agents answering crypto or AI-compliance questions can check a live official register and cite pinpoint provisions instead of guessing.
+**Let your AI agent check the ESMA MiCAR register and cite EU AI Act provisions instead of guessing — with every answer framed as a fact or a candidate flag for human review.**
 
-**What is MCP?** The [Model Context Protocol](https://modelcontextprotocol.io) is an open-source standard for connecting AI applications such as Claude to outside tools and data; its own documentation compares it to a USB-C port for AI applications. This repository is one such tool provider: once it is connected, the assistant can check the ESMA MiCAR register or run the white paper linter itself and quote the result with its source, instead of answering from memory.
+Scope today: the ESMA interim MiCAR register (search, summary, change tracking), MiCAR white paper linting, and EU AI Act risk-tier classification. Other EU regulation is not covered.
 
-Five tools:
-
-| Tool | What it does | Needs |
-| --- | --- | --- |
-| `search_micar_register` | Look up an entity by name or LEI in the ESMA interim MiCAR register: white papers (Titles II–IV), authorised CASPs, non-compliant entities | — |
-| `micar_register_summary` | Current register totals and white paper format coverage | — |
-| `micar_register_changes` | Register movement: new filings, changed entries, removals (withdrawal tracking) | — |
-| `lint_micar_whitepaper` | Deterministic Annex I–III lint of a draft white paper: cited candidate findings | `lint` extra |
-| `classify_eu_ai_act_system` | EU AI Act risk-tier classification with pinpoint Art. 5 / Annex III / GPAI citations | `classify` extra |
-
-Register data comes from the [MiCAR Register Observatory](https://github.com/sebastianfoerste/micar-register-observatory), which snapshots the public ESMA register weekly (Art. 109 VO (EU) 2023/1114). The linter is [micar-whitepaper-linter](https://github.com/sebastianfoerste/micar-whitepaper-linter) (36 rules mapped to Annex I–III); the classifier is [eu-ai-act-classifier](https://github.com/sebastianfoerste/eu-ai-act-classifier).
-
-## Install
-
-Both setups below start the server with the `lint` and `classify` extras, so all five tools work. They need [uv](https://docs.astral.sh/uv/) installed; no API key and no further configuration.
-
-**Claude Code**
+## Try it
 
 ```bash
 claude mcp add eu-reg -- uvx --from 'eu-reg-mcp[lint,classify] @ git+https://github.com/sebastianfoerste/eu-reg-mcp' eu-reg-mcp
 ```
 
-**Claude Desktop** (`claude_desktop_config.json`)
+Then ask your agent: *"Is `<entity>` on the MiCAR register, and what format is its white paper?"* The command installs the `lint` and `classify` extras, so all five tools work; no API key is needed. To run only the three register tools, drop `[lint,classify]` from the `--from` value; the lint and classify tools then return an install hint instead of failing. A PyPI package (`uvx eu-reg-mcp`) is coming; it does not exist yet, so use the git form above. Data sources, network use and the extras: [docs/tools.md](docs/tools.md#data-sources-and-network-use).
+
+<details>
+<summary>Claude Desktop (<code>claude_desktop_config.json</code>)</summary>
 
 ```json
 {
@@ -44,82 +31,71 @@ claude mcp add eu-reg -- uvx --from 'eu-reg-mcp[lint,classify] @ git+https://git
   }
 }
 ```
+</details>
 
-The extras install the linter and classifier from their own repositories; both are MIT-licensed like this server. To run only the three register tools, drop `[lint,classify]` from the `--from` value; the lint and classify tools then return an install hint instead of failing.
+## Example output
 
-## Try it
+> **Synthetic data.** Produced on 2026-10-14 by running this repo's register code (`register.search_entries` / `register.recent_changes`) against the **synthetic test fixtures** in `tests/fixtures/`, not the live register. The entity and its LEI are test data. Output shape is what a live call returns; values are not.
 
-Ask an agent with this server connected:
-
-- "Is `<entity>` on the MiCAR register, and what format is its white paper?"
-- "What changed on the MiCAR register recently — any removals?"
-- "Classify this AI system under the EU AI Act" (paste a system profile; call with an empty string to get the schema).
-
-### A real tool call
-
-Captured on 2026-10-13 from a local run: the server was installed with the uvx command above (pointed at a local checkout) and driven by a minimal MCP client. The client sent this request:
-
-```json
-{"method":"tools/call","params":{"name":"micar_register_summary","arguments":{}},"jsonrpc":"2.0","id":2}
-```
-
-The server answered with this result text, unchanged. It reflects the 2026-10-12 register snapshot; the counts move every week.
+`search_micar_register(query="skygate")`:
 
 ```json
 {
-  "snapshot_date": "2026-10-12",
-  "registers": [
+  "snapshot_date": "2026-07-07",
+  "total_matches": 1,
+  "results": [
     {
       "register": "other-wp",
-      "title": "White papers — other crypto-assets (Title II)",
-      "entries": 1040,
-      "fetched": true
-    },
-    {
-      "register": "emt-wp",
-      "title": "White papers — e-money tokens (Title IV)",
-      "entries": 50,
-      "fetched": true
-    },
-    {
-      "register": "art-wp",
-      "title": "White papers — asset-referenced tokens (Title III)",
-      "entries": 0,
-      "fetched": true
-    },
-    {
-      "register": "casps",
-      "title": "Authorised crypto-asset service providers (CASPs)",
-      "entries": 370,
-      "fetched": true
-    },
-    {
-      "register": "ncasp",
-      "title": "Non-compliant entities flagged by NCAs",
-      "entries": 173,
-      "fetched": true
+      "entity_name": "SKYGATE Network GmbH",
+      "lei": "984500BBFE52FE449926",
+      "member_state": "AT",
+      "authority": "FMA",
+      "whitepaper_url": "WWW.SKYGATETOKEN.AT",
+      "format_class": "unspecified",
+      "register_last_update": "30/12/2024"
     }
   ],
-  "whitepaper_format_coverage": {
-    "unspecified": 653,
-    "pdf": 264,
-    "xhtml/html": 171,
-    "none": 2
-  },
+  "truncated": false,
   "notice": "Facts from the public ESMA interim MiCAR register (Art. 109 MiCAR) as mirrored by the MiCAR Register Observatory. No legal assessment of any entity; not legal advice."
 }
 ```
 
-## Guardrails
+`micar_register_changes(change_type="removed")` returns the same kind of cited record (snapshot date, register, entity) and notes that *"the register itself does not state why"* an entry was removed. The lint and classify tools return pinpoint citations (MiCAR Annex I–III; AI Act Art. 5 / Annex III / GPAI); I have not run them for this README, so no sample is shown. [UNVERIFIED: live output of those two tools]
 
-Every response carries its framing: register results are **facts from a public register** with the snapshot date; lint and classification outputs are **candidate flags from deterministic rules, pending human legal review**. Extraction artifacts exist. Nothing this server returns is a legal assessment of any entity or legal advice — that is a design contract, not a disclaimer.
+## Tools
 
-## Development
+| Tool | What it does | Needs |
+| --- | --- | --- |
+| `search_micar_register` | Look up an entity by name or LEI in the ESMA interim MiCAR register | — |
+| `micar_register_summary` | Register totals and white paper format coverage | — |
+| `micar_register_changes` | New filings, changed entries, removals | — |
+| `lint_micar_whitepaper` | Deterministic Annex I–III lint of a draft white paper | `lint` extra |
+| `classify_eu_ai_act_system` | AI Act risk tier with pinpoint citations | `classify` extra |
 
-```bash
-git clone https://github.com/sebastianfoerste/eu-reg-mcp
-cd eu-reg-mcp
-make install && make test
-```
+Parameters, data sources, caching and network requirements: [docs/tools.md](docs/tools.md).
 
-Tests run offline against fixtures. The server itself is MIT-licensed.
+## Why not just ask an LLM?
+
+An ungrounded model can invent register entries or provisions. Here, register answers come from a dated snapshot of the public register, and lint/classification output comes from deterministic rules with citations. **Review-gated** means the output is a candidate flag pending human legal review — never a legal assessment or legal advice. Details: [docs/guardrails.md](docs/guardrails.md).
+
+## Links
+
+- Register data: [micar-register-observatory](https://github.com/sebastianfoerste/micar-register-observatory) (weekly snapshots of the public ESMA register, Art. 109 VO (EU) 2023/1114)
+- Linter: [micar-whitepaper-linter](https://github.com/sebastianfoerste/micar-whitepaper-linter) (36 rules mapped to Annex I–III) · Classifier: [eu-ai-act-classifier](https://github.com/sebastianfoerste/eu-ai-act-classifier) — both MIT-licensed
+- Development and tests: [docs/development.md](docs/development.md)
+
+## Part of the EU regulation as code suite
+
+By [sebastianfoerste](https://github.com/sebastianfoerste):
+
+- [awesome-eu-fintech-regulation](https://github.com/sebastianfoerste/awesome-eu-fintech-regulation)
+- [contract-review-eval-harness](https://github.com/sebastianfoerste/contract-review-eval-harness)
+- [legal-function-operating-system](https://github.com/sebastianfoerste/legal-function-operating-system)
+- [eu-ai-act-classifier](https://github.com/sebastianfoerste/eu-ai-act-classifier)
+- [micar-whitepaper-linter](https://github.com/sebastianfoerste/micar-whitepaper-linter)
+- **eu-reg-mcp** (this repo)
+- [micar-register-observatory](https://github.com/sebastianfoerste/micar-register-observatory)
+
+## Caveats
+
+Register results are public-register facts with extraction artifacts possible; lint and classification outputs are candidate flags pending human legal review. Nothing here is legal advice. MIT licensed.
