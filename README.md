@@ -12,7 +12,9 @@ Scope today: the ESMA interim MiCAR register (search, summary, change tracking),
 claude mcp add eu-reg -- uvx --from 'eu-reg-mcp[lint,classify] @ git+https://github.com/sebastianfoerste/eu-reg-mcp' eu-reg-mcp
 ```
 
-Then ask your agent: *"Is `<entity>` on the MiCAR register, and what format is its white paper?"* The command installs the `lint` and `classify` extras, so all five tools work; no API key is needed. To run only the three register tools, drop `[lint,classify]` from the `--from` value; the lint and classify tools then return an install hint instead of failing. A PyPI package (`uvx eu-reg-mcp`) is coming; it does not exist yet, so use the git form above. Data sources, network use and the extras: [docs/tools.md](docs/tools.md#data-sources-and-network-use). The command needs [uv](https://docs.astral.sh/uv/), which downloads a compatible Python (3.13 or newer) if none is installed; the first start is slower while uv installs the linter and classifier.
+The command needs [uv](https://docs.astral.sh/uv/), which downloads a compatible Python (3.13 or newer) if none is installed; the first start is slower while uv installs the linter and classifier.
+
+Then ask your agent: *"Is `<entity>` on the MiCAR register, and what format is its white paper?"* The command installs the `lint` and `classify` extras, so all five tools work; no API key is needed. To run only the three register tools, drop `[lint,classify]` from the `--from` value; the lint and classify tools then return an install hint instead of failing. A PyPI package (`uvx eu-reg-mcp`) is coming; it does not exist yet, so use the git form above. Data sources, network use and the extras: [docs/tools.md](docs/tools.md#data-sources-and-network-use).
 
 <details>
 <summary>Claude Desktop (<code>claude_desktop_config.json</code>)</summary>
@@ -84,7 +86,7 @@ An ungrounded model can invent register entries or provisions. Here, register an
 
 ## Links
 
-- Register data: [micar-register-observatory](https://github.com/sebastianfoerste/micar-register-observatory) (weekly snapshots of the public ESMA register, Art. 109 VO (EU) 2023/1114)
+- Register data: [micar-register-observatory](https://github.com/sebastianfoerste/micar-register-observatory) (weekly snapshots of ESMA's public interim register: white papers and authorised CASPs under Art. 109 of Regulation (EU) 2023/1114, MiCAR, and the list of non-compliant entities)
 - Linter: [micar-whitepaper-linter](https://github.com/sebastianfoerste/micar-whitepaper-linter) (36 rules mapped to Annex I–III) · Classifier: [eu-ai-act-classifier](https://github.com/sebastianfoerste/eu-ai-act-classifier) — both MIT-licensed
 - Development and tests: [docs/development.md](docs/development.md)
 
