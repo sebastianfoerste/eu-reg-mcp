@@ -3,7 +3,7 @@
 Usage (everything after ``--`` is the command that launches the server):
 
     uv run --no-project --with 'mcp>=1.2,<2' python scripts/smoke_list_tools.py -- \
-        uvx --refresh --from '.[classify,lint]' eu-reg-mcp
+        uvx --refresh --from '.[lint,classify]' eu-reg-mcp
 
 The script connects with the MCP SDK's stdio client, lists the tools and
 fails unless exactly the five documented tools are present. It then calls the
@@ -78,83 +78,83 @@ async def run(
     params = StdioServerParameters(
         command=command[0], args=command[1:], env=dict(os.environ)
     )
-    async with stdio_client(params) as (read, write):
-        async with ClientSession(read, write) as session:
-            # First start may build the environment and clone the git extras.
-            with anyio.fail_after(init_timeout):
-                init = await session.initialize()
-            info = init.serverInfo
-            print(f"serverInfo: name={info.name} version={info.version}")
+    async with (
+        stdio_client(params) as (read, write),
+        ClientSession(read, write) as session,
+    ):
+        # First start may build the environment and clone the git extras.
+        with anyio.fail_after(init_timeout):
+            init = await session.initialize()
+        info = init.serverInfo
+        print(f"serverInfo: name={info.name} version={info.version}")
 
-            with anyio.fail_after(call_timeout):
-                tools = (await session.list_tools()).tools
-            names = sorted(tool.name for tool in tools)
-            print(f"tools listed: {len(names)}")
-            for name in names:
-                print(f"  - {name}")
-            if set(names) != EXPECTED_TOOLS:
-                missing = sorted(EXPECTED_TOOLS - set(names))
-                extra = sorted(set(names) - EXPECTED_TOOLS)
-                print(f"FAIL: missing={missing} unexpected={extra}")
-                return 1
+        with anyio.fail_after(call_timeout):
+            tools = (await session.list_tools()).tools
+        names = sorted(tool.name for tool in tools)
+        print(f"tools listed: {len(names)}")
+        for name in names:
+            print(f"  - {name}")
+        if set(names) != EXPECTED_TOOLS:
+            missing = sorted(EXPECTED_TOOLS - set(names))
+            extra = sorted(set(names) - EXPECTED_TOOLS)
+            print(f"FAIL: missing={missing} unexpected={extra}")
+            return 1
 
-            classify = await _call(
-                session,
-                "classify_eu_ai_act_system",
-                {"profile_json": json.dumps(BANK_CREDIT_DEPLOYER)},
-                call_timeout,
-            )
-            if not classify.get("available"):
-                print(f"FAIL: classify extra missing: {classify.get('hint')}")
-                return 1
-            if "classification" not in classify:
-                print(
-                    f"FAIL: classify returned {classify.get('error')} "
-                    f"{classify.get('validation_errors')}"
-                )
-                return 1
-            report = classify["classification"]
-            articles = sorted(
-                {obligation["article"] for obligation in report["obligations"]}
-            )
+        classify = await _call(
+            session,
+            "classify_eu_ai_act_system",
+            {"profile_json": json.dumps(BANK_CREDIT_DEPLOYER)},
+            call_timeout,
+        )
+        if not classify.get("available"):
+            print(f"FAIL: classify extra missing: {classify.get('hint')}")
+            return 1
+        if "classification" not in classify:
             print(
-                f"classify III.5.b deployer: {report['risk_tier']} "
-                f"({report['disposition']}), obligations {articles}"
+                f"FAIL: classify returned {classify.get('error')} "
+                f"{classify.get('validation_errors')}"
             )
-            if report["risk_tier"] != "high_risk" or not {
-                "Art. 26 AIA",
-                "Art. 27 AIA",
-            } <= set(articles):
-                print("FAIL: expected high_risk with Art. 26 AIA and Art. 27 AIA")
-                return 1
+            return 1
+        report = classify["classification"]
+        articles = sorted(
+            {obligation["article"] for obligation in report["obligations"]}
+        )
+        print(
+            f"classify III.5.b deployer: {report['risk_tier']} "
+            f"({report['disposition']}), obligations {articles}"
+        )
+        if report["risk_tier"] != "high_risk" or not {
+            "Art. 26 AIA",
+            "Art. 27 AIA",
+        } <= set(articles):
+            print("FAIL: expected high_risk with Art. 26 AIA and Art. 27 AIA")
+            return 1
 
-            lint = await _call(
-                session,
-                "lint_micar_whitepaper",
-                {"whitepaper_json": json.dumps(SYNTHETIC_DRAFT)},
-                call_timeout,
+        lint = await _call(
+            session,
+            "lint_micar_whitepaper",
+            {"whitepaper_json": json.dumps(SYNTHETIC_DRAFT)},
+            call_timeout,
+        )
+        if not lint.get("available") or "report" not in lint:
+            print(f"FAIL: lint extra missing or failed: {lint}")
+            return 1
+        summary = lint["report"].get("summary", {})
+        print(f"lint synthetic draft: ran, summary {summary}")
+
+        if check_register:
+            register = await _call(session, "micar_register_summary", {}, call_timeout)
+            totals = {
+                entry["register"]: entry["entries"]
+                for entry in register.get("registers", [])
+            }
+            print(
+                f"register summary: snapshot_date {register.get('snapshot_date')}, "
+                f"entries {totals}"
             )
-            if not lint.get("available") or "report" not in lint:
-                print(f"FAIL: lint extra missing or failed: {lint}")
+            if not register.get("snapshot_date"):
+                print("FAIL: register summary has no snapshot_date")
                 return 1
-            summary = lint["report"].get("summary", {})
-            print(f"lint synthetic draft: ran, summary {summary}")
-
-            if check_register:
-                register = await _call(
-                    session, "micar_register_summary", {}, call_timeout
-                )
-                totals = {
-                    entry["register"]: entry["entries"]
-                    for entry in register.get("registers", [])
-                }
-                print(
-                    f"register summary: snapshot_date {register.get('snapshot_date')}, "
-                    f"entries {totals}"
-                )
-                if not register.get("snapshot_date"):
-                    print("FAIL: register summary has no snapshot_date")
-                    return 1
 
     print("OK")
     return 0

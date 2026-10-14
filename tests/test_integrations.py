@@ -6,9 +6,14 @@ import pytest
 
 from eu_reg_mcp.integrations import (
     EXAMPLE_PROFILE,
+    INSTALL_WITH_EXTRAS,
     REVIEW_NOTICE,
     classify_ai_system,
     lint_whitepaper,
+)
+
+SOURCE = (
+    "eu-reg-mcp[lint,classify] @ git+https://github.com/sebastianfoerste/eu-reg-mcp"
 )
 
 # Synthetic Annex III point 5(b) deployer, as in eu-ai-act-classifier's
@@ -48,7 +53,7 @@ def test_lint_degrades_with_install_hint_when_binary_missing(monkeypatch):
     monkeypatch.setattr("eu_reg_mcp.integrations.shutil.which", lambda _: None)
     result = lint_whitepaper(json.dumps({"title": "x"}))
     assert result["available"] is False
-    assert "eu-reg-mcp[classify,lint]" in result["hint"]
+    assert INSTALL_WITH_EXTRAS in result["hint"]
     assert result["notice"] == REVIEW_NOTICE
 
 
@@ -62,9 +67,7 @@ def test_lint_rejects_invalid_json(monkeypatch):
     assert result["notice"] == REVIEW_NOTICE
 
 
-@pytest.mark.skipif(
-    shutil.which("micar-lint") is None, reason="needs the `lint` extra"
-)
+@pytest.mark.skipif(shutil.which("micar-lint") is None, reason="needs the `lint` extra")
 def test_lint_runs_installed_linter_on_synthetic_draft():
     draft = {
         "title": "Synthetic test draft",
@@ -86,7 +89,7 @@ def test_lint_runs_installed_linter_on_synthetic_draft():
 def test_classify_degrades_with_install_hint_when_package_missing(classifier_missing):
     result = classify_ai_system("{}")
     assert result["available"] is False
-    assert "eu-reg-mcp[classify,lint]" in result["hint"]
+    assert INSTALL_WITH_EXTRAS in result["hint"]
     assert result["notice"] == REVIEW_NOTICE
 
 
@@ -101,7 +104,9 @@ def test_classify_empty_profile_returns_json_schema_and_example(classifier, empt
     schema = result["profile_schema"]
     assert schema["title"] == "SystemProfile"
     assert schema["required"] == ["name"]
-    assert {"name", "roles", "annex_iii_area", "derogation"} <= set(schema["properties"])
+    assert {"name", "roles", "annex_iii_area", "derogation"} <= set(
+        schema["properties"]
+    )
     assert schema["additionalProperties"] is False
     assert result["example_profile"] == EXAMPLE_PROFILE
     assert "Required fields: name" in result["hint"]
@@ -164,3 +169,8 @@ def test_classify_annex_iii_5b_deployer_is_high_risk_with_art_26_and_27(classifi
     }
     assert {"Art. 26 AIA", "Art. 27 AIA"} <= deployer_items
     assert classification["disclaimer"]
+
+
+def test_install_hint_names_the_git_source_with_both_extras():
+    # A bare `eu-reg-mcp[lint]` would resolve against PyPI, not this repository.
+    assert f"--from '{SOURCE}' eu-reg-mcp" in INSTALL_WITH_EXTRAS

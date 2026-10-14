@@ -11,7 +11,7 @@ test:
 
 smoke:
 	uv run --no-project --with 'mcp>=1.2,<2' python scripts/smoke_list_tools.py -- \
-		uvx --refresh --from '.[classify,lint]' eu-reg-mcp
+		uvx --refresh --from '.[lint,classify]' eu-reg-mcp
 
 run:
 	uv run eu-reg-mcp

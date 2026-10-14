@@ -22,10 +22,12 @@ REVIEW_NOTICE = (
     "Not legal advice."
 )
 
-INSTALL_COMMAND = (
-    "uvx --from 'eu-reg-mcp[classify,lint] @ "
+# The package and both extras install from GitHub, not from PyPI.
+INSTALL_WITH_EXTRAS = (
+    "uvx --from 'eu-reg-mcp[lint,classify] @ "
     "git+https://github.com/sebastianfoerste/eu-reg-mcp' eu-reg-mcp"
 )
+
 
 SCHEMA_HINT = (
     "Call classify_eu_ai_act_system with an empty string to get the "
@@ -55,7 +57,7 @@ def lint_whitepaper(whitepaper_json: str) -> dict[str, Any]:
             "available": False,
             "hint": (
                 "micar-lint is not installed. Start the server with the "
-                f"`lint` extra: `{INSTALL_COMMAND}` "
+                f"optional extras: `{INSTALL_WITH_EXTRAS}` "
                 "(see github.com/sebastianfoerste/micar-whitepaper-linter)."
             ),
             "notice": REVIEW_NOTICE,
@@ -107,7 +109,7 @@ def classify_ai_system(profile_json: str) -> dict[str, Any]:
             "available": False,
             "hint": (
                 "eu-ai-act-classifier is not installed. Start the server with "
-                f"the `classify` extra: `{INSTALL_COMMAND}` "
+                f"the optional extras: `{INSTALL_WITH_EXTRAS}` "
                 "(see github.com/sebastianfoerste/eu-ai-act-classifier)."
             ),
             "notice": REVIEW_NOTICE,
