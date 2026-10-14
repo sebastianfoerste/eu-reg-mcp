@@ -16,7 +16,7 @@ Record only once [`pyproject.toml`](../../pyproject.toml) on `main` pins `mcp>=1
 
 ### 2. Install in a new, empty directory outside any project
 
-Claude Code loads instruction files (`CLAUDE.md` and its variants) from the working directory and from every parent directory, as well as the user's own `~/.claude/CLAUDE.md`. A demo directory under a project would bring that project's instructions into the session, so create it inside a new temporary directory. `claude mcp add` registers the server for the current directory by default, so run it there. The install command is the one in the [README](../../README.md#install), unchanged:
+Claude Code loads instruction files (`CLAUDE.md` and its variants) from the working directory and from every parent directory, as well as the user's own `~/.claude/CLAUDE.md`. A demo directory under a project would bring that project's instructions into the session, so create it inside a new temporary directory. `claude mcp add` registers the server for the current directory by default, so run it there. The install command is the one in the [README](../../README.md#try-it), unchanged:
 
 ```bash
 cd "$(mktemp -d)" && mkdir eu-reg-demo && cd eu-reg-demo
