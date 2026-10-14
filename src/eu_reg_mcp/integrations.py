@@ -37,7 +37,10 @@ def lint_whitepaper(whitepaper_json: str) -> dict[str, Any]:
     try:
         payload = json.loads(whitepaper_json)
     except json.JSONDecodeError as error:
-        return {"available": True, "error": f"whitepaper_json is not valid JSON: {error}"}
+        return {
+            "available": True,
+            "error": f"whitepaper_json is not valid JSON: {error}",
+        }
 
     with tempfile.NamedTemporaryFile(
         "w", suffix=".json", delete=False, encoding="utf-8"
