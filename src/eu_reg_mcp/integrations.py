@@ -112,8 +112,8 @@ def classify_ai_system(profile_json: str) -> dict[str, Any]:
             ),
             "notice": REVIEW_NOTICE,
         }
-    profile_schema = SystemProfile.model_json_schema()
     if not profile_json.strip():
+        profile_schema = SystemProfile.model_json_schema()
         return {
             "available": True,
             "profile_schema": profile_schema,
@@ -161,7 +161,7 @@ def classify_ai_system(profile_json: str) -> dict[str, Any]:
                 for detail in error.errors()
             ],
             "hint": SCHEMA_HINT,
-            "profile_schema": profile_schema,
+            "profile_schema": SystemProfile.model_json_schema(),
             "notice": REVIEW_NOTICE,
         }
     return {

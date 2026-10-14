@@ -10,8 +10,9 @@ fails unless exactly the five documented tools are present. It then calls the
 two offline tools to prove the extras really are installed in the server's
 environment: the classifier must return ``high_risk`` with Art. 26 and
 Art. 27 for a synthetic Annex III point 5(b) deployer, and the linter must
-run. ``--check-register`` also fetches the live register summary over the
-network. Exit status 0 means every check passed.
+run. ``--check-register`` also calls the register summary, which fetches the
+observatory's weekly snapshot over the network. Exit status 0 means every
+check passed.
 """
 
 from __future__ import annotations
@@ -59,7 +60,19 @@ def _payload(result: Any) -> dict[str, Any]:
     return json.loads(result.content[0].text)
 
 
-async def run(command: list[str], check_register: bool, init_timeout: float) -> int:
+async def _call(
+    session: ClientSession, name: str, arguments: dict[str, Any], timeout: float
+) -> dict[str, Any]:
+    with anyio.fail_after(timeout):
+        return _payload(await session.call_tool(name, arguments))
+
+
+async def run(
+    command: list[str],
+    check_register: bool,
+    init_timeout: float,
+    call_timeout: float,
+) -> int:
     # The SDK passes only a minimal environment to the server by default; pass
     # the caller's environment so proxy and certificate settings reach uvx.
     params = StdioServerParameters(
@@ -73,7 +86,8 @@ async def run(command: list[str], check_register: bool, init_timeout: float) -> 
             info = init.serverInfo
             print(f"serverInfo: name={info.name} version={info.version}")
 
-            tools = (await session.list_tools()).tools
+            with anyio.fail_after(call_timeout):
+                tools = (await session.list_tools()).tools
             names = sorted(tool.name for tool in tools)
             print(f"tools listed: {len(names)}")
             for name in names:
@@ -84,14 +98,20 @@ async def run(command: list[str], check_register: bool, init_timeout: float) -> 
                 print(f"FAIL: missing={missing} unexpected={extra}")
                 return 1
 
-            classify = _payload(
-                await session.call_tool(
-                    "classify_eu_ai_act_system",
-                    {"profile_json": json.dumps(BANK_CREDIT_DEPLOYER)},
-                )
+            classify = await _call(
+                session,
+                "classify_eu_ai_act_system",
+                {"profile_json": json.dumps(BANK_CREDIT_DEPLOYER)},
+                call_timeout,
             )
             if not classify.get("available"):
                 print(f"FAIL: classify extra missing: {classify.get('hint')}")
+                return 1
+            if "classification" not in classify:
+                print(
+                    f"FAIL: classify returned {classify.get('error')} "
+                    f"{classify.get('validation_errors')}"
+                )
                 return 1
             report = classify["classification"]
             articles = sorted(
@@ -108,11 +128,11 @@ async def run(command: list[str], check_register: bool, init_timeout: float) -> 
                 print("FAIL: expected high_risk with Art. 26 AIA and Art. 27 AIA")
                 return 1
 
-            lint = _payload(
-                await session.call_tool(
-                    "lint_micar_whitepaper",
-                    {"whitepaper_json": json.dumps(SYNTHETIC_DRAFT)},
-                )
+            lint = await _call(
+                session,
+                "lint_micar_whitepaper",
+                {"whitepaper_json": json.dumps(SYNTHETIC_DRAFT)},
+                call_timeout,
             )
             if not lint.get("available") or "report" not in lint:
                 print(f"FAIL: lint extra missing or failed: {lint}")
@@ -121,8 +141,8 @@ async def run(command: list[str], check_register: bool, init_timeout: float) -> 
             print(f"lint synthetic draft: ran, summary {summary}")
 
             if check_register:
-                register = _payload(
-                    await session.call_tool("micar_register_summary", {})
+                register = await _call(
+                    session, "micar_register_summary", {}, call_timeout
                 )
                 totals = {
                     entry["register"]: entry["entries"]
@@ -153,12 +173,20 @@ def main() -> int:
         default=600.0,
         help="seconds to wait for the server to start (default: 600)",
     )
+    parser.add_argument(
+        "--call-timeout",
+        type=float,
+        default=300.0,
+        help="seconds to wait for each list or tool call (default: 300)",
+    )
     parser.add_argument("command", nargs=argparse.REMAINDER)
     args = parser.parse_args()
     command = args.command[1:] if args.command[:1] == ["--"] else args.command
     if not command:
         parser.error("give the server command after --")
-    return anyio.run(run, command, args.check_register, args.init_timeout)
+    return anyio.run(
+        run, command, args.check_register, args.init_timeout, args.call_timeout
+    )
 
 
 if __name__ == "__main__":
