@@ -57,7 +57,7 @@ Ask an agent with this server connected:
 - "What changed on the MiCAR register recently — any removals?"
 - "Classify this AI system under the EU AI Act" (paste a system profile; an empty call returns the profile's JSON schema and an example, and invalid fields come back as validation errors).
 
-For a scripted Claude Code session on a life insurer's pricing model, with its recording protocol, see [docs/demo/claude-code-life-insurer.md](docs/demo/claude-code-life-insurer.md).
+For a scripted Claude Code session on a life insurer's pricing model, with its recording protocol, see [docs/demo/claude-code-life-insurer.md](docs/demo/claude-code-life-insurer.md) (script and protocol; run not yet recorded).
 
 ### A real tool call
 
