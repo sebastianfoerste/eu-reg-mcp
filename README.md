@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/sebastianfoerste/eu-reg-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/sebastianfoerste/eu-reg-mcp/actions/workflows/ci.yml)
 
-An MCP server that gives AI agents **cited, review-gated grounding in EU regulation**. Agents answering crypto or AI-compliance questions can check a live official register and cite pinpoint provisions instead of guessing.
+An MCP server that gives AI agents **cited, review-gated grounding in EU regulation**. Agents answering crypto or AI-compliance questions can check a weekly snapshot of ESMA's interim MiCAR register and cite pinpoint provisions instead of guessing.
 
 Five tools:
 
@@ -14,14 +14,20 @@ Five tools:
 | `lint_micar_whitepaper` | Deterministic Annex I–III lint of a draft white paper: cited candidate findings | `lint` extra |
 | `classify_eu_ai_act_system` | EU AI Act risk-tier classification with pinpoint Art. 5 / Annex III / GPAI citations | `classify` extra |
 
-Register data comes from the [MiCAR Register Observatory](https://github.com/sebastianfoerste/micar-register-observatory), which snapshots the public ESMA register weekly (Art. 109 VO (EU) 2023/1114). The linter is [micar-whitepaper-linter](https://github.com/sebastianfoerste/micar-whitepaper-linter) (36 rules mapped to Annex I–III); the classifier is [eu-ai-act-classifier](https://github.com/sebastianfoerste/eu-ai-act-classifier).
+Register data comes from the [MiCAR Register Observatory](https://github.com/sebastianfoerste/micar-register-observatory), which snapshots the public ESMA register weekly (Art. 109 VO (EU) 2023/1114). The server reads the observatory's published snapshot and changelog from GitHub (cached for an hour), not ESMA directly, and every register answer carries its snapshot date. The linter is [micar-whitepaper-linter](https://github.com/sebastianfoerste/micar-whitepaper-linter) (36 rules mapped to Annex I–III); the classifier is [eu-ai-act-classifier](https://github.com/sebastianfoerste/eu-ai-act-classifier).
 
 ## Install
+
+One command installs the server with both optional tools and starts it. It needs [uv](https://docs.astral.sh/uv/); `uvx` fetches Python 3.13 if you do not have it. The first start is slower while uv installs the linter and classifier from their repositories.
+
+```bash
+uvx --from 'eu-reg-mcp[classify,lint] @ git+https://github.com/sebastianfoerste/eu-reg-mcp' eu-reg-mcp
+```
 
 **Claude Code**
 
 ```bash
-claude mcp add eu-reg -- uvx --from git+https://github.com/sebastianfoerste/eu-reg-mcp eu-reg-mcp
+claude mcp add eu-reg -- uvx --from 'eu-reg-mcp[classify,lint] @ git+https://github.com/sebastianfoerste/eu-reg-mcp' eu-reg-mcp
 ```
 
 **Claude Desktop** (`claude_desktop_config.json`)
@@ -31,20 +37,19 @@ claude mcp add eu-reg -- uvx --from git+https://github.com/sebastianfoerste/eu-r
   "mcpServers": {
     "eu-reg": {
       "command": "uvx",
-      "args": ["--from", "git+https://github.com/sebastianfoerste/eu-reg-mcp", "eu-reg-mcp"]
+      "args": [
+        "--from",
+        "eu-reg-mcp[classify,lint] @ git+https://github.com/sebastianfoerste/eu-reg-mcp",
+        "eu-reg-mcp"
+      ]
     }
   }
 }
 ```
 
-The three register tools work with no configuration and no API key. The lint and classify tools need their optional extras:
+If Claude Desktop cannot find `uvx`, put its absolute path (the output of `which uvx`) in `command`.
 
-```bash
-uv pip install 'eu-reg-mcp[lint] @ git+https://github.com/sebastianfoerste/eu-reg-mcp'
-uv pip install 'eu-reg-mcp[classify] @ git+https://github.com/sebastianfoerste/eu-reg-mcp'
-```
-
-The linter and classifier are separate packages from their own repositories, MIT-licensed like this server. Without the extras, both tools return an install hint instead of failing.
+No configuration and no API key. The `classify` and `lint` extras install the classifier and the linter, separate MIT-licensed packages from their own repositories. If you leave an extra out, its tool returns an install hint instead of failing; the three register tools need neither.
 
 ## Try it
 
