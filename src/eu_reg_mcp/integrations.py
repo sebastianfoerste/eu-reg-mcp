@@ -22,10 +22,15 @@ REVIEW_NOTICE = (
     "Not legal advice."
 )
 
-# The package and both extras install from GitHub, not from PyPI.
-INSTALL_WITH_EXTRAS = (
-    "uvx --from 'eu-reg-mcp[lint,classify] @ "
-    "git+https://github.com/sebastianfoerste/eu-reg-mcp' eu-reg-mcp"
+# The package and both extras install from PyPI. A server that uvx starts
+# needs the --from form; a server installed in a virtual environment needs
+# the pip form, run with that environment active.
+UVX_WITH_EXTRAS = "uvx --from 'eu-reg-mcp[lint,classify]' eu-reg-mcp"
+PIP_WITH_EXTRAS = "pip install 'eu-reg-mcp[lint,classify]'"
+INSTALL_HINT = (
+    f"With uvx, start the server as `{UVX_WITH_EXTRAS}`; in a virtual "
+    f"environment, run `{PIP_WITH_EXTRAS}` and start the server with that "
+    "environment active"
 )
 
 
@@ -56,8 +61,7 @@ def lint_whitepaper(whitepaper_json: str) -> dict[str, Any]:
         return {
             "available": False,
             "hint": (
-                "micar-lint is not installed. Start the server with the "
-                f"optional extras: `{INSTALL_WITH_EXTRAS}` "
+                f"micar-lint is not installed. {INSTALL_HINT} "
                 "(see github.com/sebastianfoerste/micar-whitepaper-linter)."
             ),
             "notice": REVIEW_NOTICE,
@@ -108,8 +112,7 @@ def classify_ai_system(profile_json: str) -> dict[str, Any]:
         return {
             "available": False,
             "hint": (
-                "eu-ai-act-classifier is not installed. Start the server with "
-                f"the optional extras: `{INSTALL_WITH_EXTRAS}` "
+                f"eu-ai-act-classifier is not installed. {INSTALL_HINT} "
                 "(see github.com/sebastianfoerste/eu-ai-act-classifier)."
             ),
             "notice": REVIEW_NOTICE,

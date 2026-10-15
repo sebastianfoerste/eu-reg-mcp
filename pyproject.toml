@@ -4,18 +4,32 @@ version = "0.1.0"
 description = "MCP server giving AI agents cited, review-gated grounding in EU regulation: ESMA MiCAR register search, register change tracking, white paper linting, EU AI Act classification."
 readme = "README.md"
 requires-python = ">=3.13"
-license = { file = "LICENSE" }
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [{ name = "Sebastian Förste" }]
+keywords = ["mcp", "model-context-protocol", "eu", "regulation", "micar", "esma", "ai-act", "compliance", "crypto"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries",
+]
 dependencies = ["mcp>=1.2,<2"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
 lint = [
-    "micar-whitepaper-linter @ git+https://github.com/sebastianfoerste/micar-whitepaper-linter",
+    "micar-whitepaper-linter>=0.2.0",
 ]
 classify = [
-    "eu-ai-act-classifier @ git+https://github.com/sebastianfoerste/eu-ai-act-classifier",
+    "eu-ai-act-classifier>=0.2.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/sebastianfoerste/eu-reg-mcp"
+Repository = "https://github.com/sebastianfoerste/eu-reg-mcp"
+Issues = "https://github.com/sebastianfoerste/eu-reg-mcp/issues"
 
 [project.scripts]
 eu-reg-mcp = "eu_reg_mcp.server:main"

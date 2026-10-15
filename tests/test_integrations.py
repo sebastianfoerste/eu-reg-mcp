@@ -1,19 +1,17 @@
 import json
 import shutil
 import sys
+from pathlib import Path
 
 import pytest
 
 from eu_reg_mcp.integrations import (
     EXAMPLE_PROFILE,
-    INSTALL_WITH_EXTRAS,
+    PIP_WITH_EXTRAS,
     REVIEW_NOTICE,
+    UVX_WITH_EXTRAS,
     classify_ai_system,
     lint_whitepaper,
-)
-
-SOURCE = (
-    "eu-reg-mcp[lint,classify] @ git+https://github.com/sebastianfoerste/eu-reg-mcp"
 )
 
 # Synthetic Annex III point 5(b) deployer, as in eu-ai-act-classifier's
@@ -53,7 +51,8 @@ def test_lint_degrades_with_install_hint_when_binary_missing(monkeypatch):
     monkeypatch.setattr("eu_reg_mcp.integrations.shutil.which", lambda _: None)
     result = lint_whitepaper(json.dumps({"title": "x"}))
     assert result["available"] is False
-    assert INSTALL_WITH_EXTRAS in result["hint"]
+    assert f"`{UVX_WITH_EXTRAS}`" in result["hint"]
+    assert f"`{PIP_WITH_EXTRAS}`" in result["hint"]
     assert result["notice"] == REVIEW_NOTICE
 
 
@@ -89,7 +88,8 @@ def test_lint_runs_installed_linter_on_synthetic_draft():
 def test_classify_degrades_with_install_hint_when_package_missing(classifier_missing):
     result = classify_ai_system("{}")
     assert result["available"] is False
-    assert INSTALL_WITH_EXTRAS in result["hint"]
+    assert f"`{UVX_WITH_EXTRAS}`" in result["hint"]
+    assert f"`{PIP_WITH_EXTRAS}`" in result["hint"]
     assert result["notice"] == REVIEW_NOTICE
 
 
@@ -171,6 +171,13 @@ def test_classify_annex_iii_5b_deployer_is_high_risk_with_art_26_and_27(classifi
     assert classification["disclaimer"]
 
 
-def test_install_hint_names_the_git_source_with_both_extras():
-    # A bare `eu-reg-mcp[lint]` would resolve against PyPI, not this repository.
-    assert f"--from '{SOURCE}' eu-reg-mcp" in INSTALL_WITH_EXTRAS
+def test_install_hint_names_the_pypi_uvx_and_pip_forms_with_both_extras():
+    assert UVX_WITH_EXTRAS == "uvx --from 'eu-reg-mcp[lint,classify]' eu-reg-mcp"
+    assert PIP_WITH_EXTRAS == "pip install 'eu-reg-mcp[lint,classify]'"
+    # docs/tools.md describes the hint by quoting both commands.
+    tools_doc = (Path(__file__).parents[1] / "docs" / "tools.md").read_text(
+        encoding="utf-8"
+    )
+    for command in (UVX_WITH_EXTRAS, PIP_WITH_EXTRAS):
+        assert "git+" not in command
+        assert f"`{command}`" in tools_doc
