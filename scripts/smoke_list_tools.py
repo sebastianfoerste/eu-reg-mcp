@@ -2,7 +2,8 @@
 
 Usage (everything after ``--`` is the command that launches the server):
 
-    uv run --no-project --with 'mcp>=1.2,<2' python scripts/smoke_list_tools.py -- \
+    uv run --isolated --no-project --with 'mcp>=1.2,<2' \
+        python scripts/smoke_list_tools.py -- \
         uvx --refresh --from '.[lint,classify]' eu-reg-mcp
 
 The script connects with the MCP SDK's stdio client, lists the tools and
@@ -13,6 +14,11 @@ Art. 27 for a synthetic Annex III point 5(b) deployer, and the linter must
 run. ``--check-register`` also calls the register summary, which fetches the
 observatory's weekly snapshot over the network. Exit status 0 means every
 check passed.
+
+``--isolated`` keeps uv from running the script in a checkout's ``.venv``. For
+a uvx server the script also drops every virtual environment from the server's
+``PATH``, so an active ``.venv`` with the extras cannot lend the server its
+``micar-lint`` and hide a missing ``lint`` extra.
 """
 
 from __future__ import annotations
@@ -20,7 +26,9 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import sys
+from pathlib import Path
 from typing import Any
 
 import anyio
@@ -49,6 +57,26 @@ SYNTHETIC_DRAFT = {
 }
 
 
+def server_env(command: list[str]) -> dict[str, str]:
+    """Return the environment for the server process.
+
+    The SDK passes only a minimal environment to the server by default; pass
+    the caller's, so proxy and certificate settings reach uvx. A server that
+    uvx starts has its own environment, so for uvx drop ``VIRTUAL_ENV`` and
+    every virtual environment's ``bin`` directory from ``PATH``.
+    """
+    env = dict(os.environ)
+    if Path(command[0]).stem != "uvx":
+        return env
+    env.pop("VIRTUAL_ENV", None)
+    env["PATH"] = os.pathsep.join(
+        entry
+        for entry in env.get("PATH", "").split(os.pathsep)
+        if entry and not (Path(entry).parent / "pyvenv.cfg").is_file()
+    )
+    return env
+
+
 def _payload(result: Any) -> dict[str, Any]:
     if result.isError:
         text = " ".join(getattr(block, "text", "") for block in result.content)
@@ -73,10 +101,12 @@ async def run(
     init_timeout: float,
     call_timeout: float,
 ) -> int:
-    # The SDK passes only a minimal environment to the server by default; pass
-    # the caller's environment so proxy and certificate settings reach uvx.
+    # Resolve the command on the caller's PATH: server_env may remove its
+    # directory from the server's PATH.
     params = StdioServerParameters(
-        command=command[0], args=command[1:], env=dict(os.environ)
+        command=shutil.which(command[0]) or command[0],
+        args=command[1:],
+        env=server_env(command),
     )
     async with (
         stdio_client(params) as (read, write),

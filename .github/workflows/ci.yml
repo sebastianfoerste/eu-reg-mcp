@@ -49,6 +49,14 @@ jobs:
       # its tools and calls classify, lint and the register summary (a network
       # fetch of the observatory's weekly snapshot).
       - run: >-
-          uv run --no-project --with 'mcp>=1.2,<2'
+          uv run --isolated --no-project --with 'mcp>=1.2,<2'
           python scripts/smoke_list_tools.py --check-register --
           uvx --refresh --from '.[lint,classify]' eu-reg-mcp
+      # Weekly and on manual dispatch, also smoke-test the release that the
+      # docs install: eu-reg-mcp and both extras from PyPI, not this checkout.
+      - name: install smoke (PyPI release)
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        run: >-
+          uv run --isolated --no-project --with 'mcp>=1.2,<2'
+          python scripts/smoke_list_tools.py --check-register --
+          uvx --refresh --from 'eu-reg-mcp[lint,classify]' eu-reg-mcp
