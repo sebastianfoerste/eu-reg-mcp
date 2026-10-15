@@ -37,13 +37,13 @@ pip install 'eu-reg-mcp[lint,classify]'   # or, without the extras: pip install 
 eu-reg-mcp                                # starts the server over stdio
 ```
 
-`uv pip install` works the same way inside the environment. The lint tool runs the linter's `micar-lint` command, which it looks up on `PATH`, so start the server with the environment active or its `bin` directory on `PATH`. Started by absolute path without that, the lint tool reports the linter as not installed. Under `uvx` the lint tool finds the command without extra setup.
+`uv pip install` works the same way inside the environment. An MCP client can start the server by full path without activating the environment: `/path/to/.venv/bin/eu-reg-mcp` (on Windows, `.venv\Scripts\eu-reg-mcp.exe`). The lint tool runs the linter's `micar-lint` command and looks for it next to the server's Python interpreter first (the environment's `bin`, or `Scripts` on Windows), then on `PATH`; failing both, it runs the installed linter package with that interpreter (`python -m micar_linter`). Before 0.1.1 it looked only on `PATH`, so the environment had to be active.
 
 ## Data sources and network use
 
 Register data comes from the [MiCAR Register Observatory](https://github.com/sebastianfoerste/micar-register-observatory), which snapshots the public ESMA register weekly (Art. 109 VO (EU) 2023/1114). The server reads the observatory's `data/latest.json` and `data/changelog.jsonl` from GitHub raw (`src/eu_reg_mcp/data.py`) and caches them in memory for one hour. The three register tools therefore need network access to GitHub; they do not contact ESMA directly. If the observatory files are unreachable, the register tools raise an error (no fallback is implemented).
 
-The linter is [micar-whitepaper-linter](https://github.com/sebastianfoerste/micar-whitepaper-linter) (36 rules mapped to Annex I–III); the classifier is [eu-ai-act-classifier](https://github.com/sebastianfoerste/eu-ai-act-classifier). Both are separate packages from their own repositories, MIT-licensed like this server. Without the extras, both tools return an install hint instead of failing. The hint suggests `uv pip install`, which only applies to a virtual-environment install; with `uvx`, use the `--from` form under [Install](#install).
+The linter is [micar-whitepaper-linter](https://github.com/sebastianfoerste/micar-whitepaper-linter) (36 rules mapped to Annex I–III); the classifier is [eu-ai-act-classifier](https://github.com/sebastianfoerste/eu-ai-act-classifier). Both are separate packages from their own repositories, MIT-licensed like this server. Without the extras, both tools return an install hint instead of failing. The hint gives the `uvx --from` form with both extras, the `claude mcp remove` and `claude mcp add` commands that re-register the server that way in Claude Code, and the `pip install` command for a virtual environment (see [Install](#install)).
 
 ## Sample lint and classify output
 

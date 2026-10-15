@@ -1,6 +1,6 @@
 [project]
 name = "eu-reg-mcp"
-version = "0.1.0"
+version = "0.1.1"
 description = "MCP server giving AI agents cited, review-gated grounding in EU regulation: ESMA MiCAR register search, register change tracking, white paper linting, EU AI Act classification."
 readme = "README.md"
 requires-python = ">=3.13"
