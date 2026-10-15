@@ -85,7 +85,8 @@ def test_lint_runs_linter_module_when_no_script_is_found(monkeypatch, tmp_path):
 
 
 def test_classify_degrades_with_install_hint_when_package_missing(monkeypatch):
-    # Simulate the classify extra being absent, whether or not it is installed.
+    # Simulate the classify extra being absent: a None entry in sys.modules
+    # makes the import fail even if the extra is installed.
     monkeypatch.setitem(sys.modules, "eu_ai_act_classifier.local_api", None)
     result = classify_ai_system("{}")
     assert result["available"] is False
