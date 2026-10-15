@@ -24,10 +24,10 @@ With [uv](https://docs.astral.sh/uv/), `uvx` runs the server without a separate 
 
 ```bash
 uvx eu-reg-mcp                                      # the three register tools
-uvx --from 'eu-reg-mcp[lint,classify]' eu-reg-mcp   # all five tools
+uvx --python 3.13 --from 'eu-reg-mcp[lint,classify]' eu-reg-mcp   # all five tools; the extras need Python 3.13+
 ```
 
-For one extra, name only that one: `'eu-reg-mcp[lint]'` or `'eu-reg-mcp[classify]'`. In an MCP client's JSON config, the second command is `"command": "uvx"` with `"args": ["--from", "eu-reg-mcp[lint,classify]", "eu-reg-mcp"]`.
+For one extra, name only that one: `'eu-reg-mcp[lint]'` or `'eu-reg-mcp[classify]'`. In an MCP client's JSON config, the second command is `"command": "uvx"` with `"args": ["--python", "3.13", "--from", "eu-reg-mcp[lint,classify]", "eu-reg-mcp"]`.
 
 With pip, install into a virtual environment:
 

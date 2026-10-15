@@ -47,9 +47,9 @@ claude mcp add eu-reg -- uvx eu-reg-mcp
 ```
 
 The register tools need no API key. For all five tools, add the `lint` and `classify` extras instead:
-
+The register tools need no API key. For all five tools, add the `lint` and `classify` extras instead. They need Python 3.13+, and `--python 3.13` makes uv use it even where an older Python is the default:
 ```bash
-claude mcp add eu-reg -- uvx --from 'eu-reg-mcp[lint,classify]' eu-reg-mcp
+claude mcp add eu-reg -- uvx --python 3.13 --from 'eu-reg-mcp[lint,classify]' eu-reg-mcp
 ```
 
 <details>
@@ -66,7 +66,7 @@ claude mcp add eu-reg -- uvx --from 'eu-reg-mcp[lint,classify]' eu-reg-mcp
 }
 ```
 
-For the extras, use `"args": ["--from", "eu-reg-mcp[lint,classify]", "eu-reg-mcp"]`.
+For the extras, use `"args": ["--python", "3.13", "--from", "eu-reg-mcp[lint,classify]", "eu-reg-mcp"]`.
 </details>
 
 Without uv, run `pip install 'eu-reg-mcp[lint,classify]'` in a Python 3.13+ virtual environment and register its `eu-reg-mcp` by full path, e.g. `claude mcp add eu-reg -- /path/to/.venv/bin/eu-reg-mcp`; the environment need not be active. Install options and network use: [docs/tools.md](docs/tools.md#install).

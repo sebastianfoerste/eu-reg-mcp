@@ -5,7 +5,7 @@ import pytest
 
 from eu_reg_mcp.integrations import classify_ai_system, lint_whitepaper
 
-UVX_COMMAND = 'uvx --from "eu-reg-mcp[lint,classify]" eu-reg-mcp'
+UVX_COMMAND = 'uvx --python 3.13 --from "eu-reg-mcp[lint,classify]" eu-reg-mcp'
 
 
 def write_fake_linter(directory, label):
