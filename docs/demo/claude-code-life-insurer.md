@@ -10,18 +10,18 @@ In this document, "the user" is the person who runs the session and publishes th
 
 ## Setup
 
-### 1. Check that the install fix is on `main`
+### 1. Check that the release pins mcp below 2.0
 
-Record only once [`pyproject.toml`](../../pyproject.toml) on `main` pins `mcp>=1.2,<2`. Without the pin, uv installs mcp 2.x, which no longer has the `mcp.server.fastmcp` module this server imports, and the server does not start.
+The install command takes eu-reg-mcp from [PyPI](https://pypi.org/project/eu-reg-mcp/), not from `main`. Record only with a release that requires `mcp>=1.2,<2`, as 0.1.0 does; step 3 records the version that ran. Without the pin, uv installs mcp 2.x, which no longer has the `mcp.server.fastmcp` module this server imports, and the server does not start.
 
 ### 2. Install in a new, empty directory outside any project
 
-Claude Code loads instruction files (`CLAUDE.md` and its variants) from the working directory and from every parent directory, as well as the user's own `~/.claude/CLAUDE.md`. A demo directory under a project would bring that project's instructions into the session, so create it inside a new temporary directory. `claude mcp add` registers the server for the current directory by default, so run it there. The install command is the one in the [README](../../README.md#try-it), unchanged:
+Claude Code loads instruction files (`CLAUDE.md` and its variants) from the working directory and from every parent directory, as well as the user's own `~/.claude/CLAUDE.md`. A demo directory under a project would bring that project's instructions into the session, so create it inside a new temporary directory. `claude mcp add` registers the server for the current directory by default, so run it there. The install command is the README's command with both extras, from [Try it](../../README.md#try-it), unchanged:
 
 ```bash
 cd "$(mktemp -d)" && mkdir eu-reg-demo && cd eu-reg-demo
 pwd
-claude mcp add eu-reg -- uvx --from 'eu-reg-mcp[lint,classify] @ git+https://github.com/sebastianfoerste/eu-reg-mcp' eu-reg-mcp
+claude mcp add eu-reg -- uvx --from 'eu-reg-mcp[lint,classify]' eu-reg-mcp
 claude mcp list
 ```
 
@@ -37,17 +37,16 @@ Immediately before starting the session, run this in the same directory and keep
 date -u '+%Y-%m-%d %H:%M UTC'
 claude --version
 claude mcp get eu-reg
-uvx --from 'eu-reg-mcp[lint,classify] @ git+https://github.com/sebastianfoerste/eu-reg-mcp' python -c '
-import importlib.metadata as m, json
-for d in ("eu-reg-mcp", "eu-ai-act-classifier", "micar-whitepaper-linter"):
-    url = json.loads(m.distribution(d).read_text("direct_url.json") or "{}")
-    print(d, url.get("vcs_info", {}).get("commit_id", "no commit recorded"))
+uvx --from 'eu-reg-mcp[lint,classify]' python -c '
+import importlib.metadata as m
+for d in ("eu-reg-mcp", "eu-ai-act-classifier", "micar-whitepaper-linter", "mcp"):
+    print(d, m.version(d))
 '
 ```
 
 - `claude --version` prints the Claude Code version.
-- `claude mcp get eu-reg` prints the server command Claude Code will start, which should be the README command.
-- The `uvx` command prints the commit uv installed each repository from, as uv records it in the package metadata (`direct_url.json`). It uses the same `--from` value as the server. The micar-whitepaper-linter commit is recorded for completeness; this prompt is not expected to call the linter.
+- `claude mcp get eu-reg` prints the server command Claude Code will start, which should be the install command from step 2.
+- The `uvx` command prints the version uv installed from PyPI for eu-reg-mcp, both extras and the MCP SDK (`mcp`). It uses the same `--from` value as the server. The micar-whitepaper-linter version is recorded for completeness; this prompt is not expected to call the linter.
 
 Run the `uvx` command again right after the run. If the two outputs differ, record both.
 
@@ -118,10 +117,11 @@ The transcript is verbatim, unedited tool output: no trimming, reformatting or c
 | Claude Code version (`claude --version`) | [version] |
 | Model, as displayed in the session (`/status`) | [model name] |
 | Server command (`claude mcp get eu-reg`) | [command] |
-| eu-reg-mcp commit, resolved by uvx | [SHA] |
-| eu-ai-act-classifier commit, resolved by uvx | [SHA] |
-| micar-whitepaper-linter commit, resolved by uvx (installed, not expected to be called) | [SHA] |
-| Commits after the run (same command) | [unchanged, or the new values] |
+| eu-reg-mcp version, resolved by uvx from PyPI | [version] |
+| eu-ai-act-classifier version, resolved by uvx from PyPI | [version] |
+| micar-whitepaper-linter version, resolved by uvx from PyPI (installed, not expected to be called) | [version] |
+| mcp version, resolved by uvx from PyPI | [version] |
+| Versions after the run (same command) | [unchanged, or the new values] |
 | Tools pre-approved in settings | [none, or which] |
 | Instruction files loaded (`/context`) | [none, or each path] |
 | Other MCP servers, plugins, skills and hooks active (`/mcp`, `/context`, `/hooks`) | [none, or which] |
@@ -159,5 +159,5 @@ Review note: [for each profile field: agree or disagree, and why]
 - **A result that holds whatever the facts.** The classification is only as right as the characterised facts. A different, equally plausible characterisation, for example of the operator role, can change the tier or the obligations.
 - **An answer drawn from the tools alone.** Claude can add articles, dates and reasoning from its own knowledge. The review of the summary marks what no tool result contains.
 - **Reliability.** One prompt and one run show how this run went, not how Claude or the tools perform across cases.
-- **Dates checked on the day.** The application dates the classifier returns come from its source data at the recorded commit; dates Claude adds itself are not from the tools. Neither is re-checked against the Official Journal on the recording day.
+- **Dates checked on the day.** The application dates the classifier returns come from its source data in the recorded version; dates Claude adds itself are not from the tools. Neither is re-checked against the Official Journal on the recording day.
 - **Other law.** The tools cover the AI Act and MiCAR only. Other law that applies to such a model, such as data protection or insurance supervision, is out of scope.

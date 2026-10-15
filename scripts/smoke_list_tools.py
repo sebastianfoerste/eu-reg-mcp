@@ -82,7 +82,7 @@ async def run(
         stdio_client(params) as (read, write),
         ClientSession(read, write) as session,
     ):
-        # First start may build the environment and clone the git extras.
+        # First start may build the environment and download the extras.
         with anyio.fail_after(init_timeout):
             init = await session.initialize()
         info = init.serverInfo
