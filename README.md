@@ -9,11 +9,19 @@ Scope today: the ESMA interim MiCAR register (search, summary, change tracking),
 
 ## Try it
 
+`eu-reg-mcp` is on [PyPI](https://pypi.org/project/eu-reg-mcp/). With [uv](https://docs.astral.sh/uv/) installed, `uvx` fetches and runs it:
+
 ```bash
 claude mcp add eu-reg -- uvx eu-reg-mcp
 ```
 
-Then ask your agent: *"Is `<entity>` on the MiCAR register, and what format is its white paper?"* The register tools need no API key. Claude Desktop config, the lint/classify extras and other clients: [docs/tools.md](docs/tools.md#data-sources-and-network-use).
+Then ask your agent: *"Is `<entity>` on the MiCAR register, and what format is its white paper?"* The register tools need no API key. For all five tools, add the `lint` and `classify` extras instead:
+
+```bash
+claude mcp add eu-reg -- uvx --from 'eu-reg-mcp[lint,classify]' eu-reg-mcp
+```
+
+Without uv, run `pip install 'eu-reg-mcp[lint,classify]'` in a Python 3.13+ virtual environment and start `eu-reg-mcp` with that environment active. Install options and network use: [docs/tools.md](docs/tools.md#install).
 
 <details>
 <summary>Claude Desktop (<code>claude_desktop_config.json</code>)</summary>
@@ -28,6 +36,8 @@ Then ask your agent: *"Is `<entity>` on the MiCAR register, and what format is i
   }
 }
 ```
+
+For the extras, use `"args": ["--from", "eu-reg-mcp[lint,classify]", "eu-reg-mcp"]`.
 </details>
 
 ## Example output
@@ -57,7 +67,7 @@ Then ask your agent: *"Is `<entity>` on the MiCAR register, and what format is i
 }
 ```
 
-`micar_register_changes(change_type="removed")` returns the same kind of cited record (snapshot date, register, entity) and notes that *"the register itself does not state why"* an entry was removed. The lint and classify tools return pinpoint citations (MiCAR Annex I–III; AI Act Art. 5 / Annex III / GPAI); I have not run them for this README, so no sample is shown. [UNVERIFIED: live output of those two tools]
+`micar_register_changes(change_type="removed")` returns the same kind of cited record (snapshot date, register, entity) and notes that *"the register itself does not state why"* an entry was removed. With the extras installed, the lint and classify tools cite the provision behind each finding, for example `Anhang I Teil A MiCAR` (MiCAR Annex I, Part A), `Art. 5(1)(f) AIA`, `Annex III(4)(a) AIA`, and `Art. 51 AIA` for a general-purpose AI model with systemic risk. Sample output from synthetic inputs: [docs/tools.md](docs/tools.md#sample-lint-and-classify-output).
 
 ## Tools
 
@@ -77,6 +87,7 @@ An ungrounded model can invent register entries or provisions. Here, register an
 
 ## Links
 
+- PyPI: [eu-reg-mcp](https://pypi.org/project/eu-reg-mcp/), [micar-whitepaper-linter](https://pypi.org/project/micar-whitepaper-linter/), [eu-ai-act-classifier](https://pypi.org/project/eu-ai-act-classifier/)
 - Register data: [micar-register-observatory](https://github.com/sebastianfoerste/micar-register-observatory) (weekly snapshots of the public ESMA register, Art. 109 VO (EU) 2023/1114)
 - Linter: [micar-whitepaper-linter](https://github.com/sebastianfoerste/micar-whitepaper-linter) (36 rules mapped to Annex I–III) · Classifier: [eu-ai-act-classifier](https://github.com/sebastianfoerste/eu-ai-act-classifier) — both MIT-licensed
 - Development and tests: [docs/development.md](docs/development.md)
