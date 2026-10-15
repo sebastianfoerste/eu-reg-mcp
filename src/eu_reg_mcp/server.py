@@ -28,7 +28,9 @@ def search_micar_register(
 ) -> dict[str, Any]:
     """Search the ESMA interim MiCAR register by entity name or LEI.
 
-    query: entity-name substring (case-insensitive) or an exact LEI.
+    query: entity-name substring (case- and accent-insensitive) or an exact LEI.
+    Each result carries its entry_id and the ESMA source file; the response
+    states the snapshot date, data_age_days and a stale flag.
     register_slug: all | other-wp | emt-wp | art-wp | casps | ncasp.
     member_state: optional two-letter code (DE, IE, MT, ...).
     """
@@ -48,8 +50,11 @@ def micar_register_changes(limit: int = 50, change_type: str = "all") -> dict[st
     """Recent register movement: new filings, changed entries, removals.
 
     change_type: all | added | changed | removed.
+    Each record says whether the entry is still listed in the latest snapshot.
     """
-    return register.recent_changes(data.load_changelog(), limit, change_type)
+    return register.recent_changes(
+        data.load_changelog(), limit, change_type, snapshot=data.load_snapshot()
+    )
 
 
 @mcp.tool()

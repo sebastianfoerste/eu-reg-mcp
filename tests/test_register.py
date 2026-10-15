@@ -54,3 +54,57 @@ def test_changes_exclude_baseline_and_filter_by_type():
     removed = recent_changes(CHANGELOG, change_type="removed")
     assert removed["total_changes"] == 1
     assert removed["changes"][0]["entity_name"] == "SKYGATE Network GmbH"
+
+
+def test_search_is_accent_and_case_insensitive():
+    accented = {
+        "snapshot_date": "2026-07-07",
+        "registers": [
+            {
+                "slug": "casps",
+                "source_url": "https://esma.example/CASPS.csv",
+                "fetched": True,
+                "entries": [
+                    {
+                        "entry_id": "x1",
+                        "register_slug": "casps",
+                        "entity_name": "Société Générale-Forge",
+                    }
+                ],
+            }
+        ],
+    }
+    assert search_entries(accented, "SOCIETE generale")["total_matches"] == 1
+    assert search_entries(accented, "société")["total_matches"] == 1
+
+
+def test_search_results_are_verifiable():
+    from datetime import date
+
+    result = search_entries(SNAPSHOT, "skygate", today=date(2026, 7, 10))
+    hit = result["results"][0]
+    assert hit["entry_id"]
+    assert hit["esma_source_url"].startswith("https://")
+    assert result["snapshot_date"] == "2026-07-07"
+    assert result["data_age_days"] == 3
+    assert result["stale"] is False
+    assert result["observatory_snapshot"].endswith("/data/latest.json")
+
+
+def test_stale_flag_after_missed_refresh():
+    from datetime import date
+
+    assert search_entries(SNAPSHOT, "", today=date(2026, 8, 1))["stale"] is True
+    assert summarize(SNAPSHOT, today=date(2026, 8, 1))["data_age_days"] == 25
+
+
+def test_changes_flag_whether_entry_is_still_listed():
+    result = recent_changes(CHANGELOG, change_type="all", snapshot=SNAPSHOT)
+    listed = {
+        entry["entry_id"]
+        for reg in SNAPSHOT["registers"]
+        for entry in reg.get("entries", [])
+    }
+    for record in result["changes"]:
+        assert record["still_listed"] == (record["entry_id"] in listed)
+    assert "still_listed" not in recent_changes(CHANGELOG)["changes"][0]
