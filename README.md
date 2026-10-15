@@ -69,7 +69,7 @@ claude mcp add eu-reg -- uvx --from 'eu-reg-mcp[lint,classify]' eu-reg-mcp
 For the extras, use `"args": ["--from", "eu-reg-mcp[lint,classify]", "eu-reg-mcp"]`.
 </details>
 
-Without uv, run `pip install 'eu-reg-mcp[lint,classify]'` in a Python 3.13+ virtual environment and start `eu-reg-mcp` with that environment active. Install options and network use: [docs/tools.md](docs/tools.md#install).
+Without uv, run `pip install 'eu-reg-mcp[lint,classify]'` in a Python 3.13+ virtual environment and register its `eu-reg-mcp` by full path, e.g. `claude mcp add eu-reg -- /path/to/.venv/bin/eu-reg-mcp`; the environment need not be active. Install options and network use: [docs/tools.md](docs/tools.md#install).
 
 ## Example output
 
