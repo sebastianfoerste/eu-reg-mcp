@@ -92,7 +92,7 @@ Before recording, the user fills in the date below and in the status block, then
   - If Claude Code still asks permission for a tool other than the eu-reg tools, the user denies it and sends exactly: "Continue without that tool."
 - **Tool permissions.** The user approves each eu-reg tool call when Claude Code asks. Tools that run without a prompt (such as reading or searching files in the empty working directory, a task list, subagents or tool search) are not blocked, and they are recorded in the transcript as they occur. Claude may still add statements from its own knowledge; the [review of the summary](#review-of-the-summary) marks any article or date that no tool result contains. The metadata table records the start command and whether any tools were pre-approved in settings.
 - **No interruptions.** The user does not interrupt the run. If it is interrupted anyway, it is published as it stands, and the interruption is not a failure.
-- **A failure is an infrastructure fault that stops the run before the summary.** That means the eu-reg server does not start or connect, a tool call returns the install hint or an internal error instead of a result, or Claude Code or the model API ends the session with an error. An error about the input Claude sent (invalid JSON, or a profile the classifier's validation rejects) is part of the run, not a failure, whether the tool returns it in its result or as a tool error, and so is any error after which Claude still gives the summary. A failed run is published with a short note under [Failure note](#failure-note): what failed, the fix, the commit that fixed it and, when the fix is in a package that uvx installs, the release version that ships it. The run made after the fix is added below it as the next numbered run, labelled with that commit and the versions recorded in step 3.
+- **A failure is an infrastructure fault that stops the run before the summary.** That means the eu-reg server does not start or connect, a tool call returns the install hint or an internal error instead of a result, or Claude Code or the model API ends the session with an error. An error about the input Claude sent (invalid JSON, or a profile the classifier's validation rejects) is part of the run, not a failure, whether the tool returns it in its result or as a tool error, and so is any error after which Claude still gives the summary. A failed run is published with a short note under [Failure note](#failure-note): what failed, the fix, the commit that fixed it and, when the fix is in a package that uvx installs, the release version that ships it. If no code changed (for example, the model API was briefly unavailable), the note says so. The run made after the fix is added below it as the next numbered run, labelled with that commit, or "no code change", and the versions recorded in step 3.
 - **A wrong answer is not a failure.** If the summary is legally wrong or incomplete, it is published as it is, and the [review of the summary](#review-of-the-summary) says what is wrong.
 
 ### The characterisation needs review
@@ -158,7 +158,7 @@ Review note: [for each profile field: agree or disagree, and why]
 
 ## Failure note
 
-[Only if the run failed: what failed, the fix, the commit that fixed it and, when the fix is in a package that uvx installs, the release version that ships it.]
+[Only if the run failed: what failed, the fix, the commit that fixed it (or "no code change") and, when the fix is in a package that uvx installs, the release version that ships it.]
 
 ## What this demo does not show
 
