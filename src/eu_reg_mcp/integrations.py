@@ -22,11 +22,9 @@ REVIEW_NOTICE = (
     "Not legal advice."
 )
 
-# The package and both extras install from GitHub, not from PyPI.
-INSTALL_WITH_EXTRAS = (
-    "uvx --from 'eu-reg-mcp[lint,classify] @ "
-    "git+https://github.com/sebastianfoerste/eu-reg-mcp' eu-reg-mcp"
-)
+# A server started by uvx runs in its own environment, so `uv pip install`
+# would add the extras somewhere else. The hint gives the uvx form instead.
+INSTALL_WITH_EXTRAS = "uvx --from 'eu-reg-mcp[lint,classify]' eu-reg-mcp"
 
 
 def lint_whitepaper(whitepaper_json: str) -> dict[str, Any]:

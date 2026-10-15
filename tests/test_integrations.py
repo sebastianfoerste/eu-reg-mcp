@@ -6,7 +6,7 @@ from eu_reg_mcp.integrations import (
     lint_whitepaper,
 )
 
-SOURCE = "eu-reg-mcp[lint,classify] @ git+https://github.com/sebastianfoerste/eu-reg-mcp"
+SOURCE = "eu-reg-mcp[lint,classify]"
 
 
 def test_lint_degrades_with_install_hint_when_binary_missing(monkeypatch):
@@ -25,13 +25,16 @@ def test_lint_rejects_invalid_json(monkeypatch):
     assert "not valid JSON" in result["error"]
 
 
-def test_classify_degrades_with_install_hint_when_package_missing():
-    # eu_ai_act_classifier is not installed in the test environment.
+def test_classify_degrades_with_install_hint_when_package_missing(monkeypatch):
+    # Simulate the classify extra being absent, whether or not it is installed.
+    import sys
+
+    monkeypatch.setitem(sys.modules, "eu_ai_act_classifier.local_api", None)
     result = classify_ai_system("{}")
     assert result["available"] is False
     assert INSTALL_WITH_EXTRAS in result["hint"]
 
 
-def test_install_hint_names_the_git_source_with_both_extras():
-    # A bare `eu-reg-mcp[lint]` would resolve against PyPI, not this repository.
+def test_install_hint_uses_uvx_with_both_extras():
+    # `uv pip install` would not reach the environment a uvx-started server runs in.
     assert f"--from '{SOURCE}' eu-reg-mcp" in INSTALL_WITH_EXTRAS
