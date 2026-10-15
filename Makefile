@@ -10,7 +10,7 @@ test:
 	uv run pytest -q
 
 smoke:
-	uv run --no-project --with 'mcp>=1.2,<2' python scripts/smoke_list_tools.py -- \
+	uv run --isolated --no-project --with 'mcp>=1.2,<2' python scripts/smoke_list_tools.py -- \
 		uvx --refresh --from '.[lint,classify]' eu-reg-mcp
 
 run:

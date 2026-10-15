@@ -90,7 +90,7 @@ An ungrounded model can invent register entries or provisions. Here, register an
 ## Links
 
 - PyPI: [eu-reg-mcp](https://pypi.org/project/eu-reg-mcp/), [micar-whitepaper-linter](https://pypi.org/project/micar-whitepaper-linter/), [eu-ai-act-classifier](https://pypi.org/project/eu-ai-act-classifier/)
-- Register data: [micar-register-observatory](https://github.com/sebastianfoerste/micar-register-observatory) (weekly snapshots of ESMA's public interim register: white papers and authorised CASPs under Art. 109 of Regulation (EU) 2023/1114, MiCAR, and the list of non-compliant entities)
+- Register data: [micar-register-observatory](https://github.com/sebastianfoerste/micar-register-observatory) (weekly snapshots of ESMA's public interim MiCAR register under Art. 109 of Regulation (EU) 2023/1114, covering white papers and authorised CASPs, plus the list of non-compliant entities)
 - Linter: [micar-whitepaper-linter](https://github.com/sebastianfoerste/micar-whitepaper-linter) (36 rules mapped to Annex I–III) · Classifier: [eu-ai-act-classifier](https://github.com/sebastianfoerste/eu-ai-act-classifier) — both MIT-licensed
 - Development and tests: [docs/development.md](docs/development.md)
 

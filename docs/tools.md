@@ -14,7 +14,7 @@
 - `micar_register_summary()` — no parameters.
 - `micar_register_changes(limit=50, change_type="all")` — `change_type` is `all | added | changed | removed`.
 - `lint_micar_whitepaper(whitepaper_json)` — a draft white paper as a JSON string.
-- `classify_eu_ai_act_system(profile_json="")` — a SystemProfile as JSON; an empty string returns the profile's JSON schema and an example, and invalid fields come back as validation errors.
+- `classify_eu_ai_act_system(profile_json="")` — a SystemProfile as JSON. On `main`, an empty string returns the profile's JSON schema and an example, and invalid fields come back as validation errors in the result. Release 0.1.0 returns the classifier's lists of allowed values (roles, Annex III areas and others) for an empty string, and an invalid profile reaches the client as a tool error.
 
 ## Install
 
@@ -43,7 +43,7 @@ eu-reg-mcp                                # starts the server over stdio
 
 Register data comes from the [MiCAR Register Observatory](https://github.com/sebastianfoerste/micar-register-observatory), which snapshots ESMA's public interim register weekly: crypto-asset white papers and authorised CASPs (Art. 109 of Regulation (EU) 2023/1114, MiCAR) and the list of non-compliant entities. The server reads the observatory's `data/latest.json` and `data/changelog.jsonl` from GitHub raw (`src/eu_reg_mcp/data.py`) and caches them in memory for one hour. The three register tools therefore need network access to GitHub; they do not contact ESMA directly. If the observatory files are unreachable, the register tools raise an error (no fallback is implemented).
 
-The linter is [micar-whitepaper-linter](https://github.com/sebastianfoerste/micar-whitepaper-linter) (36 rules mapped to Annex I–III); the classifier is [eu-ai-act-classifier](https://github.com/sebastianfoerste/eu-ai-act-classifier). Both are separate packages from their own repositories, MIT-licensed like this server. Without the extras, both tools return an install hint instead of failing. The hint gives both forms from [Install](#install): `uvx --from 'eu-reg-mcp[lint,classify]' eu-reg-mcp` for a server that uvx starts, and `pip install 'eu-reg-mcp[lint,classify]'` for a virtual-environment install, started with that environment active.
+The linter is [micar-whitepaper-linter](https://github.com/sebastianfoerste/micar-whitepaper-linter) (36 rules mapped to Annex I–III); the classifier is [eu-ai-act-classifier](https://github.com/sebastianfoerste/eu-ai-act-classifier). Both are separate packages from their own repositories, MIT-licensed like this server. Without the extras, both tools return an install hint instead of failing. On `main`, the hint gives both forms from [Install](#install): `uvx --from 'eu-reg-mcp[lint,classify]' eu-reg-mcp` for a server that uvx starts, and `pip install 'eu-reg-mcp[lint,classify]'` for a virtual-environment install, started with that environment active. Release 0.1.0 suggests `uv pip install` with the missing extra, which only reaches a virtual-environment install; with uvx, use the `--from` form.
 
 ## Sample lint and classify output
 
