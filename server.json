@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.sebastianfoerste/eu-reg-mcp",
   "title": "EU Regulatory Grounding",
-  "description": "Cited, review-gated grounding in EU regulation: ESMA MiCAR register search and change tracking, white paper linting, EU AI Act classification.",
+  "description": "Cited ESMA MiCAR register search and change tracking, white paper linting, EU AI Act classification",
   "repository": {
     "url": "https://github.com/sebastianfoerste/eu-reg-mcp",
     "source": "github"
