@@ -1,4 +1,5 @@
 import json
+import sys
 
 from eu_reg_mcp.integrations import classify_ai_system, lint_whitepaper
 
@@ -20,9 +21,8 @@ def test_lint_rejects_invalid_json(monkeypatch):
 
 
 def test_classify_degrades_with_install_hint_when_package_missing(monkeypatch):
-    # Simulate the classify extra being absent, whether or not it is installed.
-    import sys
-
+    # Simulate the classify extra being absent: a None entry in sys.modules
+    # makes the import fail even if the extra is installed.
     monkeypatch.setitem(sys.modules, "eu_ai_act_classifier.local_api", None)
     result = classify_ai_system("{}")
     assert result["available"] is False
