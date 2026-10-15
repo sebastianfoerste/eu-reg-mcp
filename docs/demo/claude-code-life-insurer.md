@@ -10,9 +10,17 @@ In this document, "the user" is the person who runs the session and publishes th
 
 ## Setup
 
-### 1. Check that the release pins mcp below 2.0
+### 1. Check the release
 
-The install command takes eu-reg-mcp from [PyPI](https://pypi.org/project/eu-reg-mcp/), not from `main`. Record only with a release that requires `mcp>=1.2,<2`, as 0.1.0 does; step 3 records the version that ran. Without the pin, uv installs mcp 2.x, which no longer has the `mcp.server.fastmcp` module this server imports, and the server does not start.
+The install command takes eu-reg-mcp from [PyPI](https://pypi.org/project/eu-reg-mcp/), not from `main`. Record only with a release that requires `mcp>=1.2,<2` and includes the classify changes from pull request #4: validation errors come back as a result, and every classify response carries the review notice. 0.1.0 has the pin but not those changes. Step 3 records the version that ran. Without the pin, uv installs mcp 2.x, which no longer has the `mcp.server.fastmcp` module this server imports, and the server does not start.
+
+To check, run:
+
+```bash
+uvx --from 'eu-reg-mcp[lint,classify]' python -c 'import importlib.metadata as m; print(m.version("eu-reg-mcp"), m.requires("eu-reg-mcp"))'
+```
+
+It prints the eu-reg-mcp version that uvx installs, then that version's requirements. Look for two things. The version must be above 0.1.0, and its release tag on GitHub (`v` and the version) must contain the merge commit of pull request #4. The requirements must include `mcp<2,>=1.2`, which is how the package metadata writes `mcp>=1.2,<2`. If the version is 0.1.0, do not record.
 
 ### 2. Install in a new, empty directory outside any project
 
@@ -45,7 +53,7 @@ for d in ("eu-reg-mcp", "eu-ai-act-classifier", "micar-whitepaper-linter", "mcp"
 ```
 
 - `claude --version` prints the Claude Code version.
-- `claude mcp get eu-reg` prints the server command Claude Code will start, which should be the install command from step 2.
+- `claude mcp get eu-reg` prints the server command Claude Code will start, which should be the part of the step 2 `claude mcp add` line after `--`.
 - The `uvx` command prints the version uv installed from PyPI for eu-reg-mcp, both extras and the MCP SDK (`mcp`). It uses the same `--from` value as the server. The micar-whitepaper-linter version is recorded for completeness; this prompt is not expected to call the linter.
 
 Run the `uvx` command again right after the run. If the two outputs differ, record both.
@@ -84,14 +92,14 @@ Before recording, the user fills in the date below and in the status block, then
   - If Claude Code still asks permission for a tool other than the eu-reg tools, the user denies it and sends exactly: "Continue without that tool."
 - **Tool permissions.** The user approves each eu-reg tool call when Claude Code asks. Tools that run without a prompt (such as reading or searching files in the empty working directory, a task list, subagents or tool search) are not blocked, and they are recorded in the transcript as they occur. Claude may still add statements from its own knowledge; the [review of the summary](#review-of-the-summary) marks any article or date that no tool result contains. The metadata table records the start command and whether any tools were pre-approved in settings.
 - **No interruptions.** The user does not interrupt the run. If it is interrupted anyway, it is published as it stands, and the interruption is not a failure.
-- **A failure is an infrastructure fault that stops the run before the summary.** That means the eu-reg server does not start or connect, a tool call returns the install hint or an internal error instead of a result, or Claude Code or the model API ends the session with an error. A validation error that the classifier returns to Claude is part of the run, not a failure, and so is any error after which Claude still gives the summary. A failed run is published with a short note under [Failure note](#failure-note): what failed, the fix, and the commit that fixed it. The run made after the fix is added below it as "Run 2", labelled with that commit.
+- **A failure is an infrastructure fault that stops the run before the summary.** That means the eu-reg server does not start or connect, a tool call returns the install hint or an internal error instead of a result, or Claude Code or the model API ends the session with an error. An error about the input Claude sent (invalid JSON, or a profile the classifier's validation rejects) is part of the run, not a failure, whether the tool returns it in its result or as a tool error, and so is any error after which Claude still gives the summary. A failed run is published with a short note under [Failure note](#failure-note): what failed, the fix, the commit that fixed it and, when the fix is in a package that uvx installs, the release version that ships it. The run made after the fix is added below it as the next numbered run, labelled with that commit and the versions recorded in step 3.
 - **A wrong answer is not a failure.** If the summary is legally wrong or incomplete, it is published as it is, and the [review of the summary](#review-of-the-summary) says what is wrong.
 
 ### The characterisation needs review
 
 The classifier does not read a description. It takes a `SystemProfile` of characterised facts, such as the operator roles (`roles`), the Annex III area (`annex_iii_area`) and the Art. 6(3) derogation facts, including profiling (`derogation`). The prompt leaves it to Claude to turn the description into that profile.
 
-The classifier's own documentation assigns this step to a qualified reviewer. Its [claim ledger](https://github.com/sebastianfoerste/eu-ai-act-classifier/blob/a3757803538d3e152b5779eef167a5f625480051/docs/REGULATORY_CLAIM_LEDGER.md?plain=1#L11) records that classification of a real system "still depends on characterised facts, actor role and the applicable route", with the obligation "Qualified reviewer validates intake facts and legal characterisation". Its [README](https://github.com/sebastianfoerste/eu-ai-act-classifier/blob/a3757803538d3e152b5779eef167a5f625480051/README.md?plain=1#L137) says: "The engine applies rules to characterised facts and does not decide disputed intended purpose, operator role or factual deployment scope."
+The classifier's own documentation assigns this step to a qualified reviewer. Its [claim ledger](https://github.com/sebastianfoerste/eu-ai-act-classifier/blob/293b803d9e13aece796aee5ad279f8d6a0d3e610/docs/REGULATORY_CLAIM_LEDGER.md?plain=1#L11) records that classification of a real system "still depends on characterised facts, actor role and the applicable route", with the obligation "Qualified reviewer validates intake facts and legal characterisation". Its [README](https://github.com/sebastianfoerste/eu-ai-act-classifier/blob/293b803d9e13aece796aee5ad279f8d6a0d3e610/README.md?plain=1#L121) says: "The engine applies rules to characterised facts and does not decide disputed intended purpose, operator role or factual deployment scope."
 
 So every profile Claude passes to `classify_eu_ai_act_system` is copied, unchanged and in call order, into the section below under the label "Claude-proposed characterisation, reviewed by the user on [date]". The user then writes a review note: for each profile field, agree or disagree, and why. The review never changes the transcript or the profile. Disagreements go in the note.
 
@@ -150,11 +158,11 @@ Review note: [for each profile field: agree or disagree, and why]
 
 ## Failure note
 
-[Only if the run failed: what failed, the fix, and the commit that fixed it.]
+[Only if the run failed: what failed, the fix, the commit that fixed it and, when the fix is in a package that uvx installs, the release version that ships it.]
 
 ## What this demo does not show
 
-- **Legal advice.** Neither the classifier's output nor Claude's summary is a legal assessment of any insurer or product. Both are first-pass material for a lawyer's review, and every classify response carries the review notice defined in [`integrations.py`](../../src/eu_reg_mcp/integrations.py).
+- **Legal advice.** Neither the classifier's output nor Claude's summary is a legal assessment of any insurer or product. Both are first-pass material for a lawyer's review, and every classification the classify tool returns carries the review notice "Deterministic rule output. Every finding is a candidate gap in the submitted text pending human legal review; extraction artifacts occur. Not legal advice."
 - **A real system.** The insurer and its model are invented for this demo. No real company, client or product is described.
 - **A result that holds whatever the facts.** The classification is only as right as the characterised facts. A different, equally plausible characterisation, for example of the operator role, can change the tier or the obligations.
 - **An answer drawn from the tools alone.** Claude can add articles, dates and reasoning from its own knowledge. The review of the summary marks what no tool result contains.
