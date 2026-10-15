@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
@@ -72,6 +73,11 @@ def classify_eu_ai_act_system(profile_json: str = "") -> dict[str, Any]:
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(
+        prog="eu-reg-mcp",
+        description="MCP server for EU regulatory grounding (stdio transport).",
+    )
+    parser.parse_args()
     mcp.run()
 
 

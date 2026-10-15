@@ -1,0 +1,21 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.sebastianfoerste/eu-reg-mcp",
+  "title": "EU Regulatory Grounding",
+  "description": "Cited ESMA MiCAR register search and change tracking, white paper linting, EU AI Act classification",
+  "repository": {
+    "url": "https://github.com/sebastianfoerste/eu-reg-mcp",
+    "source": "github"
+  },
+  "version": "0.1.0",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "registryBaseUrl": "https://pypi.org",
+      "identifier": "eu-reg-mcp",
+      "version": "0.1.0",
+      "runtimeHint": "uvx",
+      "transport": { "type": "stdio" }
+    }
+  ]
+}

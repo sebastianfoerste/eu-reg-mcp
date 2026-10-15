@@ -21,7 +21,8 @@ def test_lint_rejects_invalid_json(monkeypatch):
 
 
 def test_classify_degrades_with_install_hint_when_package_missing(monkeypatch):
-    # A None entry in sys.modules makes the import fail even if the extra is installed.
+    # Simulate the classify extra being absent: a None entry in sys.modules
+    # makes the import fail even if the extra is installed.
     monkeypatch.setitem(sys.modules, "eu_ai_act_classifier.local_api", None)
     result = classify_ai_system("{}")
     assert result["available"] is False
