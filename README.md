@@ -1,71 +1,98 @@
+<!-- mcp-name: io.github.sebastianfoerste/eu-reg-mcp -->
 # eu-reg-mcp
 
 [![CI](https://github.com/sebastianfoerste/eu-reg-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/sebastianfoerste/eu-reg-mcp/actions/workflows/ci.yml)
 
-<!-- mcp-name: io.github.sebastianfoerste/eu-reg-mcp -->
+**Let your AI agent check the ESMA MiCAR register and cite EU AI Act provisions instead of guessing — with every answer framed as a fact or a candidate flag for human review.**
 
-An MCP server that gives AI agents **cited, review-gated grounding in EU regulation**. Agents answering crypto or AI-compliance questions can check a live official register and cite pinpoint provisions instead of guessing.
+Scope today: the ESMA interim MiCAR register (search, summary, change tracking), MiCAR white paper linting, and EU AI Act risk-tier classification. Other EU regulation is not covered.
 
-Five tools:
-
-| Tool | What it does | Needs |
-| --- | --- | --- |
-| `search_micar_register` | Look up an entity by name or LEI in the ESMA interim MiCAR register: white papers (Titles II–IV), authorised CASPs, non-compliant entities | — |
-| `micar_register_summary` | Current register totals and white paper format coverage | — |
-| `micar_register_changes` | Register movement: new filings, changed entries, removals (withdrawal tracking) | — |
-| `lint_micar_whitepaper` | Deterministic Annex I–III lint of a draft white paper: cited candidate findings | `lint` extra |
-| `classify_eu_ai_act_system` | EU AI Act risk-tier classification with pinpoint Art. 5 / Annex III / GPAI citations | `classify` extra |
-
-Register data comes from the [MiCAR Register Observatory](https://github.com/sebastianfoerste/micar-register-observatory), which snapshots the public ESMA register weekly (Art. 109 VO (EU) 2023/1114). The linter is [micar-whitepaper-linter](https://github.com/sebastianfoerste/micar-whitepaper-linter) (36 rules mapped to Annex I–III); the classifier is [eu-ai-act-classifier](https://github.com/sebastianfoerste/eu-ai-act-classifier).
-
-## Install
-
-**Claude Code**
+## Try it
 
 ```bash
-claude mcp add eu-reg -- uvx --from git+https://github.com/sebastianfoerste/eu-reg-mcp eu-reg-mcp
+claude mcp add eu-reg -- uvx eu-reg-mcp
 ```
 
-**Claude Desktop** (`claude_desktop_config.json`)
+Then ask your agent: *"Is `<entity>` on the MiCAR register, and what format is its white paper?"* The register tools need no API key. Claude Desktop config, the lint/classify extras and other clients: [docs/tools.md](docs/tools.md#data-sources-and-network-use).
+
+<details>
+<summary>Claude Desktop (<code>claude_desktop_config.json</code>)</summary>
 
 ```json
 {
   "mcpServers": {
     "eu-reg": {
       "command": "uvx",
-      "args": ["--from", "git+https://github.com/sebastianfoerste/eu-reg-mcp", "eu-reg-mcp"]
+      "args": ["eu-reg-mcp"]
     }
   }
 }
 ```
+</details>
 
-The three register tools work with no configuration and no API key. The lint and classify tools need their optional extras:
+## Example output
 
-```bash
-uv pip install 'eu-reg-mcp[lint] @ git+https://github.com/sebastianfoerste/eu-reg-mcp'
-uv pip install 'eu-reg-mcp[classify] @ git+https://github.com/sebastianfoerste/eu-reg-mcp'
+> **Synthetic data.** Produced on 2026-10-14 by running this repo's register code (`register.search_entries` / `register.recent_changes`) against the **synthetic test fixtures** in `tests/fixtures/`, not the live register. The entity and its LEI are test data. Output shape is what a live call returns; values are not.
+
+`search_micar_register(query="skygate")`:
+
+```json
+{
+  "snapshot_date": "2026-07-07",
+  "total_matches": 1,
+  "results": [
+    {
+      "register": "other-wp",
+      "entity_name": "SKYGATE Network GmbH",
+      "lei": "984500BBFE52FE449926",
+      "member_state": "AT",
+      "authority": "FMA",
+      "whitepaper_url": "WWW.SKYGATETOKEN.AT",
+      "format_class": "unspecified",
+      "register_last_update": "30/12/2024"
+    }
+  ],
+  "truncated": false,
+  "notice": "Facts from the public ESMA interim MiCAR register (Art. 109 MiCAR) as mirrored by the MiCAR Register Observatory. No legal assessment of any entity; not legal advice."
+}
 ```
 
-The linter and classifier are separate packages from their own repositories, MIT-licensed like this server. Without the extras, both tools return an install hint instead of failing.
+`micar_register_changes(change_type="removed")` returns the same kind of cited record (snapshot date, register, entity) and notes that *"the register itself does not state why"* an entry was removed. The lint and classify tools return pinpoint citations (MiCAR Annex I–III; AI Act Art. 5 / Annex III / GPAI); I have not run them for this README, so no sample is shown. [UNVERIFIED: live output of those two tools]
 
-## Try it
+## Tools
 
-Ask an agent with this server connected:
+| Tool | What it does | Needs |
+| --- | --- | --- |
+| `search_micar_register` | Look up an entity by name or LEI in the ESMA interim MiCAR register | — |
+| `micar_register_summary` | Register totals and white paper format coverage | — |
+| `micar_register_changes` | New filings, changed entries, removals | — |
+| `lint_micar_whitepaper` | Deterministic Annex I–III lint of a draft white paper | `lint` extra |
+| `classify_eu_ai_act_system` | AI Act risk tier with pinpoint citations | `classify` extra |
 
-- "Is `<entity>` on the MiCAR register, and what format is its white paper?"
-- "What changed on the MiCAR register recently — any removals?"
-- "Classify this AI system under the EU AI Act" (paste a system profile; call with an empty string to get the schema).
+Parameters, data sources, caching and network requirements: [docs/tools.md](docs/tools.md).
 
-## Guardrails
+## Why not just ask an LLM?
 
-Every response carries its framing: register results are **facts from a public register** with the snapshot date; lint and classification outputs are **candidate flags from deterministic rules, pending human legal review**. Extraction artifacts exist. Nothing this server returns is a legal assessment of any entity or legal advice — that is a design contract, not a disclaimer.
+An ungrounded model can invent register entries or provisions. Here, register answers come from a dated snapshot of the public register, and lint/classification output comes from deterministic rules with citations. **Review-gated** means the output is a candidate flag pending human legal review — never a legal assessment or legal advice. Details: [docs/guardrails.md](docs/guardrails.md).
 
-## Development
+## Links
 
-```bash
-git clone https://github.com/sebastianfoerste/eu-reg-mcp
-cd eu-reg-mcp
-make install && make test
-```
+- Register data: [micar-register-observatory](https://github.com/sebastianfoerste/micar-register-observatory) (weekly snapshots of the public ESMA register, Art. 109 VO (EU) 2023/1114)
+- Linter: [micar-whitepaper-linter](https://github.com/sebastianfoerste/micar-whitepaper-linter) (36 rules mapped to Annex I–III) · Classifier: [eu-ai-act-classifier](https://github.com/sebastianfoerste/eu-ai-act-classifier) — both MIT-licensed
+- Development and tests: [docs/development.md](docs/development.md)
 
-Tests run offline against fixtures. The server itself is MIT-licensed.
+## Part of the EU regulation as code suite
+
+By [sebastianfoerste](https://github.com/sebastianfoerste):
+
+- [awesome-eu-fintech-regulation](https://github.com/sebastianfoerste/awesome-eu-fintech-regulation)
+- [contract-review-eval-harness](https://github.com/sebastianfoerste/contract-review-eval-harness)
+- [legal-function-operating-system](https://github.com/sebastianfoerste/legal-function-operating-system)
+- [eu-ai-act-classifier](https://github.com/sebastianfoerste/eu-ai-act-classifier)
+- [micar-whitepaper-linter](https://github.com/sebastianfoerste/micar-whitepaper-linter)
+- **eu-reg-mcp** (this repo)
+- [micar-register-observatory](https://github.com/sebastianfoerste/micar-register-observatory)
+
+## Caveats
+
+Register results are public-register facts with extraction artifacts possible; lint and classification outputs are candidate flags pending human legal review. Nothing here is legal advice. MIT licensed.

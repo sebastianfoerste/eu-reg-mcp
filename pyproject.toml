@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 license = "MIT"
 license-files = ["LICENSE"]
-authors = [{ name = "Sebastian Foerste" }]
+authors = [{ name = "Sebastian Förste" }]
 keywords = ["mcp", "model-context-protocol", "eu", "regulation", "micar", "esma", "ai-act", "compliance", "crypto"]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -20,10 +20,10 @@ dependencies = ["mcp>=1.2,<2"]
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
 lint = [
-    "micar-whitepaper-linter @ git+https://github.com/sebastianfoerste/micar-whitepaper-linter",
+    "micar-whitepaper-linter>=0.2.0",
 ]
 classify = [
-    "eu-ai-act-classifier @ git+https://github.com/sebastianfoerste/eu-ai-act-classifier",
+    "eu-ai-act-classifier>=0.2.0",
 ]
 
 [project.urls]
