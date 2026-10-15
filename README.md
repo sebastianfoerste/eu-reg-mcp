@@ -1,3 +1,4 @@
+<!-- mcp-name: io.github.sebastianfoerste/eu-reg-mcp -->
 # eu-reg-mcp
 
 [![CI](https://github.com/sebastianfoerste/eu-reg-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/sebastianfoerste/eu-reg-mcp/actions/workflows/ci.yml)
@@ -9,10 +10,10 @@ Scope today: the ESMA interim MiCAR register (search, summary, change tracking),
 ## Try it
 
 ```bash
-claude mcp add eu-reg -- uvx --from git+https://github.com/sebastianfoerste/eu-reg-mcp eu-reg-mcp
+claude mcp add eu-reg -- uvx eu-reg-mcp
 ```
 
-Then ask your agent: *"Is `<entity>` on the MiCAR register, and what format is its white paper?"* The register tools need no API key. A PyPI package (`uvx eu-reg-mcp`) is coming; it does not exist yet, so use the git form above. Claude Desktop config, the lint/classify extras and other clients: [docs/tools.md](docs/tools.md#data-sources-and-network-use).
+Then ask your agent: *"Is `<entity>` on the MiCAR register, and what format is its white paper?"* The register tools need no API key. Claude Desktop config, the lint/classify extras and other clients: [docs/tools.md](docs/tools.md#data-sources-and-network-use).
 
 <details>
 <summary>Claude Desktop (<code>claude_desktop_config.json</code>)</summary>
@@ -22,7 +23,7 @@ Then ask your agent: *"Is `<entity>` on the MiCAR register, and what format is i
   "mcpServers": {
     "eu-reg": {
       "command": "uvx",
-      "args": ["--from", "git+https://github.com/sebastianfoerste/eu-reg-mcp", "eu-reg-mcp"]
+      "args": ["eu-reg-mcp"]
     }
   }
 }
