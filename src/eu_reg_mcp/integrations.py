@@ -24,7 +24,7 @@ REVIEW_NOTICE = (
     "Not legal advice."
 )
 
-UVX_WITH_EXTRAS = 'uvx --from "eu-reg-mcp[lint,classify]" eu-reg-mcp'
+UVX_WITH_EXTRAS = 'uvx --python 3.13 --from "eu-reg-mcp[lint,classify]" eu-reg-mcp'
 
 
 def _install_hint(package: str, extra: str) -> str:

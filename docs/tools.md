@@ -24,10 +24,10 @@ With [uv](https://docs.astral.sh/uv/), `uvx` runs the server without a separate 
 
 ```bash
 uvx eu-reg-mcp                                      # the three register tools
-uvx --from 'eu-reg-mcp[lint,classify]' eu-reg-mcp   # all five tools
+uvx --python 3.13 --from 'eu-reg-mcp[lint,classify]' eu-reg-mcp   # all five tools; the extras need Python 3.13+
 ```
 
-For one extra, name only that one: `'eu-reg-mcp[lint]'` or `'eu-reg-mcp[classify]'`. In an MCP client's JSON config, the second command is `"command": "uvx"` with `"args": ["--from", "eu-reg-mcp[lint,classify]", "eu-reg-mcp"]`.
+For one extra, name only that one: `'eu-reg-mcp[lint]'` or `'eu-reg-mcp[classify]'`. In an MCP client's JSON config, the second command is `"command": "uvx"` with `"args": ["--python", "3.13", "--from", "eu-reg-mcp[lint,classify]", "eu-reg-mcp"]`.
 
 With pip, install into a virtual environment:
 
@@ -93,3 +93,30 @@ The linter is [micar-whitepaper-linter](https://github.com/sebastianfoerste/mica
 ```
 
 Two more profiles: workplace emotion recognition (`"prohibited_practices": ["5.1.f"]`) returns `prohibited` with `Art. 5(1)(f) AIA`; a general-purpose AI model (`"is_gpai_model": true`, `"training_flops": 3e25`) returns `Art. 51 AIA` (systemic risk, above the 10^25 FLOP presumption) with obligations under Art. 53(1)(a)–(d) and Art. 55(1)(a)–(d) AIA.
+
+## Command line and HTTP
+
+The same register tools work without an MCP client and print JSON:
+
+```bash
+uvx eu-reg-mcp search "societe generale"       # case- and accent-insensitive
+uvx eu-reg-mcp search 969500FX8K40ZDW4F377      # exact LEI
+uvx eu-reg-mcp summary
+uvx eu-reg-mcp changes --type removed --limit 10
+```
+
+To serve MCP over HTTP instead of stdio (for clients that connect by URL), run
+`uvx eu-reg-mcp --transport streamable-http --host 127.0.0.1 --port 8000`; the
+endpoint is `http://127.0.0.1:8000/mcp`. It has no authentication, so keep it on
+localhost or behind your own access control.
+
+## Verifiable answers
+
+Every register answer carries what you need to check it:
+
+- `snapshot_date`, `data_age_days` and `stale` (true when the mirrored data is
+  more than 10 days old, i.e. a weekly refresh was missed);
+- `observatory_snapshot`, the published data file the answer was computed from;
+- per result, the register `entry_id` and `esma_source_url`, the ESMA file the
+  entry came from;
+- per change record, `still_listed`: whether the entry is in the latest snapshot.

@@ -44,3 +44,59 @@ def test_search_tool_end_to_end():
 def test_summary_and_changes_tools():
     assert server.micar_register_summary()["snapshot_date"] == "2026-07-07"
     assert server.micar_register_changes(limit=5)["total_changes"] == 2
+
+
+def test_cli_search_prints_json(capsys):
+    server.main(["search", "skygate"])
+    out = json.loads(capsys.readouterr().out)
+    assert out["total_matches"] >= 1
+    assert out["results"][0]["entry_id"]
+
+
+def test_cli_summary_and_changes(capsys):
+    server.main(["summary"])
+    assert "registers" in json.loads(capsys.readouterr().out)
+    server.main(["changes", "--type", "removed", "--limit", "5"])
+    out = json.loads(capsys.readouterr().out)
+    assert all(c["change"] == "removed" for c in out["changes"])
+    assert all("still_listed" in c for c in out["changes"])
+
+
+def test_http_transport_is_configured(monkeypatch):
+    calls = {}
+    monkeypatch.setattr(
+        server.mcp, "run", lambda transport="stdio": calls.update(t=transport)
+    )
+    server.main(["--transport", "streamable-http", "--port", "8123"])
+    assert calls["t"] == "streamable-http"
+    assert server.mcp.settings.port == 8123
+
+
+def test_default_serves_stdio(monkeypatch):
+    calls = {}
+    monkeypatch.setattr(
+        server.mcp, "run", lambda transport="stdio": calls.update(t=transport)
+    )
+    server.main([])
+    assert calls["t"] == "stdio"
+
+
+def test_tools_declare_read_only_and_enums():
+    import anyio
+
+    tools = {tool.name: tool for tool in anyio.run(server.mcp.list_tools)}
+    for tool in tools.values():
+        assert tool.annotations is not None and tool.annotations.readOnlyHint is True
+    slug = tools["search_micar_register"].inputSchema["properties"]["register_slug"]
+    assert "casps" in str(slug)
+    change = tools["micar_register_changes"].inputSchema["properties"]["change_type"]
+    assert "removed" in str(change)
+
+
+def test_search_paging():
+    first = server.search_micar_register("", offset=0)
+    second = server.search_micar_register("", offset=1)
+    assert first["total_matches"] == second["total_matches"]
+    if first["total_matches"] > 1:
+        assert first["results"][1] == second["results"][0]
+    assert second["offset"] == 1
