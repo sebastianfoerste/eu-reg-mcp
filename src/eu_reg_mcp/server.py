@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import argparse
 import json
-from typing import Any
+from typing import Any, Literal
 
 from mcp.server.fastmcp import FastMCP
+from mcp.types import ToolAnnotations
 
 from eu_reg_mcp import data, integrations, register
 
@@ -23,9 +24,22 @@ mcp = FastMCP(
 )
 
 
-@mcp.tool()
+RegisterSlug = Literal["all", "other-wp", "emt-wp", "art-wp", "casps", "ncasp"]
+ChangeType = Literal["all", "added", "changed", "removed"]
+
+# Register tools only read published data; lint/classify are local and pure.
+READ_ONLY = ToolAnnotations(readOnlyHint=True, idempotentHint=True, openWorldHint=True)
+LOCAL_READ_ONLY = ToolAnnotations(
+    readOnlyHint=True, idempotentHint=True, openWorldHint=False
+)
+
+
+@mcp.tool(annotations=READ_ONLY)
 def search_micar_register(
-    query: str, register_slug: str = "all", member_state: str = ""
+    query: str,
+    register_slug: RegisterSlug = "all",
+    member_state: str = "",
+    offset: int = 0,
 ) -> dict[str, Any]:
     """Search the ESMA interim MiCAR register by entity name or LEI.
 
@@ -34,20 +48,23 @@ def search_micar_register(
     states the snapshot date, data_age_days and a stale flag.
     register_slug: all | other-wp | emt-wp | art-wp | casps | ncasp.
     member_state: optional two-letter code (DE, IE, MT, ...).
+    offset: skip this many matches (results come 25 at a time; see truncated).
     """
     return register.search_entries(
-        data.load_snapshot(), query, register_slug, member_state
+        data.load_snapshot(), query, register_slug, member_state, offset=offset
     )
 
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY)
 def micar_register_summary() -> dict[str, Any]:
     """Current totals per MiCAR register and white paper format coverage."""
     return register.summarize(data.load_snapshot())
 
 
-@mcp.tool()
-def micar_register_changes(limit: int = 50, change_type: str = "all") -> dict[str, Any]:
+@mcp.tool(annotations=READ_ONLY)
+def micar_register_changes(
+    limit: int = 50, change_type: ChangeType = "all"
+) -> dict[str, Any]:
     """Recent register movement: new filings, changed entries, removals.
 
     change_type: all | added | changed | removed.
@@ -58,7 +75,7 @@ def micar_register_changes(limit: int = 50, change_type: str = "all") -> dict[st
     )
 
 
-@mcp.tool()
+@mcp.tool(annotations=LOCAL_READ_ONLY)
 def lint_micar_whitepaper(whitepaper_json: str) -> dict[str, Any]:
     """Lint a draft MiCAR white paper (JSON) against Annex I-III rules.
 
@@ -68,7 +85,7 @@ def lint_micar_whitepaper(whitepaper_json: str) -> dict[str, Any]:
     return integrations.lint_whitepaper(whitepaper_json)
 
 
-@mcp.tool()
+@mcp.tool(annotations=LOCAL_READ_ONLY)
 def classify_eu_ai_act_system(profile_json: str = "") -> dict[str, Any]:
     """Classify an AI system's EU AI Act risk tier with pinpoint citations.
 

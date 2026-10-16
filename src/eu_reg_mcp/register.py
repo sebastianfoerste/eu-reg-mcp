@@ -68,6 +68,7 @@ def search_entries(
     register: str = "all",
     member_state: str = "",
     today: date | None = None,
+    offset: int = 0,
 ) -> dict[str, Any]:
     needle = _fold(query)
     state = member_state.strip().upper()
@@ -101,8 +102,9 @@ def search_entries(
     return {
         **_provenance(snapshot, today),
         "total_matches": len(matches),
-        "results": matches[:MAX_RESULTS],
-        "truncated": len(matches) > MAX_RESULTS,
+        "offset": max(0, offset),
+        "results": matches[max(0, offset) : max(0, offset) + MAX_RESULTS],
+        "truncated": len(matches) > max(0, offset) + MAX_RESULTS,
         "notice": NOTICE,
     }
 

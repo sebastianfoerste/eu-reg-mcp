@@ -8,6 +8,7 @@
 - CLI subcommands `search`, `summary`, `changes` print JSON without an MCP client.
 - `--transport streamable-http` (with `--host`, `--port`) serves MCP over HTTP.
 - Weekly live-data check and an unlocked PyPI install smoke test in CI.
+- Tools declare read-only annotations and enum parameters (`register_slug`, `change_type`); search pages with `offset`. Minimum mcp is now 1.9 (still below 2).
 - Docs pin `--python 3.13` wherever the `lint`/`classify` extras are installed with uvx.
 
 ## 0.1.1 (2026-10-15)

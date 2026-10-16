@@ -79,3 +79,24 @@ def test_default_serves_stdio(monkeypatch):
     )
     server.main([])
     assert calls["t"] == "stdio"
+
+
+def test_tools_declare_read_only_and_enums():
+    import anyio
+
+    tools = {tool.name: tool for tool in anyio.run(server.mcp.list_tools)}
+    for tool in tools.values():
+        assert tool.annotations is not None and tool.annotations.readOnlyHint is True
+    slug = tools["search_micar_register"].inputSchema["properties"]["register_slug"]
+    assert "casps" in str(slug)
+    change = tools["micar_register_changes"].inputSchema["properties"]["change_type"]
+    assert "removed" in str(change)
+
+
+def test_search_paging():
+    first = server.search_micar_register("", offset=0)
+    second = server.search_micar_register("", offset=1)
+    assert first["total_matches"] == second["total_matches"]
+    if first["total_matches"] > 1:
+        assert first["results"][1] == second["results"][0]
+    assert second["offset"] == 1
