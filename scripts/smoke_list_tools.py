@@ -4,7 +4,7 @@ Usage (everything after ``--`` is the command that launches the server):
 
     uv run --isolated --no-project --with 'mcp>=1.2,<2' \
         python scripts/smoke_list_tools.py -- \
-        uvx --refresh --from '.[lint,classify]' eu-reg-mcp
+        uvx --python 3.13 --refresh --from '.[lint,classify]' eu-reg-mcp
 
 The script connects with the MCP SDK's stdio client, lists the tools and
 fails unless exactly the five documented tools are present. It then calls the

@@ -1,15 +1,12 @@
+import importlib.util
 import json
-import shutil
 import sys
-from pathlib import Path
 
 import pytest
 
 from eu_reg_mcp.integrations import (
     EXAMPLE_PROFILE,
-    PIP_WITH_EXTRAS,
     REVIEW_NOTICE,
-    UVX_WITH_EXTRAS,
     classify_ai_system,
     lint_whitepaper,
 )
@@ -35,24 +32,35 @@ def classifier():
     return pytest.importorskip("eu_ai_act_classifier.local_api")
 
 
-@pytest.fixture
-def classifier_missing(monkeypatch):
-    """Make `import eu_ai_act_classifier...` fail, installed or not."""
-    for name in list(sys.modules):
-        if name == "eu_ai_act_classifier" or name.startswith("eu_ai_act_classifier."):
-            monkeypatch.setitem(sys.modules, name, None)
-    monkeypatch.setitem(sys.modules, "eu_ai_act_classifier", None)
+UVX_COMMAND = 'uvx --python 3.13 --from "eu-reg-mcp[lint,classify]" eu-reg-mcp'
 
 
-# --- lint -----------------------------------------------------------------
+def write_fake_linter(directory, label):
+    # Stands in for the micar-lint console script and reports where it was found.
+    directory.mkdir(parents=True, exist_ok=True)
+    script = directory / "micar-lint"
+    script.write_text(f"#!/bin/sh\necho '{json.dumps({'found': label})}'\n")
+    script.chmod(0o755)
+
+
+def write_fake_linter_package(directory, label):
+    package = directory / "micar_linter"
+    package.mkdir(parents=True)
+    (package / "__init__.py").write_text("")
+    (package / "__main__.py").write_text(
+        "import json, sys\n"
+        f"print(json.dumps({{'found': {label!r}, 'argv': sys.argv[1:]}}))\n"
+    )
 
 
 def test_lint_degrades_with_install_hint_when_binary_missing(monkeypatch):
     monkeypatch.setattr("eu_reg_mcp.integrations.shutil.which", lambda _: None)
+    # Hide the module fallback too, whether or not the lint extra is installed.
+    monkeypatch.setitem(sys.modules, "micar_linter", None)
     result = lint_whitepaper(json.dumps({"title": "x"}))
     assert result["available"] is False
-    assert f"`{UVX_WITH_EXTRAS}`" in result["hint"]
-    assert f"`{PIP_WITH_EXTRAS}`" in result["hint"]
+    assert "eu-reg-mcp[lint]" in result["hint"]
+    assert f"claude mcp add eu-reg -- {UVX_COMMAND}" in result["hint"]
     assert result["notice"] == REVIEW_NOTICE
 
 
@@ -66,7 +74,48 @@ def test_lint_rejects_invalid_json(monkeypatch):
     assert result["notice"] == REVIEW_NOTICE
 
 
-@pytest.mark.skipif(shutil.which("micar-lint") is None, reason="needs the `lint` extra")
+@pytest.mark.skipif(sys.platform == "win32", reason="fake micar-lint is a sh script")
+@pytest.mark.parametrize(
+    ("installed_in", "expected"),
+    [
+        pytest.param(["env"], "env", id="venv-not-activated"),
+        pytest.param(["env/Scripts"], "env/Scripts", id="windows-base-install"),
+        pytest.param(["env", "on-path"], "env", id="own-env-before-path"),
+        pytest.param(["on-path"], "on-path", id="path-fallback"),
+    ],
+)
+def test_lint_finds_linter_beside_interpreter_before_path(
+    monkeypatch, tmp_path, installed_in, expected
+):
+    for place in installed_in:
+        write_fake_linter(tmp_path / place, place)
+    # The server runs from env/python; PATH holds only on-path/, never env/.
+    monkeypatch.setattr(sys, "executable", str(tmp_path / "env" / "python"))
+    monkeypatch.setenv("PATH", str(tmp_path / "on-path"))
+    result = lint_whitepaper(json.dumps({"title": "x"}))
+    assert result["available"] is True
+    assert result["report"] == {"found": expected}
+
+
+def test_lint_runs_linter_module_when_no_script_is_found(monkeypatch, tmp_path):
+    # E.g. a user-site install whose scripts folder is not on PATH.
+    site_packages, workdir = tmp_path / "site-packages", tmp_path / "workdir"
+    write_fake_linter_package(site_packages, "installed")
+    # The MCP client picks the working directory; a package there must not run.
+    write_fake_linter_package(workdir, "workdir")
+    monkeypatch.setattr("eu_reg_mcp.integrations.shutil.which", lambda _: None)
+    monkeypatch.syspath_prepend(str(site_packages))
+    monkeypatch.setenv("PYTHONPATH", str(site_packages))
+    monkeypatch.chdir(workdir)
+    result = lint_whitepaper(json.dumps({"title": "x"}))
+    assert result["available"] is True
+    assert result["report"]["found"] == "installed"
+    assert result["report"]["argv"][-1] == "--json"
+
+
+@pytest.mark.skipif(
+    importlib.util.find_spec("micar_linter") is None, reason="needs the `lint` extra"
+)
 def test_lint_runs_installed_linter_on_synthetic_draft():
     draft = {
         "title": "Synthetic test draft",
@@ -82,14 +131,14 @@ def test_lint_runs_installed_linter_on_synthetic_draft():
     assert all(finding["citation"] for finding in report["findings"])
 
 
-# --- classify: missing extra ------------------------------------------------
-
-
-def test_classify_degrades_with_install_hint_when_package_missing(classifier_missing):
+def test_classify_degrades_with_install_hint_when_package_missing(monkeypatch):
+    # Simulate the classify extra being absent: a None entry in sys.modules
+    # makes the import fail even if the extra is installed.
+    monkeypatch.setitem(sys.modules, "eu_ai_act_classifier.local_api", None)
     result = classify_ai_system("{}")
     assert result["available"] is False
-    assert f"`{UVX_WITH_EXTRAS}`" in result["hint"]
-    assert f"`{PIP_WITH_EXTRAS}`" in result["hint"]
+    assert "eu-reg-mcp[classify]" in result["hint"]
+    assert UVX_COMMAND in result["hint"]
     assert result["notice"] == REVIEW_NOTICE
 
 
@@ -169,15 +218,3 @@ def test_classify_annex_iii_5b_deployer_is_high_risk_with_art_26_and_27(classifi
     }
     assert {"Art. 26 AIA", "Art. 27 AIA"} <= deployer_items
     assert classification["disclaimer"]
-
-
-def test_install_hint_names_the_pypi_uvx_and_pip_forms_with_both_extras():
-    assert UVX_WITH_EXTRAS == "uvx --from 'eu-reg-mcp[lint,classify]' eu-reg-mcp"
-    assert PIP_WITH_EXTRAS == "pip install 'eu-reg-mcp[lint,classify]'"
-    # docs/tools.md describes the hint by quoting both commands.
-    tools_doc = (Path(__file__).parents[1] / "docs" / "tools.md").read_text(
-        encoding="utf-8"
-    )
-    for command in (UVX_WITH_EXTRAS, PIP_WITH_EXTRAS):
-        assert "git+" not in command
-        assert f"`{command}`" in tools_doc

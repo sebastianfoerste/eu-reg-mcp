@@ -9,9 +9,11 @@ framing is part of the contract.
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import shutil
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 from typing import Any
@@ -22,16 +24,40 @@ REVIEW_NOTICE = (
     "Not legal advice."
 )
 
-# The package and both extras install from PyPI. A server that uvx starts
-# needs the --from form; a server installed in a virtual environment needs
-# the pip form, run with that environment active.
-UVX_WITH_EXTRAS = "uvx --from 'eu-reg-mcp[lint,classify]' eu-reg-mcp"
-PIP_WITH_EXTRAS = "pip install 'eu-reg-mcp[lint,classify]'"
-INSTALL_HINT = (
-    f"With uvx, start the server as `{UVX_WITH_EXTRAS}`; in a virtual "
-    f"environment, run `{PIP_WITH_EXTRAS}` and start the server with that "
-    "environment active"
-)
+UVX_WITH_EXTRAS = 'uvx --python 3.13 --from "eu-reg-mcp[lint,classify]" eu-reg-mcp'
+
+
+def _install_hint(package: str, extra: str) -> str:
+    return (
+        f"{package} is not installed; this tool needs the `{extra}` extra. "
+        f"With uvx, start the server as `{UVX_WITH_EXTRAS}` (Claude Code: "
+        "`claude mcp remove eu-reg`, then "
+        f"`claude mcp add eu-reg -- {UVX_WITH_EXTRAS}`). "
+        "With pip, install the extra into the server's environment: "
+        f'`pip install "eu-reg-mcp[{extra}]"`. '
+        f"See github.com/sebastianfoerste/{package}."
+    )
+
+
+def _linter_command() -> list[str] | None:
+    # MCP clients often start a venv's eu-reg-mcp by path without activating
+    # the venv, so look in this interpreter's environment before PATH.
+    if sys.executable:
+        interpreter_dir = Path(sys.executable).parent
+        # Console scripts sit beside python in a venv (bin/ or Scripts\) and
+        # in Scripts\ below python.exe in a base Windows install.
+        for script_dir in (interpreter_dir, interpreter_dir / "Scripts"):
+            binary = shutil.which(str(script_dir / "micar-lint"))
+            if binary is not None:
+                return [binary]
+    binary = shutil.which("micar-lint")
+    if binary is not None:
+        return [binary]
+    if sys.executable and importlib.util.find_spec("micar_linter") is not None:
+        # -P keeps the working directory, which the MCP client picks, off
+        # sys.path, so a micar_linter/ folder there cannot shadow the package.
+        return [sys.executable, "-P", "-m", "micar_linter"]
+    return None
 
 
 SCHEMA_HINT = (
@@ -56,14 +82,11 @@ EXAMPLE_PROFILE: dict[str, Any] = {
 
 
 def lint_whitepaper(whitepaper_json: str) -> dict[str, Any]:
-    binary = shutil.which("micar-lint")
-    if binary is None:
+    command = _linter_command()
+    if command is None:
         return {
             "available": False,
-            "hint": (
-                f"micar-lint is not installed. {INSTALL_HINT} "
-                "(see github.com/sebastianfoerste/micar-whitepaper-linter)."
-            ),
+            "hint": _install_hint("micar-whitepaper-linter", "lint"),
             "notice": REVIEW_NOTICE,
         }
     try:
@@ -82,7 +105,7 @@ def lint_whitepaper(whitepaper_json: str) -> dict[str, Any]:
         path = handle.name
     try:
         result = subprocess.run(
-            [binary, path, "--json"],
+            [*command, path, "--json"],
             capture_output=True,
             text=True,
             timeout=120,
@@ -111,10 +134,7 @@ def classify_ai_system(profile_json: str) -> dict[str, Any]:
     except ImportError:
         return {
             "available": False,
-            "hint": (
-                f"eu-ai-act-classifier is not installed. {INSTALL_HINT} "
-                "(see github.com/sebastianfoerste/eu-ai-act-classifier)."
-            ),
+            "hint": _install_hint("eu-ai-act-classifier", "classify"),
             "notice": REVIEW_NOTICE,
         }
     if not profile_json.strip():

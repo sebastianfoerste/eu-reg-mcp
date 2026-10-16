@@ -8,8 +8,14 @@ same weekly, review-gated dataset without touching ESMA directly.
 from __future__ import annotations
 
 import json
+import logging
+import os
+import tempfile
 import time
+import urllib.error
 import urllib.request
+from collections.abc import Callable
+from pathlib import Path
 from typing import Any
 
 OBSERVATORY_RAW = (
@@ -21,40 +27,147 @@ CHANGELOG_URL = f"{OBSERVATORY_RAW}/data/changelog.jsonl"
 USER_AGENT = "eu-reg-mcp/0.1 (+https://github.com/sebastianfoerste/eu-reg-mcp)"
 
 CACHE_TTL_SECONDS = 3600  # register moves weekly; an hour is generous
+FETCH_ATTEMPTS = 3
+BACKOFF_SECONDS = 1.0  # doubled after each failed attempt
+FETCH_TIMEOUT_SECONDS = 30
+
+log = logging.getLogger(__name__)
 
 _cache: dict[str, tuple[float, Any]] = {}
 
 
+class DataError(RuntimeError):
+    """Register data could not be fetched and no cached copy exists."""
+
+
+def cache_dir() -> Path:
+    override = os.environ.get("EU_REG_MCP_CACHE_DIR")
+    if override:
+        return Path(override)
+    base = os.environ.get("XDG_CACHE_HOME") or str(Path.home() / ".cache")
+    return Path(base) / "eu-reg-mcp"
+
+
 def _get(url: str) -> bytes:
     request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-    with urllib.request.urlopen(request, timeout=30) as response:
+    with urllib.request.urlopen(request, timeout=FETCH_TIMEOUT_SECONDS) as response:
         return response.read()
 
 
-def _cached(key: str, url: str, parse: Any) -> Any:
+def _retryable(exc: Exception) -> bool:
+    if isinstance(exc, urllib.error.HTTPError):
+        return exc.code == 429 or exc.code >= 500
+    return isinstance(exc, (urllib.error.URLError, TimeoutError, ConnectionError))
+
+
+def _get_with_retry(url: str) -> bytes:
+    delay = BACKOFF_SECONDS
+    for attempt in range(1, FETCH_ATTEMPTS + 1):
+        try:
+            return _get(url)
+        except Exception as exc:
+            if attempt == FETCH_ATTEMPTS or not _retryable(exc):
+                raise
+            log.warning("fetch of %s failed (%s); retrying in %.1fs", url, exc, delay)
+            time.sleep(delay)
+            delay *= 2
+    raise AssertionError("unreachable")
+
+
+def _write_atomic(path: Path, raw: bytes) -> None:
+    """Write via a temp file in the same directory, then rename into place."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=path.name, suffix=".tmp")
+    try:
+        with os.fdopen(fd, "wb") as handle:
+            handle.write(raw)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(tmp, path)
+    except BaseException:
+        try:
+            os.unlink(tmp)
+        except FileNotFoundError:
+            pass
+        raise
+
+
+def _validate_snapshot(value: Any) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise ValueError("snapshot must be a JSON object")
+    registers = value.get("registers")
+    if not isinstance(registers, list):
+        raise ValueError("snapshot.registers must be a list")
+    for register in registers:
+        if not isinstance(register, dict):
+            raise ValueError("each register must be an object")
+        entries = register.get("entries", [])
+        if not isinstance(entries, list) or not all(
+            isinstance(entry, dict) for entry in entries
+        ):
+            raise ValueError("register.entries must be a list of objects")
+    return value
+
+
+def _parse_snapshot(raw: bytes) -> dict[str, Any]:
+    return _validate_snapshot(json.loads(raw.decode("utf-8")))
+
+
+def _parse_changelog(raw: bytes) -> list[dict[str, Any]]:
+    records = [
+        json.loads(line) for line in raw.decode("utf-8").splitlines() if line.strip()
+    ]
+    for record in records:
+        if not isinstance(record, dict) or not isinstance(record.get("change"), str):
+            raise ValueError("changelog records must be objects with a 'change' field")
+    return records
+
+
+def _cached(key: str, url: str, parse: Callable[[bytes], Any]) -> Any:
     now = time.monotonic()
     hit = _cache.get(key)
     if hit is not None and now - hit[0] < CACHE_TTL_SECONDS:
         return hit[1]
-    value = parse(_get(url))
+    path = cache_dir() / key
+    try:
+        raw = _get_with_retry(url)
+        value = parse(raw)  # validate before anything is persisted
+    except (OSError, ValueError) as exc:  # URLError/timeouts are OSErrors
+        stale = _stale(key, path, parse, hit)
+        if stale is None:
+            raise DataError(f"could not load {url}: {exc}") from exc
+        log.warning("using stale cached %s after fetch failure: %s", key, exc)
+        return stale
+    try:
+        _write_atomic(path, raw)
+    except OSError as exc:
+        log.warning("could not write cache file %s: %s", path, exc)
     _cache[key] = (now, value)
     return value
 
 
+def _stale(
+    key: str,
+    path: Path,
+    parse: Callable[[bytes], Any],
+    hit: tuple[float, Any] | None,
+) -> Any | None:
+    if hit is not None:
+        return hit[1]
+    try:
+        return parse(path.read_bytes())
+    except (OSError, ValueError):
+        return None
+
+
 def load_snapshot() -> dict[str, Any]:
-    return _cached("latest", LATEST_URL, lambda raw: json.loads(raw.decode("utf-8")))
+    return _cached("latest.json", LATEST_URL, _parse_snapshot)
 
 
 def load_changelog() -> list[dict[str, Any]]:
-    def parse(raw: bytes) -> list[dict[str, Any]]:
-        return [
-            json.loads(line)
-            for line in raw.decode("utf-8").splitlines()
-            if line.strip()
-        ]
-
-    return _cached("changelog", CHANGELOG_URL, parse)
+    return _cached("changelog.jsonl", CHANGELOG_URL, _parse_changelog)
 
 
 def clear_cache() -> None:
+    """Drop the in-memory cache (the on-disk stale fallback is kept)."""
     _cache.clear()
