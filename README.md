@@ -67,6 +67,8 @@ claude mcp add eu-reg -- uvx --python 3.13 --from 'eu-reg-mcp[lint,classify]' eu
 ```
 
 For the extras, use `"args": ["--python", "3.13", "--from", "eu-reg-mcp[lint,classify]", "eu-reg-mcp"]`.
+
+If Claude Desktop cannot find `uvx`, put its absolute path (the output of `which uvx`) in `command`.
 </details>
 
 Without uv, run `pip install 'eu-reg-mcp[lint,classify]'` in a Python 3.13+ virtual environment and register its `eu-reg-mcp` by full path, e.g. `claude mcp add eu-reg -- /path/to/.venv/bin/eu-reg-mcp`; the environment need not be active. Install options and network use: [docs/tools.md](docs/tools.md#install).
@@ -123,7 +125,7 @@ An ungrounded model can invent register entries or provisions. Here, register an
 ## Links
 
 - PyPI: [eu-reg-mcp](https://pypi.org/project/eu-reg-mcp/), [micar-whitepaper-linter](https://pypi.org/project/micar-whitepaper-linter/), [eu-ai-act-classifier](https://pypi.org/project/eu-ai-act-classifier/)
-- Register data: [micar-register-observatory](https://github.com/sebastianfoerste/micar-register-observatory) (weekly snapshots of the public ESMA register, Art. 109 VO (EU) 2023/1114)
+- Register data: [micar-register-observatory](https://github.com/sebastianfoerste/micar-register-observatory) (weekly snapshots of ESMA's public interim MiCAR register under Art. 109 of Regulation (EU) 2023/1114, covering white papers and authorised CASPs, plus the list of non-compliant entities)
 - Linter: [micar-whitepaper-linter](https://github.com/sebastianfoerste/micar-whitepaper-linter) (36 rules mapped to Annex I–III) · Classifier: [eu-ai-act-classifier](https://github.com/sebastianfoerste/eu-ai-act-classifier) — both MIT-licensed
 - Development and tests: [docs/development.md](docs/development.md)
 
