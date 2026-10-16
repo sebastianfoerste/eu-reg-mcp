@@ -10,6 +10,9 @@
 - Weekly live-data check and an unlocked PyPI install smoke test in CI.
 - Tools declare read-only annotations and enum parameters (`register_slug`, `change_type`); search pages with `offset`. Minimum mcp is now 1.9 (still below 2).
 - Docs pin `--python 3.13` wherever the `lint`/`classify` extras are installed with uvx.
+- `classify_eu_ai_act_system` with an empty profile returns the SystemProfile JSON schema, a synthetic example profile and the required fields, instead of the classifier's lists of allowed values. Invalid fields come back in the result as `validation_errors` with the schema, not as a tool error, and a JSON value that is not an object is rejected in the result.
+- Every lint and classify result carries the review notice in `notice`, install hints and input errors included.
+- CI installs the checkout with uvx, lists the five tools over MCP stdio and calls classify, lint and the register summary (`scripts/smoke_list_tools.py`, `make smoke`); the weekly live-data workflow runs the same check against the PyPI release.
 
 ## 0.1.1 (2026-10-15)
 
