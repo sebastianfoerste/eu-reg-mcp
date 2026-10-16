@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
@@ -77,13 +78,60 @@ def classify_eu_ai_act_system(profile_json: str = "") -> dict[str, Any]:
     return integrations.classify_ai_system(profile_json)
 
 
-def main() -> None:
+def _print(result: dict[str, Any]) -> None:
+    print(json.dumps(result, ensure_ascii=False, indent=2))
+
+
+def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(
         prog="eu-reg-mcp",
-        description="MCP server for EU regulatory grounding (stdio transport).",
+        description=(
+            "MCP server for EU regulatory grounding. Without a subcommand it "
+            "serves MCP (stdio by default); the subcommands query the MiCAR "
+            "register directly and print JSON."
+        ),
     )
-    parser.parse_args()
-    mcp.run()
+    parser.add_argument(
+        "--transport",
+        choices=["stdio", "streamable-http"],
+        default="stdio",
+        help="MCP transport when serving (default: stdio).",
+    )
+    parser.add_argument(
+        "--host", default="127.0.0.1", help="HTTP host (default: 127.0.0.1)."
+    )
+    parser.add_argument(
+        "--port", type=int, default=8000, help="HTTP port (default: 8000)."
+    )
+    sub = parser.add_subparsers(dest="command")
+    search = sub.add_parser("search", help="Search the MiCAR register by name or LEI.")
+    search.add_argument("query")
+    search.add_argument(
+        "--register",
+        default="all",
+        help="all | other-wp | emt-wp | art-wp | casps | ncasp",
+    )
+    search.add_argument("--member-state", default="", help="Two-letter code, e.g. DE.")
+    sub.add_parser("summary", help="Totals per register and white paper formats.")
+    changes = sub.add_parser("changes", help="Recent register changes.")
+    changes.add_argument("--limit", type=int, default=20)
+    changes.add_argument(
+        "--type", default="all", choices=["all", "added", "changed", "removed"]
+    )
+    args = parser.parse_args(argv)
+
+    if args.command == "search":
+        _print(search_micar_register(args.query, args.register, args.member_state))
+    elif args.command == "summary":
+        _print(micar_register_summary())
+    elif args.command == "changes":
+        _print(micar_register_changes(args.limit, args.type))
+    elif args.transport == "streamable-http":
+        mcp.settings.host = args.host
+        mcp.settings.port = args.port
+        mcp.run(transport="streamable-http")
+    else:
+        mcp.run()
 
 
 if __name__ == "__main__":
