@@ -73,6 +73,8 @@ If Claude Desktop cannot find `uvx`, put its absolute path (the output of `which
 
 Without uv, run `pip install 'eu-reg-mcp[lint,classify]'` in a Python 3.13+ virtual environment and register its `eu-reg-mcp` by full path, e.g. `claude mcp add eu-reg -- /path/to/.venv/bin/eu-reg-mcp`; the environment need not be active. Install options and network use: [docs/tools.md](docs/tools.md#install).
 
+For a scripted Claude Code session on a life insurer's pricing model, with its recording protocol, see [docs/demo/claude-code-life-insurer.md](docs/demo/claude-code-life-insurer.md) (script and protocol; run not yet recorded).
+
 ## Example output
 
 > **Synthetic data.** Produced on 2026-10-14 by running this repo's register code (`register.search_entries` / `register.recent_changes`) against the **synthetic test fixtures** in `tests/fixtures/`, not the live register. The entity and its LEI are test data. Output shape is what a live call returns; values are not.
