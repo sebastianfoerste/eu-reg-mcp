@@ -2,26 +2,55 @@
 # eu-reg-mcp
 
 [![CI](https://github.com/sebastianfoerste/eu-reg-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/sebastianfoerste/eu-reg-mcp/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![Python >=3.13](https://img.shields.io/badge/python-%3E%3D3.13-blue)](pyproject.toml)
 
-**Let your AI agent check the ESMA MiCAR register and cite EU AI Act provisions instead of guessing — with every answer framed as a fact or a candidate flag for human review.**
+**Let your AI assistant answer MiCAR and EU AI Act questions with citations instead of guesses — every finding flagged for human legal review.**
 
 Scope today: the ESMA interim MiCAR register (search, summary, change tracking), MiCAR white paper linting, and EU AI Act risk-tier classification. Other EU regulation is not covered.
 
-## Try it
+<!--
+  Screenshot/GIF placeholder — to be added.
+  Capture a real session: Claude Code or Claude Desktop with eu-reg-mcp connected, answering
+  one of the register questions under "Try it now", with the snapshot date visible in the answer.
+  Then replace this comment and the note below with the image.
+-->
 
-`eu-reg-mcp` is on [PyPI](https://pypi.org/project/eu-reg-mcp/). With [uv](https://docs.astral.sh/uv/) installed, `uvx` fetches and runs it:
+> *Screenshot/GIF placeholder — to be added*
+
+## Who it's for
+
+- **Crypto-asset compliance and legal teams** looking up entities on the ESMA interim MiCAR register (white papers, authorised CASPs, non-compliant entities) and tracking what changes on it, including removals.
+- **Teams preparing MiCAR white papers** who want a deterministic Annex I–III check of a draft that returns cited candidate findings.
+- **Teams assessing AI systems under the EU AI Act** who want a first-pass risk-tier classification with pinpoint Art. 5 / Annex III / GPAI citations.
+
+It does not replace legal review: its outputs are register facts or candidate flags for a human to assess (see [Guardrails](docs/guardrails.md)).
+
+## Try it now
+
+There is no hosted playground. eu-reg-mcp is a [Model Context Protocol](https://modelcontextprotocol.io) (MCP) server, so you try it by adding it to your own MCP client — the [Quick start](#quick-start) has the configuration for Claude Code and Claude Desktop. Then ask your assistant:
+
+- "Is `<entity>` on the MiCAR register, and what format is its white paper?"
+- "What changed on the MiCAR register recently — any removals?"
+- "Classify this AI system under the EU AI Act" (paste a system profile; call with an empty string to get the schema).
+
+The first two work without extras; the third needs the `classify` extra.
+
+## Quick start
+
+`eu-reg-mcp` is on [PyPI](https://pypi.org/project/eu-reg-mcp/) and requires Python 3.13 or newer. With [uv](https://docs.astral.sh/uv/) installed, `uvx` fetches and runs it.
+
+**Claude Code**
 
 ```bash
 claude mcp add eu-reg -- uvx eu-reg-mcp
 ```
 
-Then ask your agent: *"Is `<entity>` on the MiCAR register, and what format is its white paper?"* The register tools need no API key. For all five tools, add the `lint` and `classify` extras instead:
-
+The register tools need no API key. For all five tools, add the `lint` and `classify` extras instead:
+The register tools need no API key. For all five tools, add the `lint` and `classify` extras instead. They need Python 3.13+, and `--python 3.13` makes uv use it even where an older Python is the default:
 ```bash
-claude mcp add eu-reg -- uvx --from 'eu-reg-mcp[lint,classify]' eu-reg-mcp
+claude mcp add eu-reg -- uvx --python 3.13 --from 'eu-reg-mcp[lint,classify]' eu-reg-mcp
 ```
-
-Without uv, run `pip install 'eu-reg-mcp[lint,classify]'` in a Python 3.13+ virtual environment and start `eu-reg-mcp` with that environment active. Install options and network use: [docs/tools.md](docs/tools.md#install).
 
 <details>
 <summary>Claude Desktop (<code>claude_desktop_config.json</code>)</summary>
@@ -37,8 +66,10 @@ Without uv, run `pip install 'eu-reg-mcp[lint,classify]'` in a Python 3.13+ virt
 }
 ```
 
-For the extras, use `"args": ["--from", "eu-reg-mcp[lint,classify]", "eu-reg-mcp"]`.
+For the extras, use `"args": ["--python", "3.13", "--from", "eu-reg-mcp[lint,classify]", "eu-reg-mcp"]`.
 </details>
+
+Without uv, run `pip install 'eu-reg-mcp[lint,classify]'` in a Python 3.13+ virtual environment and register its `eu-reg-mcp` by full path, e.g. `claude mcp add eu-reg -- /path/to/.venv/bin/eu-reg-mcp`; the environment need not be active. Install options and network use: [docs/tools.md](docs/tools.md#install).
 
 ## Example output
 
@@ -69,7 +100,11 @@ For the extras, use `"args": ["--from", "eu-reg-mcp[lint,classify]", "eu-reg-mcp
 
 `micar_register_changes(change_type="removed")` returns the same kind of cited record (snapshot date, register, entity) and notes that *"the register itself does not state why"* an entry was removed. With the extras installed, the lint and classify tools cite the provision behind each finding, for example `Anhang I Teil A MiCAR` (MiCAR Annex I, Part A), `Art. 5(1)(f) AIA`, `Annex III(4)(a) AIA`, and `Art. 51 AIA` for a general-purpose AI model with systemic risk. Sample output from synthetic inputs: [docs/tools.md](docs/tools.md#sample-lint-and-classify-output).
 
-## Tools
+## Tools and data sources
+
+An MCP server that gives AI agents **cited, review-gated grounding in EU regulation**.
+
+Five tools:
 
 | Tool | What it does | Needs |
 | --- | --- | --- |

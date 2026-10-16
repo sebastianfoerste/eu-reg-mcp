@@ -24,10 +24,10 @@ With [uv](https://docs.astral.sh/uv/), `uvx` runs the server without a separate 
 
 ```bash
 uvx eu-reg-mcp                                      # the three register tools
-uvx --from 'eu-reg-mcp[lint,classify]' eu-reg-mcp   # all five tools
+uvx --python 3.13 --from 'eu-reg-mcp[lint,classify]' eu-reg-mcp   # all five tools; the extras need Python 3.13+
 ```
 
-For one extra, name only that one: `'eu-reg-mcp[lint]'` or `'eu-reg-mcp[classify]'`. In an MCP client's JSON config, the second command is `"command": "uvx"` with `"args": ["--from", "eu-reg-mcp[lint,classify]", "eu-reg-mcp"]`.
+For one extra, name only that one: `'eu-reg-mcp[lint]'` or `'eu-reg-mcp[classify]'`. In an MCP client's JSON config, the second command is `"command": "uvx"` with `"args": ["--python", "3.13", "--from", "eu-reg-mcp[lint,classify]", "eu-reg-mcp"]`.
 
 With pip, install into a virtual environment:
 
@@ -37,13 +37,13 @@ pip install 'eu-reg-mcp[lint,classify]'   # or, without the extras: pip install 
 eu-reg-mcp                                # starts the server over stdio
 ```
 
-`uv pip install` works the same way inside the environment. The lint tool runs the linter's `micar-lint` command, which it looks up on `PATH`, so start the server with the environment active or its `bin` directory on `PATH`. Started by absolute path without that, the lint tool reports the linter as not installed. Under `uvx` the lint tool finds the command without extra setup.
+`uv pip install` works the same way inside the environment. An MCP client can start the server by full path without activating the environment: `/path/to/.venv/bin/eu-reg-mcp` (on Windows, `.venv\Scripts\eu-reg-mcp.exe`). The lint tool runs the linter's `micar-lint` command and looks for it next to the server's Python interpreter first (the environment's `bin`, or `Scripts` on Windows), then on `PATH`; failing both, it runs the installed linter package with that interpreter (`python -m micar_linter`). Before 0.1.1 it looked only on `PATH`, so the environment had to be active.
 
 ## Data sources and network use
 
-Register data comes from the [MiCAR Register Observatory](https://github.com/sebastianfoerste/micar-register-observatory), which snapshots the public ESMA register weekly (Art. 109 VO (EU) 2023/1114). The server reads the observatory's `data/latest.json` and `data/changelog.jsonl` from GitHub raw (`src/eu_reg_mcp/data.py`) and caches them in memory for one hour. The three register tools therefore need network access to GitHub; they do not contact ESMA directly. If the observatory files are unreachable, the register tools raise an error (no fallback is implemented).
+Register data comes from the [MiCAR Register Observatory](https://github.com/sebastianfoerste/micar-register-observatory), which snapshots the public ESMA register weekly (Art. 109 VO (EU) 2023/1114). The server reads the observatory's `data/latest.json` and `data/changelog.jsonl` from GitHub raw (`src/eu_reg_mcp/data.py`) and caches them in memory for one hour. The three register tools therefore need network access to GitHub; they do not contact ESMA directly. A fetch that fails with a transient error (timeout, connection error, HTTP 429 or 5xx) is tried up to three times. Each fetched copy that passes validation is also saved to disk, in `$EU_REG_MCP_CACHE_DIR` if set, else `$XDG_CACHE_HOME/eu-reg-mcp` or `~/.cache/eu-reg-mcp`. If the observatory files are unreachable or invalid, the register tools fall back to the last good copy (in memory, then on disk) and raise an error only if there is none. Before 0.1.1 a failed fetch raised an error at once, with no retry or fallback.
 
-The linter is [micar-whitepaper-linter](https://github.com/sebastianfoerste/micar-whitepaper-linter) (36 rules mapped to Annex I–III); the classifier is [eu-ai-act-classifier](https://github.com/sebastianfoerste/eu-ai-act-classifier). Both are separate packages from their own repositories, MIT-licensed like this server. Without the extras, both tools return an install hint instead of failing. The hint gives the `uvx --from` command from [Install](#install), which installs both extras; in a virtual environment, `pip install 'eu-reg-mcp[lint,classify]'` works as well.
+The linter is [micar-whitepaper-linter](https://github.com/sebastianfoerste/micar-whitepaper-linter) (36 rules mapped to Annex I–III); the classifier is [eu-ai-act-classifier](https://github.com/sebastianfoerste/eu-ai-act-classifier). Both are separate packages from their own repositories, MIT-licensed like this server. Without the extras, both tools return an install hint instead of failing. The hint gives the `uvx --from` form with both extras, the `claude mcp remove` and `claude mcp add` commands that re-register the server that way in Claude Code, and the `pip install` command for a virtual environment (see [Install](#install)).
 
 ## Sample lint and classify output
 
@@ -93,3 +93,30 @@ The linter is [micar-whitepaper-linter](https://github.com/sebastianfoerste/mica
 ```
 
 Two more profiles: workplace emotion recognition (`"prohibited_practices": ["5.1.f"]`) returns `prohibited` with `Art. 5(1)(f) AIA`; a general-purpose AI model (`"is_gpai_model": true`, `"training_flops": 3e25`) returns `Art. 51 AIA` (systemic risk, above the 10^25 FLOP presumption) with obligations under Art. 53(1)(a)–(d) and Art. 55(1)(a)–(d) AIA.
+
+## Command line and HTTP
+
+The same register tools work without an MCP client and print JSON:
+
+```bash
+uvx eu-reg-mcp search "societe generale"       # case- and accent-insensitive
+uvx eu-reg-mcp search 969500FX8K40ZDW4F377      # exact LEI
+uvx eu-reg-mcp summary
+uvx eu-reg-mcp changes --type removed --limit 10
+```
+
+To serve MCP over HTTP instead of stdio (for clients that connect by URL), run
+`uvx eu-reg-mcp --transport streamable-http --host 127.0.0.1 --port 8000`; the
+endpoint is `http://127.0.0.1:8000/mcp`. It has no authentication, so keep it on
+localhost or behind your own access control.
+
+## Verifiable answers
+
+Every register answer carries what you need to check it:
+
+- `snapshot_date`, `data_age_days` and `stale` (true when the mirrored data is
+  more than 10 days old, i.e. a weekly refresh was missed);
+- `observatory_snapshot`, the published data file the answer was computed from;
+- per result, the register `entry_id` and `esma_source_url`, the ESMA file the
+  entry came from;
+- per change record, `still_listed`: whether the entry is in the latest snapshot.
