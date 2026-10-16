@@ -1,0 +1,19 @@
+name: Register data looks wrong
+description: An answer differs from the ESMA interim MiCAR register.
+labels: [data]
+body:
+  - type: markdown
+    attributes:
+      value: The server mirrors ESMA's published register files weekly. Please include the entry id and snapshot date from the answer so the record can be traced.
+  - type: input
+    id: entry
+    attributes:
+      label: entry_id and snapshot_date from the answer
+    validations:
+      required: true
+  - type: textarea
+    id: difference
+    attributes:
+      label: What differs from the ESMA register (with a link to the ESMA source)?
+    validations:
+      required: true
