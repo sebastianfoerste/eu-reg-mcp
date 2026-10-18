@@ -9,15 +9,6 @@
 
 Scope today: the ESMA interim MiCAR register (search, summary, change tracking), MiCAR white paper linting, and EU AI Act risk-tier classification. Other EU regulation is not covered.
 
-<!--
-  Screenshot/GIF placeholder — to be added.
-  Capture a real session: Claude Code or Claude Desktop with eu-reg-mcp connected, answering
-  one of the register questions under "Try it now", with the snapshot date visible in the answer.
-  Then replace this comment and the note below with the image.
--->
-
-> *Screenshot/GIF placeholder — to be added*
-
 ## Who it's for
 
 - **Crypto-asset compliance and legal teams** looking up entities on the ESMA interim MiCAR register (white papers, authorised CASPs, non-compliant entities) and tracking what changes on it, including removals.
