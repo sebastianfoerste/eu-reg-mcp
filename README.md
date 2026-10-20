@@ -64,9 +64,9 @@ Without uv, run `pip install 'eu-reg-mcp[lint,classify]'` in a Python 3.13+ virt
 
 ## Example output
 
-> **Synthetic data.** Produced on 2026-10-14 by running this repo's register code (`register.search_entries` / `register.recent_changes`) against the **synthetic test fixtures** in `tests/fixtures/`, not the live register. The entity and its LEI are test data. Output shape is what a live call returns; values are not.
+> **Synthetic data.** Produced on 2026-10-20 by running this repo's register code (`register.search_entries` / `register.recent_changes`) against the **synthetic test fixtures** in `tests/fixtures/`, not the live register, and abridged. The entity and its LEI are invented. Fields shown are what a live call returns; values are not.
 
-`search_micar_register(query="skygate")`:
+`search_micar_register(query="network")`:
 
 ```json
 {
@@ -75,11 +75,11 @@ Without uv, run `pip install 'eu-reg-mcp[lint,classify]'` in a Python 3.13+ virt
   "results": [
     {
       "register": "other-wp",
-      "entity_name": "SKYGATE Network GmbH",
-      "lei": "984500BBFE52FE449926",
+      "entity_name": "Example Network GmbH",
+      "lei": "529900EXAMPLELEI0002",
       "member_state": "AT",
       "authority": "FMA",
-      "whitepaper_url": "WWW.SKYGATETOKEN.AT",
+      "whitepaper_url": "WWW.EXAMPLE-NETWORK.EXAMPLE",
       "format_class": "unspecified",
       "register_last_update": "30/12/2024"
     }
