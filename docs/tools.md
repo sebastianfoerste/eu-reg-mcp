@@ -96,6 +96,8 @@ Two more profiles: workplace emotion recognition (`"prohibited_practices": ["5.1
 
 ## Command line and HTTP
 
+These commands, and the answer fields under [Verifiable answers](#verifiable-answers), came after the 0.1.1 release on PyPI (`main` still carries the version number 0.1.1). With the PyPI package, `eu-reg-mcp` takes no arguments and serves MCP over stdio only. Until the next release, run them from `main` by writing `uvx --from git+https://github.com/sebastianfoerste/eu-reg-mcp eu-reg-mcp` where the examples say `uvx eu-reg-mcp`.
+
 The same register tools work without an MCP client and print JSON:
 
 ```bash
@@ -112,7 +114,7 @@ localhost or behind your own access control.
 
 ## Verifiable answers
 
-Every register answer carries what you need to check it:
+On `main` (not yet in the 0.1.1 release), every register answer carries what you need to check it:
 
 - `snapshot_date`, `data_age_days` and `stale` (true when the mirrored data is
   more than 10 days old, i.e. a weekly refresh was missed);

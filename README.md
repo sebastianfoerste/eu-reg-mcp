@@ -37,7 +37,6 @@ The first two work without extras; the third needs the `classify` extra.
 claude mcp add eu-reg -- uvx eu-reg-mcp
 ```
 
-The register tools need no API key. For all five tools, add the `lint` and `classify` extras instead:
 The register tools need no API key. For all five tools, add the `lint` and `classify` extras instead. They need Python 3.13+, and `--python 3.13` makes uv use it even where an older Python is the default:
 ```bash
 claude mcp add eu-reg -- uvx --python 3.13 --from 'eu-reg-mcp[lint,classify]' eu-reg-mcp
