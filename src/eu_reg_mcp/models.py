@@ -19,10 +19,10 @@ from pydantic import (
 )
 
 
-def _compact(node: Any) -> Any:
+def compact_schema(node: Any) -> Any:
     """Drop generated titles and null defaults; fold `X | None` into a type list."""
     if isinstance(node, list):
-        return [_compact(item) for item in node]
+        return [compact_schema(item) for item in node]
     if not isinstance(node, dict):
         return node
     out: dict[str, Any] = {}
@@ -32,9 +32,9 @@ def _compact(node: Any) -> Any:
         if key == "default" and value is None:
             continue
         if key in ("properties", "$defs"):
-            out[key] = {name: _compact(schema) for name, schema in value.items()}
+            out[key] = {name: compact_schema(schema) for name, schema in value.items()}
         else:
-            out[key] = _compact(value)
+            out[key] = compact_schema(value)
     variants = out.get("anyOf")
     if (
         isinstance(variants, list)
@@ -55,7 +55,9 @@ class _Model(BaseModel):
 
     @classmethod
     def model_json_schema(cls, *args: Any, **kwargs: Any) -> dict[str, Any]:
-        result: dict[str, Any] = _compact(super().model_json_schema(*args, **kwargs))
+        result: dict[str, Any] = compact_schema(
+            super().model_json_schema(*args, **kwargs)
+        )
         return result
 
     @model_serializer(mode="wrap")
@@ -74,6 +76,23 @@ class Provenance(_Model):
     observatory_snapshot: str
 
 
+class Match(_Model):
+    score: float = Field(
+        description="How the query string matched the name or LEI; not an "
+        "assessment of the entity."
+    )
+    basis: str
+
+
+class SimilarName(_Model):
+    entry_id: str | None
+    entity_name: str | None
+    register_: str | None = Field(alias="register")
+    member_state: str | None
+    similarity: float
+    label: str
+
+
 class RegisterEntry(_Model):
     register_: str | None = Field(alias="register")
     entry_id: str | None
@@ -85,6 +104,9 @@ class RegisterEntry(_Model):
     format_class: str | None
     register_last_update: str | None
     esma_source_url: str | None
+    match: Match | None = None
+
+    _omit_if_none = frozenset({"match"})
 
 
 class SearchResponse(Provenance):
@@ -92,6 +114,11 @@ class SearchResponse(Provenance):
     offset: int
     results: list[RegisterEntry]
     truncated: bool
+    next_offset: int | None
+    similar_names: list[SimilarName] = Field(
+        default_factory=list,
+        description="Only when nothing matched: similarly spelt names, not matches.",
+    )
     warnings: list[str] = Field(default_factory=list)
     notice: str
 
@@ -132,7 +159,9 @@ class ChangeRecord(_Model):
 
 class ChangesResponse(Provenance):
     total_changes: int
+    offset: int
     changes: list[ChangeRecord]
+    next_offset: int | None
     changelog_source: str
     warnings: list[str] = Field(default_factory=list)
     notice: str

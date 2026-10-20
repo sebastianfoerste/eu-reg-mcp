@@ -108,3 +108,32 @@ def test_changes_flag_whether_entry_is_still_listed():
     for record in result["changes"]:
         assert record["still_listed"] == (record["entry_id"] in listed)
     assert "still_listed" not in recent_changes(CHANGELOG)["changes"][0]
+
+
+def test_change_filters():
+    from datetime import date
+
+    def ids(**filters):
+        return [c["entry_id"] for c in recent_changes(CHANGELOG, **filters)["changes"]]
+
+    assert ids(since=date(2026, 7, 14)) == ["a3", "c9"]
+    assert ids(until=date(2026, 7, 13)) == []
+    assert ids(member_state="mt") == ["c9"]
+    assert ids(entity="former example") == ["a3"]
+    assert ids(entry_id="c9") == ["c9"]
+    assert ids(register="casps") == []
+
+
+def test_change_paging_reports_next_offset():
+    first = recent_changes(CHANGELOG, limit=1)
+    assert first["offset"] == 0 and first["next_offset"] == 1
+    second = recent_changes(CHANGELOG, limit=1, offset=1)
+    assert second["next_offset"] is None
+    assert first["changes"][0] != second["changes"][0]
+
+
+def test_search_reports_next_offset_and_match_basis():
+    result = search_entries(SNAPSHOT, "example issuer gmbh")
+    assert result["next_offset"] is None
+    assert result["results"][0]["match"] == {"score": 1.0, "basis": "exact_name"}
+    assert search_entries(SNAPSHOT, "")["results"][0]["match"] is None

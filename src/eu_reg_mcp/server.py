@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 from collections.abc import Callable, Sequence
+from datetime import date
 from typing import Any, Literal
 
 from mcp.server.fastmcp import FastMCP
@@ -104,12 +105,10 @@ def search_micar_register(
 ) -> models.SearchResponse:
     """Search the ESMA interim MiCAR register by entity name or LEI.
 
-    query: entity-name substring (case- and accent-insensitive) or an exact LEI.
-    Each result carries its entry_id and the ESMA source file; the response
-    states the snapshot date, data_age_days and a stale flag.
-    register_slug: all | other-wp | emt-wp | art-wp | casps | ncasp.
-    member_state: optional two-letter code (DE, IE, MT, ...).
-    offset: skip this many matches (results come 25 at a time; see truncated).
+    query: name substring (ignores case and accents) or exact LEI. Ranked
+    results carry entry_id, ESMA file and match basis. No match:
+    similar_names lists close spellings (not matches). member_state: two-letter
+    code. 25 per page: offset, next_offset.
     """
     snapshot = _load(data.load_snapshot)
     result = register.search_entries(
@@ -120,25 +119,41 @@ def search_micar_register(
 
 @mcp.tool(title="MiCAR register summary", annotations=READ_ONLY)
 def micar_register_summary() -> models.SummaryResponse:
-    """Current totals per MiCAR register and white paper format coverage."""
+    """Totals per MiCAR register and white paper format coverage."""
     result = register.summarize(_load(data.load_snapshot))
     return models.SummaryResponse.model_validate(_with_warnings(result))
 
 
 @mcp.tool(title="MiCAR register changes", annotations=READ_ONLY)
 def micar_register_changes(
-    limit: int = 50, change_type: ChangeType = "all"
+    limit: int = 50,
+    change_type: ChangeType = "all",
+    since: date | None = None,
+    until: date | None = None,
+    register_slug: RegisterSlug = "all",
+    member_state: str = "",
+    entity: str = "",
+    entry_id: str = "",
+    offset: int = 0,
 ) -> models.ChangesResponse:
-    """Recent register movement: new filings, changed entries, removals.
+    """Register changes, newest first: additions, changes, removals.
 
-    change_type: all | added | changed | removed.
-    Each record says whether the entry is still listed in the latest snapshot.
+    Filters: change_type, since/until (snapshot date), register_slug,
+    member_state, entity (name), entry_id. Pages: offset, next_offset.
+    still_listed: entry in latest snapshot.
     """
     result = register.recent_changes(
         _load(data.load_changelog),
         limit,
         change_type,
         snapshot=_load(data.load_snapshot),
+        since=since,
+        until=until,
+        register=register_slug,
+        member_state=member_state,
+        entity=entity,
+        entry_id=entry_id,
+        offset=offset,
     )
     return models.ChangesResponse.model_validate(_with_warnings(result))
 
@@ -147,24 +162,30 @@ def micar_register_changes(
 def lint_micar_whitepaper(whitepaper_json: str) -> models.LintResponse:
     """Lint a draft MiCAR white paper (JSON) against Annex I-III rules.
 
-    Returns cited candidate findings pending human review. Requires the
-    optional `lint` extra; degrades to an install hint when absent.
+    Returns cited candidate findings pending human review. Needs the `lint`
+    extra.
     """
     return models.LintResponse.model_validate(
         integrations.lint_whitepaper(whitepaper_json)
     )
 
 
-@mcp.tool(title="Classify an AI system (EU AI Act)", annotations=LOCAL_READ_ONLY)
+@mcp.tool(title="Classify an AI system (AI Act)", annotations=LOCAL_READ_ONLY)
 def classify_eu_ai_act_system(profile_json: str = "") -> models.ClassifyResponse:
     """Classify an AI system's EU AI Act risk tier with pinpoint citations.
 
-    Pass a SystemProfile as JSON; pass an empty string to get the schema.
-    Requires the optional `classify` extra; degrades to an install hint.
+    Pass a SystemProfile as JSON, or an empty string for the schema.
+    Needs the `classify` extra.
     """
     return models.ClassifyResponse.model_validate(
         integrations.classify_ai_system(profile_json)
     )
+
+
+# Generated parameter titles ("Register Slug") repeat the names; dropping them
+# keeps tools/list small. Tool.parameters is the inputSchema FastMCP lists.
+for _tool in mcp._tool_manager.list_tools():
+    _tool.parameters = models.compact_schema(_tool.parameters)
 
 
 def _print(result: BaseModel | dict[str, Any]) -> None:
@@ -204,10 +225,17 @@ def main(argv: list[str] | None = None) -> None:
     )
     sub.add_parser("summary", help="Totals per register and white paper formats.")
     changes = sub.add_parser("changes", help="Recent register changes.")
-    changes.add_argument("--limit", type=int, default=20)
+    changes.add_argument("--limit", type=int, default=50)
     changes.add_argument(
         "--type", default="all", choices=["all", "added", "changed", "removed"]
     )
+    changes.add_argument("--since", type=date.fromisoformat, help="YYYY-MM-DD.")
+    changes.add_argument("--until", type=date.fromisoformat, help="YYYY-MM-DD.")
+    changes.add_argument("--register", default="all", choices=REGISTER_SLUGS)
+    changes.add_argument("--member-state", default="")
+    changes.add_argument("--entity", default="", help="Entity-name substring.")
+    changes.add_argument("--entry-id", default="")
+    changes.add_argument("--offset", type=int, default=0)
     args = parser.parse_args(argv)
 
     try:
@@ -227,7 +255,19 @@ def _run(args: argparse.Namespace) -> None:
     elif args.command == "summary":
         _print(micar_register_summary())
     elif args.command == "changes":
-        _print(micar_register_changes(args.limit, args.type))
+        _print(
+            micar_register_changes(
+                args.limit,
+                args.type,
+                args.since,
+                args.until,
+                args.register,
+                args.member_state,
+                args.entity,
+                args.entry_id,
+                args.offset,
+            )
+        )
     elif args.transport == "streamable-http":
         mcp.settings.host = args.host
         mcp.settings.port = args.port

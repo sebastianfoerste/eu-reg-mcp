@@ -157,3 +157,39 @@ def test_cli_rejects_unknown_register(capsys):
     with pytest.raises(SystemExit) as exit_info:
         server.main(["search", "x", "--register", "nope"])
     assert exit_info.value.code == 2
+
+
+def test_change_filters_over_mcp(offline_data):
+    tool, result = call(
+        "micar_register_changes", {"since": "2026-07-14", "member_state": "AT"}
+    )
+    jsonschema.validate(result.structuredContent, tool.outputSchema)
+    assert [c["entry_id"] for c in result.structuredContent["changes"]] == ["a3"]
+    assert result.structuredContent["changes"][0]["still_listed"] is False
+
+
+def test_bad_date_is_invalid_input(offline_data):
+    _, result = call("micar_register_changes", {"since": "last week"})
+    assert "since" in assert_error(result, "invalid_input")["error"]
+
+
+def test_cli_changes_filters(offline_data, capsys):
+    server.main(["changes", "--since", "2026-07-14", "--entity", "new issuer"])
+    out = json.loads(capsys.readouterr().out)
+    assert [c["entry_id"] for c in out["changes"]] == ["c9"]
+
+
+def test_tools_list_input_side_stays_within_budget():
+    # Names, titles, descriptions and inputSchemas: what a model reads to pick a
+    # tool. 2,904 bytes was the pre-typed-output baseline (2026-10-20).
+    async def run():
+        async with create_connected_server_and_client_session(server.mcp) as client:
+            return (await client.list_tools()).tools
+
+    listed = [
+        tool.model_dump(by_alias=True, exclude_none=True, mode="json")
+        for tool in anyio.run(run)
+    ]
+    for tool in listed:
+        tool.pop("outputSchema", None)
+    assert len(json.dumps(listed, separators=(",", ":"))) <= 2904
