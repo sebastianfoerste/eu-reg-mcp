@@ -139,6 +139,7 @@ def recent_changes(
     limit: int = 50,
     change_type: str = "all",
     snapshot: dict[str, Any] | None = None,
+    today: date | None = None,
 ) -> dict[str, Any]:
     records = [
         record
@@ -153,6 +154,7 @@ def recent_changes(
         for record in page:
             record["still_listed"] = record.get("entry_id") in listed
     return {
+        **_provenance(snapshot or {}, today),
         "total_changes": len(records),
         "changes": page,
         "changelog_source": f"{OBSERVATORY_DATA_URL}/changelog.jsonl",

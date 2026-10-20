@@ -129,6 +129,9 @@ def main(argv: list[str] | None = None) -> None:
         help="all | other-wp | emt-wp | art-wp | casps | ncasp",
     )
     search.add_argument("--member-state", default="", help="Two-letter code, e.g. DE.")
+    search.add_argument(
+        "--offset", type=int, default=0, help="Skip this many matches (25 per page)."
+    )
     sub.add_parser("summary", help="Totals per register and white paper formats.")
     changes = sub.add_parser("changes", help="Recent register changes.")
     changes.add_argument("--limit", type=int, default=20)
@@ -138,7 +141,11 @@ def main(argv: list[str] | None = None) -> None:
     args = parser.parse_args(argv)
 
     if args.command == "search":
-        _print(search_micar_register(args.query, args.register, args.member_state))
+        _print(
+            search_micar_register(
+                args.query, args.register, args.member_state, args.offset
+            )
+        )
     elif args.command == "summary":
         _print(micar_register_summary())
     elif args.command == "changes":

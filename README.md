@@ -37,8 +37,8 @@ The first two work without extras; the third needs the `classify` extra.
 claude mcp add eu-reg -- uvx eu-reg-mcp
 ```
 
-The register tools need no API key. For all five tools, add the `lint` and `classify` extras instead:
 The register tools need no API key. For all five tools, add the `lint` and `classify` extras instead. They need Python 3.13+, and `--python 3.13` makes uv use it even where an older Python is the default:
+
 ```bash
 claude mcp add eu-reg -- uvx --python 3.13 --from 'eu-reg-mcp[lint,classify]' eu-reg-mcp
 ```
@@ -64,9 +64,9 @@ Without uv, run `pip install 'eu-reg-mcp[lint,classify]'` in a Python 3.13+ virt
 
 ## Example output
 
-> **Synthetic data.** Produced on 2026-10-14 by running this repo's register code (`register.search_entries` / `register.recent_changes`) against the **synthetic test fixtures** in `tests/fixtures/`, not the live register. The entity and its LEI are test data. Output shape is what a live call returns; values are not.
+> **Synthetic data.** Produced on 2026-10-20 by running this repo's register code (`register.search_entries` / `register.recent_changes`) against the **synthetic test fixtures** in `tests/fixtures/`, not the live register. The entities and LEIs are fictional test data. Output shape is what a live call returns; values are not.
 
-`search_micar_register(query="skygate")`:
+`search_micar_register(query="sample ledger")` (abridged: `entry_id`, `esma_source_url`, `data_age_days`, `stale` and `observatory_snapshot` omitted):
 
 ```json
 {
@@ -75,11 +75,11 @@ Without uv, run `pip install 'eu-reg-mcp[lint,classify]'` in a Python 3.13+ virt
   "results": [
     {
       "register": "other-wp",
-      "entity_name": "SKYGATE Network GmbH",
-      "lei": "984500BBFE52FE449926",
+      "entity_name": "Sample Ledger Labs GmbH",
+      "lei": "529900EXAMPLELEI0002",
       "member_state": "AT",
       "authority": "FMA",
-      "whitepaper_url": "WWW.SKYGATETOKEN.AT",
+      "whitepaper_url": "WWW.SAMPLE-LEDGER.EXAMPLE",
       "format_class": "unspecified",
       "register_last_update": "30/12/2024"
     }

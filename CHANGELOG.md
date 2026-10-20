@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- `micar_register_changes` now states `snapshot_date`, `data_age_days`, `stale` and `observatory_snapshot`, like search and summary.
+- CLI `search --offset` pages through matches.
+- Test fixtures and the README example use only fictional entities and example LEIs; a fixture row that copied a live register entry is gone.
 - Register answers are verifiable: each result carries its `entry_id` and the ESMA source file (`esma_source_url`); responses state `snapshot_date`, `data_age_days`, `stale` and the observatory data file used.
 - Change records carry `still_listed` (is the entry in the latest snapshot).
 - Name search is case- and accent-insensitive ("societe" finds "Société").

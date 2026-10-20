@@ -14,9 +14,9 @@ CHANGELOG = [
 
 
 def test_search_by_name_substring():
-    result = search_entries(SNAPSHOT, "skygate")
+    result = search_entries(SNAPSHOT, "sample ledger")
     assert result["total_matches"] == 1
-    assert result["results"][0]["entity_name"] == "SKYGATE Network GmbH"
+    assert result["results"][0]["entity_name"] == "Sample Ledger Labs GmbH"
     assert "notice" in result
 
 
@@ -53,7 +53,7 @@ def test_changes_exclude_baseline_and_filter_by_type():
     assert result["changes"][0]["change"] in {"added", "removed"}
     removed = recent_changes(CHANGELOG, change_type="removed")
     assert removed["total_changes"] == 1
-    assert removed["changes"][0]["entity_name"] == "SKYGATE Network GmbH"
+    assert removed["changes"][0]["entity_name"] == "Former Example Token AG"
 
 
 def test_search_is_accent_and_case_insensitive():
@@ -68,20 +68,20 @@ def test_search_is_accent_and_case_insensitive():
                     {
                         "entry_id": "x1",
                         "register_slug": "casps",
-                        "entity_name": "Société Générale-Forge",
+                        "entity_name": "Société Exemple-Forge",
                     }
                 ],
             }
         ],
     }
-    assert search_entries(accented, "SOCIETE generale")["total_matches"] == 1
+    assert search_entries(accented, "SOCIETE exemple")["total_matches"] == 1
     assert search_entries(accented, "société")["total_matches"] == 1
 
 
 def test_search_results_are_verifiable():
     from datetime import date
 
-    result = search_entries(SNAPSHOT, "skygate", today=date(2026, 7, 10))
+    result = search_entries(SNAPSHOT, "sample ledger", today=date(2026, 7, 10))
     hit = result["results"][0]
     assert hit["entry_id"]
     assert hit["esma_source_url"].startswith("https://")

@@ -10,7 +10,7 @@
 
 ## Parameters
 
-- `search_micar_register(query, register_slug="all", member_state="")` — `query` is a case-insensitive entity-name substring or an exact LEI; `register_slug` is one of `all | other-wp | emt-wp | art-wp | casps | ncasp`; `member_state` is an optional two-letter code (DE, IE, MT, …).
+- `search_micar_register(query, register_slug="all", member_state="", offset=0)` — `query` is a case-insensitive entity-name substring or an exact LEI; `register_slug` is one of `all | other-wp | emt-wp | art-wp | casps | ncasp`; `member_state` is an optional two-letter code (DE, IE, MT, …); `offset` skips that many matches (results come 25 at a time; `truncated` says whether more follow).
 - `micar_register_summary()` — no parameters.
 - `micar_register_changes(limit=50, change_type="all")` — `change_type` is `all | added | changed | removed`.
 - `lint_micar_whitepaper(whitepaper_json)` — a draft white paper as a JSON string.
@@ -99,8 +99,9 @@ Two more profiles: workplace emotion recognition (`"prohibited_practices": ["5.1
 The same register tools work without an MCP client and print JSON:
 
 ```bash
-uvx eu-reg-mcp search "societe generale"       # case- and accent-insensitive
-uvx eu-reg-mcp search 969500FX8K40ZDW4F377      # exact LEI
+uvx eu-reg-mcp search "<entity name>"          # case- and accent-insensitive substring
+uvx eu-reg-mcp search "<20-character LEI>"     # exact LEI
+uvx eu-reg-mcp search "<entity name>" --offset 25   # next page of 25
 uvx eu-reg-mcp summary
 uvx eu-reg-mcp changes --type removed --limit 10
 ```
@@ -115,7 +116,8 @@ localhost or behind your own access control.
 Every register answer carries what you need to check it:
 
 - `snapshot_date`, `data_age_days` and `stale` (true when the mirrored data is
-  more than 10 days old, i.e. a weekly refresh was missed);
+  more than 10 days old, i.e. a weekly refresh was missed), on search, summary
+  and changes alike;
 - `observatory_snapshot`, the published data file the answer was computed from;
 - per result, the register `entry_id` and `esma_source_url`, the ESMA file the
   entry came from;
