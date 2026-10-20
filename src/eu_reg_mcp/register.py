@@ -130,6 +130,42 @@ def _looks_like_lei(needle: str) -> bool:
     return bool(re.fullmatch(r"[0-9a-z]{20}", needle))
 
 
+def _sources(snapshot: dict[str, Any]) -> dict[Any, Any]:
+    return {
+        reg.get("slug"): reg.get("source_url") for reg in snapshot.get("registers", [])
+    }
+
+
+def _row(entry: dict[str, Any], sources: dict[Any, Any]) -> dict[str, Any]:
+    """An entry as answers show it, with the ESMA file it came from."""
+    return {
+        "register": entry.get("register_slug"),
+        "entry_id": entry.get("entry_id"),
+        "entity_name": entry.get("entity_name"),
+        "lei": entry.get("lei"),
+        "member_state": entry.get("member_state"),
+        "authority": entry.get("authority"),
+        "whitepaper_url": entry.get("wp_url"),
+        "format_class": entry.get("format_class"),
+        "register_last_update": entry.get("last_update"),
+        "esma_source_url": sources.get(entry.get("register_slug")),
+    }
+
+
+def get_entry(
+    snapshot: dict[str, Any], entry_id: str, today: date | None = None
+) -> dict[str, Any] | None:
+    """One register entry by entry_id, or None when the snapshot lacks it."""
+    for entry in _all_entries(snapshot):
+        if entry.get("entry_id") == entry_id:
+            return {
+                **_provenance(snapshot, today),
+                "entry": _row(entry, _sources(snapshot)),
+                "notice": NOTICE,
+            }
+    return None
+
+
 def search_entries(
     snapshot: dict[str, Any],
     query: str,
@@ -141,9 +177,7 @@ def search_entries(
     needle = _fold(query)
     state = member_state.strip().upper()
     offset = max(0, offset)
-    sources = {
-        reg.get("slug"): reg.get("source_url") for reg in snapshot.get("registers", [])
-    }
+    sources = _sources(snapshot)
     in_scope = [
         entry
         for entry in _all_entries(snapshot)
@@ -163,16 +197,7 @@ def search_entries(
     ranked.sort(key=lambda item: (item[0], item[1]))
     matches = [
         {
-            "register": entry.get("register_slug"),
-            "entry_id": entry.get("entry_id"),
-            "entity_name": entry.get("entity_name"),
-            "lei": entry.get("lei"),
-            "member_state": entry.get("member_state"),
-            "authority": entry.get("authority"),
-            "whitepaper_url": entry.get("wp_url"),
-            "format_class": entry.get("format_class"),
-            "register_last_update": entry.get("last_update"),
-            "esma_source_url": sources.get(entry.get("register_slug")),
+            **_row(entry, sources),
             "match": {"score": hit[0], "basis": hit[1]} if hit else None,
         }
         for _, _, hit, entry in ranked

@@ -13,8 +13,8 @@ from mcp.server.fastmcp.exceptions import ToolError
 from mcp.types import CallToolResult, ContentBlock, ToolAnnotations
 from pydantic import BaseModel, ValidationError
 
-from eu_reg_mcp import data, integrations, models, register
-from eu_reg_mcp.errors import ToolFailure
+from eu_reg_mcp import __version__, data, integrations, models, register
+from eu_reg_mcp.errors import ERROR_CODES, ToolFailure
 from eu_reg_mcp.integrations import REVIEW_NOTICE
 
 REGISTER_TOOLS = frozenset(
@@ -65,6 +65,10 @@ mcp = _Server(
 )
 
 
+# serverInfo.version would otherwise report the SDK's version.
+mcp._mcp_server.version = __version__
+
+
 RegisterSlug = Literal["all", "other-wp", "emt-wp", "art-wp", "casps", "ncasp"]
 ChangeType = Literal["all", "added", "changed", "removed"]
 REGISTER_SLUGS: tuple[str, ...] = RegisterSlug.__args__  # type: ignore[attr-defined]
@@ -93,7 +97,9 @@ def _load[T](loader: Callable[[], T]) -> T:
 
 
 def _with_warnings(result: dict[str, Any]) -> dict[str, Any]:
-    return {**result, "warnings": data.fallback_warnings()}
+    """Add cached-fallback warnings, keeping `notice` the last key."""
+    body = {key: value for key, value in result.items() if key != "notice"}
+    return {**body, "warnings": data.fallback_warnings(), "notice": result["notice"]}
 
 
 @mcp.tool(title="Search the MiCAR register", annotations=READ_ONLY)
@@ -121,6 +127,11 @@ def search_micar_register(
 def micar_register_summary() -> models.SummaryResponse:
     """Totals per MiCAR register and white paper format coverage."""
     result = register.summarize(_load(data.load_snapshot))
+    return models.SummaryResponse.model_validate(_with_warnings(result))
+
+
+def _summary_answer() -> models.SummaryResponse:
+    result = register.summarize(_resource_load(data.load_snapshot))
     return models.SummaryResponse.model_validate(_with_warnings(result))
 
 
@@ -179,6 +190,122 @@ def classify_eu_ai_act_system(profile_json: str = "") -> models.ClassifyResponse
     """
     return models.ClassifyResponse.model_validate(
         integrations.classify_ai_system(profile_json)
+    )
+
+
+def _json(result: BaseModel | dict[str, Any]) -> str:
+    if isinstance(result, BaseModel):
+        result = result.model_dump(mode="json")
+    return json.dumps(result, ensure_ascii=False, indent=2)
+
+
+def _resource_load[T](loader: Callable[[], T]) -> T:
+    # Resource errors are protocol errors; keep the code in the message.
+    try:
+        return _load(loader)
+    except ToolFailure as failure:
+        raise ValueError(f"{failure.code}: {failure.message}") from failure
+
+
+@mcp.resource(
+    "eu-reg://about",
+    title="About this server",
+    description="Version, data sources, network use, error codes and notices.",
+    mime_type="application/json",
+)
+def about() -> str:
+    return _json(
+        {
+            "name": "eu-reg-mcp",
+            "version": __version__,
+            "data_sources": {
+                "snapshot": data.LATEST_URL,
+                "changelog": data.CHANGELOG_URL,
+            },
+            "outbound_hosts": ["raw.githubusercontent.com"],
+            "stale_after_days": register.STALE_AFTER_DAYS,
+            "extras": {
+                "lint": integrations.linter_available(),
+                "classify": integrations.classifier_available(),
+            },
+            "error_codes": list(ERROR_CODES),
+            "notices": {"register": register.NOTICE, "review": REVIEW_NOTICE},
+        }
+    )
+
+
+@mcp.resource(
+    "micar://summary",
+    title="MiCAR register summary",
+    description="Same answer as micar_register_summary.",
+    mime_type="application/json",
+)
+def summary_resource() -> str:
+    return _json(_summary_answer())
+
+
+@mcp.resource(
+    "micar://changes",
+    title="Latest MiCAR register changes",
+    description="The 50 newest changes; micar_register_changes filters and pages.",
+    mime_type="application/json",
+)
+def changes_resource() -> str:
+    result = register.recent_changes(
+        _resource_load(data.load_changelog),
+        snapshot=_resource_load(data.load_snapshot),
+    )
+    return _json(models.ChangesResponse.model_validate(_with_warnings(result)))
+
+
+@mcp.resource(
+    "micar://entry/{entry_id}",
+    title="MiCAR register entry",
+    description="One entry by the entry_id that search results carry.",
+    mime_type="application/json",
+)
+def entry_resource(entry_id: str) -> str:
+    found = register.get_entry(_resource_load(data.load_snapshot), entry_id)
+    if found is None:
+        raise ValueError(
+            f"entry_id {entry_id!r} is not in the latest snapshot; it may have "
+            "been removed (see micar_register_changes) or never existed."
+        )
+    return _json(_with_warnings(found))
+
+
+@mcp.prompt(
+    title="Check an entity's MiCAR register status",
+    description="Look an entity up and report the register facts with their date.",
+)
+def check_register_status(entity: str) -> str:
+    return (
+        f"Look up {entity!r} on the ESMA interim MiCAR register with the "
+        "search_micar_register tool (use the LEI if you know it). Report, for "
+        "each matching result: the register, entry_id, entity_name, "
+        "member_state and esma_source_url, and state the snapshot_date. If "
+        "stale is true, say first that the data may be out of date. If nothing "
+        "matched, say so plainly; similar_names are not matches and may be "
+        "mentioned only as names to check. Report register facts only: do not "
+        "assess whether the entity is authorised, compliant or trustworthy. "
+        f"End with this notice: {register.NOTICE}"
+    )
+
+
+@mcp.prompt(
+    title="Review recent MiCAR register changes",
+    description="Summarise register changes since a date, with removals unexplained.",
+)
+def review_register_changes(since: str = "") -> str:
+    window = f" with since={since!r}" if since else ""
+    return (
+        f"Call micar_register_changes{window} and summarise the changes by "
+        "type and register, stating the snapshot_date of the answer and the "
+        "snapshot date of each change. For each removal, say that the entry "
+        "left the register export and that the register itself does not state "
+        "why; do not suggest a reason. Use still_listed to say whether an "
+        "entry is listed today. Report register facts only, with no legal "
+        f"assessment of any entity. End with this notice: {register.NOTICE}"
     )
 
 

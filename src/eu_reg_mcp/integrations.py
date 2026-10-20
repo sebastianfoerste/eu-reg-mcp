@@ -65,6 +65,17 @@ def _linter_command() -> list[str] | None:
 LINT_TIMEOUT_SECONDS = 120
 
 
+def linter_available() -> bool:
+    return _linter_command() is not None
+
+
+def classifier_available() -> bool:
+    try:
+        return importlib.util.find_spec("eu_ai_act_classifier.local_api") is not None
+    except (ImportError, ValueError):
+        return False
+
+
 def _parse_object(raw: str, argument: str) -> dict[str, Any]:
     try:
         payload = json.loads(raw)

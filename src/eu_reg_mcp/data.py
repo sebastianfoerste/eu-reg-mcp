@@ -18,13 +18,17 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+from eu_reg_mcp import __version__
+
 OBSERVATORY_RAW = (
     "https://raw.githubusercontent.com/sebastianfoerste/micar-register-observatory/main"
 )
 LATEST_URL = f"{OBSERVATORY_RAW}/data/latest.json"
 CHANGELOG_URL = f"{OBSERVATORY_RAW}/data/changelog.jsonl"
 
-USER_AGENT = "eu-reg-mcp/0.1 (+https://github.com/sebastianfoerste/eu-reg-mcp)"
+USER_AGENT = (
+    f"eu-reg-mcp/{__version__} (+https://github.com/sebastianfoerste/eu-reg-mcp)"
+)
 
 CACHE_TTL_SECONDS = 3600  # register moves weekly; an hour is generous
 FETCH_ATTEMPTS = 3
