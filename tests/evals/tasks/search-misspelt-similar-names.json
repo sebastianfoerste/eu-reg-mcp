@@ -1,0 +1,19 @@
+{
+  "id": "search-misspelt-similar-names",
+  "description": "A misspelt name matches nothing; similar_names offers the close spelling, labelled not a match.",
+  "setup": "fixtures",
+  "call": {
+    "tool": "search_micar_register",
+    "arguments": {
+      "query": "exampel issuer"
+    }
+  },
+  "expect": {
+    "isError": false,
+    "equals": {
+      "total_matches": 0,
+      "similar_names.0.entry_id": "a1",
+      "similar_names.0.label": "not a match"
+    }
+  }
+}

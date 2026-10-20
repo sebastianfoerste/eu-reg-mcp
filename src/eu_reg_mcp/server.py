@@ -20,6 +20,8 @@ from eu_reg_mcp.integrations import REVIEW_NOTICE
 REGISTER_TOOLS = frozenset(
     {"search_micar_register", "micar_register_summary", "micar_register_changes"}
 )
+# Register errors answer without a snapshot; they say so instead of omitting it.
+NO_SNAPSHOT = {"snapshot_date": None, "data_age_days": None, "stale": None}
 
 
 class _Server(FastMCP):
@@ -44,11 +46,19 @@ def _invalid_arguments(tool: str, error: ValidationError) -> ToolFailure:
         f"{'.'.join(str(part) for part in item['loc'])}: {item['msg']}"
         for item in error.errors()
     )
+    if tool in REGISTER_TOOLS:
+        return ToolFailure(
+            "invalid_input",
+            f"Invalid arguments: {problems}",
+            hint="See the tool's inputSchema for allowed values.",
+            notice=register.NOTICE,
+            extra=NO_SNAPSHOT,
+        )
     return ToolFailure(
         "invalid_input",
         f"Invalid arguments: {problems}",
         hint="See the tool's inputSchema for allowed values.",
-        notice=register.NOTICE if tool in REGISTER_TOOLS else REVIEW_NOTICE,
+        notice=REVIEW_NOTICE,
     )
 
 
@@ -92,7 +102,7 @@ def _load[T](loader: Callable[[], T]) -> T:
                 "fetched and no cached copy exists. Check network access and retry."
             ),
             notice=register.NOTICE,
-            extra={"snapshot_date": None, "data_age_days": None, "stale": None},
+            extra=NO_SNAPSHOT,
         ) from error
 
 

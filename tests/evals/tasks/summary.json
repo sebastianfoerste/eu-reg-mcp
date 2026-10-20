@@ -1,0 +1,17 @@
+{
+  "id": "summary",
+  "description": "Totals per register with provenance.",
+  "setup": "fixtures",
+  "call": {
+    "tool": "micar_register_summary",
+    "arguments": {}
+  },
+  "expect": {
+    "isError": false,
+    "equals": {
+      "registers.0.register": "other-wp",
+      "registers.0.entries": 2,
+      "snapshot_date": "2026-07-07"
+    }
+  }
+}

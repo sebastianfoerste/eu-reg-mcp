@@ -144,13 +144,13 @@ A failed call returns `isError: true` with this object (also as text):
 
 | `code` | When |
 | --- | --- |
-| `data_unavailable` | Register data could not be fetched and no cached copy exists (register errors also carry `snapshot_date`, `data_age_days` and `stale` as `null`) |
+| `data_unavailable` | Register data could not be fetched and no cached copy exists |
 | `extra_missing` | The `lint` or `classify` extra is not installed; `hint` says how to add it, `available` is `false` |
 | `invalid_input` | Arguments failed validation (e.g. an unknown `register_slug`), the JSON did not parse or is not an object, or the SystemProfile is invalid |
 | `upstream_failed` | The linter failed or printed something other than JSON (`raw_output` holds the first 5,000 characters) |
 | `timeout` | The linter did not finish within 120 seconds |
 
-`hint` is present when there is a concrete next step. The CLI prints the same
+Errors from the three register tools also carry `snapshot_date`, `data_age_days` and `stale` as `null`: there was no snapshot behind the answer. `hint` is present when there is a concrete next step. The CLI prints the same
 object and exits with status 1; an unknown `--register` is rejected with
 status 2. Before this change, register failures were plain-text errors without
 a code, and a missing extra or invalid JSON returned an ordinary result with

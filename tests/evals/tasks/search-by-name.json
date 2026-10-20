@@ -1,0 +1,25 @@
+{
+  "id": "search-by-name",
+  "description": "A partial name finds the fictional issuer first, dated and with its notice.",
+  "setup": "fixtures",
+  "call": {
+    "tool": "search_micar_register",
+    "arguments": {
+      "query": "example issuer"
+    }
+  },
+  "expect": {
+    "isError": false,
+    "equals": {
+      "results.0.entry_id": "a1",
+      "results.0.match.basis": "name_without_legal_form",
+      "snapshot_date": "2026-07-07"
+    },
+    "present": [
+      "data_age_days",
+      "stale",
+      "results.0.esma_source_url",
+      "notice"
+    ]
+  }
+}
