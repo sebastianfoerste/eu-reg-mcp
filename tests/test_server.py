@@ -36,14 +36,18 @@ def test_tools_are_registered():
     }
 
 
+def dump(model):
+    return model.model_dump(mode="json")
+
+
 def test_search_tool_end_to_end():
-    result = server.search_micar_register("sample ledger")
+    result = dump(server.search_micar_register("sample ledger"))
     assert result["total_matches"] == 1
 
 
 def test_summary_and_changes_tools():
-    assert server.micar_register_summary()["snapshot_date"] == "2026-07-07"
-    assert server.micar_register_changes(limit=5)["total_changes"] == 2
+    assert dump(server.micar_register_summary())["snapshot_date"] == "2026-07-07"
+    assert dump(server.micar_register_changes(limit=5))["total_changes"] == 2
 
 
 def test_cli_search_prints_json(capsys):
@@ -94,8 +98,8 @@ def test_tools_declare_read_only_and_enums():
 
 
 def test_search_paging():
-    first = server.search_micar_register("", offset=0)
-    second = server.search_micar_register("", offset=1)
+    first = dump(server.search_micar_register("", offset=0))
+    second = dump(server.search_micar_register("", offset=1))
     assert first["total_matches"] == second["total_matches"]
     if first["total_matches"] > 1:
         assert first["results"][1] == second["results"][0]
@@ -103,7 +107,7 @@ def test_search_paging():
 
 
 def test_changes_tool_states_snapshot_provenance():
-    result = server.micar_register_changes(limit=5)
+    result = dump(server.micar_register_changes(limit=5))
     assert result["snapshot_date"] == "2026-07-07"
     assert {"data_age_days", "stale", "observatory_snapshot"} <= result.keys()
     assert result["notice"]

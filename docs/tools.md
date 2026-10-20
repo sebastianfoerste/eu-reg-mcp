@@ -43,7 +43,7 @@ eu-reg-mcp                                # starts the server over stdio
 
 Register data comes from the [MiCAR Register Observatory](https://github.com/sebastianfoerste/micar-register-observatory), which snapshots the public ESMA register weekly (Art. 109 VO (EU) 2023/1114). The server reads the observatory's `data/latest.json` and `data/changelog.jsonl` from GitHub raw (`src/eu_reg_mcp/data.py`) and caches them in memory for one hour. The three register tools therefore need network access to GitHub; they do not contact ESMA directly. A fetch that fails with a transient error (timeout, connection error, HTTP 429 or 5xx) is tried up to three times. Each fetched copy that passes validation is also saved to disk, in `$EU_REG_MCP_CACHE_DIR` if set, else `$XDG_CACHE_HOME/eu-reg-mcp` or `~/.cache/eu-reg-mcp`. If the observatory files are unreachable or invalid, the register tools fall back to the last good copy (in memory, then on disk) and raise an error only if there is none. Before 0.1.1 a failed fetch raised an error at once, with no retry or fallback.
 
-The linter is [micar-whitepaper-linter](https://github.com/sebastianfoerste/micar-whitepaper-linter) (36 rules mapped to Annex I–III); the classifier is [eu-ai-act-classifier](https://github.com/sebastianfoerste/eu-ai-act-classifier). Both are separate packages from their own repositories, MIT-licensed like this server. Without the extras, both tools return an install hint instead of failing. The hint gives the `uvx --from` form with both extras, the `claude mcp remove` and `claude mcp add` commands that re-register the server that way in Claude Code, and the `pip install` command for a virtual environment (see [Install](#install)).
+The linter is [micar-whitepaper-linter](https://github.com/sebastianfoerste/micar-whitepaper-linter) (36 rules mapped to Annex I–III); the classifier is [eu-ai-act-classifier](https://github.com/sebastianfoerste/eu-ai-act-classifier). Both are separate packages from their own repositories, MIT-licensed like this server. Without the extras, both tools return an `extra_missing` error whose `hint` says how to install them. The hint gives the `uvx --from` form with both extras, the `claude mcp remove` and `claude mcp add` commands that re-register the server that way in Claude Code, and the `pip install` command for a virtual environment (see [Install](#install)).
 
 ## Sample lint and classify output
 
@@ -122,3 +122,36 @@ Every register answer carries what you need to check it:
 - per result, the register `entry_id` and `esma_source_url`, the ESMA file the
   entry came from;
 - per change record, `still_listed`: whether the entry is in the latest snapshot.
+
+## Typed output and errors
+
+Each tool declares a field-level `outputSchema`; a successful call returns the
+same object as `structuredContent` and as a JSON text block, so clients that
+read only text see the same data. `notice` is always the last key. Register
+answers also carry `warnings`: empty normally, one line per data file served
+from the last good cached copy after a failed refresh.
+
+A failed call returns `isError: true` with this object (also as text):
+
+```json
+{
+  "code": "data_unavailable",
+  "error": "could not load https://raw.githubusercontent.com/…/latest.json: …",
+  "hint": "The observatory data on raw.githubusercontent.com could not be fetched …",
+  "notice": "…"
+}
+```
+
+| `code` | When |
+| --- | --- |
+| `data_unavailable` | Register data could not be fetched and no cached copy exists (register errors also carry `snapshot_date`, `data_age_days` and `stale` as `null`) |
+| `extra_missing` | The `lint` or `classify` extra is not installed; `hint` says how to add it, `available` is `false` |
+| `invalid_input` | Arguments failed validation (e.g. an unknown `register_slug`), the JSON did not parse or is not an object, or the SystemProfile is invalid |
+| `upstream_failed` | The linter failed or printed something other than JSON (`raw_output` holds the first 5,000 characters) |
+| `timeout` | The linter did not finish within 120 seconds |
+
+`hint` is present when there is a concrete next step. The CLI prints the same
+object and exits with status 1; an unknown `--register` is rejected with
+status 2. Before this change, register failures were plain-text errors without
+a code, and a missing extra or invalid JSON returned an ordinary result with
+`available`/`hint` or `error`.

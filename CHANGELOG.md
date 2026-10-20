@@ -4,6 +4,8 @@
 
 - `micar_register_changes` now states `snapshot_date`, `data_age_days`, `stale` and `observatory_snapshot`, like search and summary.
 - CLI `search --offset` pages through matches.
+- Typed output: every tool declares a field-level `outputSchema` and a `title`; register answers add `warnings` (cached-fallback notes).
+- One error model: failures return `isError: true` with `code` (`data_unavailable`, `extra_missing`, `invalid_input`, `upstream_failed`, `timeout`), `error`, `hint` and `notice`. A missing extra or invalid JSON is now an error result, not an ordinary one; linter timeouts are caught. The CLI prints the error and exits 1, and rejects an unknown `--register`.
 - Test fixtures and the README example use only fictional entities and example LEIs; a fixture row that copied a live register entry is gone.
 - Register answers are verifiable: each result carries its `entry_id` and the ESMA source file (`esma_source_url`); responses state `snapshot_date`, `data_age_days`, `stale` and the observatory data file used.
 - Change records carry `still_listed` (is the entry in the latest snapshot).
@@ -11,7 +13,7 @@
 - CLI subcommands `search`, `summary`, `changes` print JSON without an MCP client.
 - `--transport streamable-http` (with `--host`, `--port`) serves MCP over HTTP.
 - Weekly live-data check and an unlocked PyPI install smoke test in CI.
-- Tools declare read-only annotations and enum parameters (`register_slug`, `change_type`); search pages with `offset`. Minimum mcp is now 1.9 (still below 2).
+- Tools declare read-only annotations and enum parameters (`register_slug`, `change_type`); search pages with `offset`. Minimum mcp is now 1.22 (still below 2): typed output and titles need it, and it is the oldest release this suite passes on.
 - Docs pin `--python 3.13` wherever the `lint`/`classify` extras are installed with uvx.
 
 ## 0.1.1 (2026-10-15)

@@ -34,6 +34,8 @@ FETCH_TIMEOUT_SECONDS = 30
 log = logging.getLogger(__name__)
 
 _cache: dict[str, tuple[float, Any]] = {}
+# Files currently served from the last good copy after a failed refresh.
+_fallbacks: dict[str, str] = {}
 
 
 class DataError(RuntimeError):
@@ -137,12 +139,14 @@ def _cached(key: str, url: str, parse: Callable[[bytes], Any]) -> Any:
         if stale is None:
             raise DataError(f"could not load {url}: {exc}") from exc
         log.warning("using stale cached %s after fetch failure: %s", key, exc)
+        _fallbacks[key] = str(exc)
         return stale
     try:
         _write_atomic(path, raw)
     except OSError as exc:
         log.warning("could not write cache file %s: %s", path, exc)
     _cache[key] = (now, value)
+    _fallbacks.pop(key, None)
     return value
 
 
@@ -168,6 +172,16 @@ def load_changelog() -> list[dict[str, Any]]:
     return _cached("changelog.jsonl", CHANGELOG_URL, _parse_changelog)
 
 
+def fallback_warnings() -> list[str]:
+    """One line per data file served from the last good copy, for `warnings`."""
+    return [
+        f"Refreshing {key} failed ({reason}); this answer uses the last good "
+        "cached copy. Its snapshot_date shows how old it is."
+        for key, reason in sorted(_fallbacks.items())
+    ]
+
+
 def clear_cache() -> None:
     """Drop the in-memory cache (the on-disk stale fallback is kept)."""
     _cache.clear()
+    _fallbacks.clear()
