@@ -292,9 +292,9 @@ lint = [
 
 [package.metadata]
 requires-dist = [
-    { name = "eu-ai-act-classifier", marker = "extra == 'classify'", specifier = ">=0.2.0" },
+    { name = "eu-ai-act-classifier", marker = "extra == 'classify'", specifier = ">=0.2.1" },
     { name = "mcp", specifier = ">=1.22,<2" },
-    { name = "micar-whitepaper-linter", marker = "extra == 'lint'", specifier = ">=0.2.0" },
+    { name = "micar-whitepaper-linter", marker = "extra == 'lint'", specifier = ">=0.2.1" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.10" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.6" },

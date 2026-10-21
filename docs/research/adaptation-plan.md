@@ -177,7 +177,7 @@ New or changed wording that describes legal effect or frames outputs (`NOTICE`, 
 
 1. **Publish 0.2.0** (CHANGELOG heading proposed) and set up Trusted Publishing and the MCP Registry per §5; `uvx eu-reg-mcp` still runs 0.1.1.
 2. **Behaviour change in 0.2.0**: missing extras and invalid JSON now return `isError: true`; register order of search results is now ranked.
-3. ~~**Lock bump** to micar-whitepaper-linter 0.2.1 and eu-ai-act-classifier 0.2.1~~: done on 2026-10-21 at the owner's request; lint and classify output on the eval inputs is unchanged. H4 can follow.
+3. ~~**Lock bump** to micar-whitepaper-linter 0.2.1 and eu-ai-act-classifier 0.2.1~~: done on 2026-10-21 at the owner's request, with the `lint`/`classify` extras floors raised to `>=0.2.1`; lint and classify output on the eval inputs is unchanged. H4 can follow.
 4. **Merge or keep** the two MCP surfaces for the classifier (this server's tool and the classifier's own server).
 5. **Truncation** of lint (19 KB) and classify (41 KB) responses: a cap would rewrite sibling output (rule 6) unless done as paging the sibling exposes.
 6. **Tool renaming** for consistent verb-first names (breaking; would need aliases).

@@ -10,7 +10,7 @@
 - Errors from register tools always carry `snapshot_date`, `data_age_days` and `stale` (as `null`).
 - Resources `eu-reg://about`, `micar://summary`, `micar://changes` and the template `micar://entry/{entry_id}`; prompts `check_register_status` and `review_register_changes` that ask for the snapshot date and keep the review framing.
 - Single-source `__version__`: the HTTP `User-Agent` and the MCP `serverInfo.version` (which reported the SDK's version) now state this package's version.
-- The lockfile (development and CI) now uses micar-whitepaper-linter 0.2.1 and eu-ai-act-classifier 0.2.1; the `lint` and `classify` extras still accept 0.2.0 and up.
+- The `lint` and `classify` extras now require micar-whitepaper-linter 0.2.1 and eu-ai-act-classifier 0.2.1 or newer (was 0.2.0), and the lockfile uses 0.2.1.
 - Ranked search: each result carries `match` (`score` and `basis`, string matching only); `next_offset` pages; with no match, `similar_names` lists up to five similarly spelt names, each labelled "not a match". On a 22-query synthetic benchmark, hit@1 rose from 0.18 to 1.00.
 - `micar_register_changes` filters by `since`, `until`, `register_slug`, `member_state`, `entity` and `entry_id`, and pages with `offset`/`next_offset`; the CLI mirrors them, and `changes --limit` now defaults to 50 like the tool.
 - Test fixtures and the README example use only fictional entities and example LEIs; a fixture row that copied a live register entry is gone.
