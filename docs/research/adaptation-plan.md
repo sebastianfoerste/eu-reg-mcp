@@ -55,7 +55,7 @@ Impact 1–5 on the lawyer's, drafter's or assessor's job; Fit names the rule; E
 | H1 Typed output, one error model | **Confirmed, modified.** Field-level schemas cost 4,576 B in `tools/list`; input-side bytes held at baseline. Errors are `isError` results whose `structuredContent` the Python client does not validate against `outputSchema` (`ClientSession.call_tool` skips validation when `isError`; Observed in mcp 1.28.1). | [ADR 0001](../adr/0001-typed-output-and-error-model.md) |
 | H2 Resources, templates, prompts | **Confirmed.** No rule-catalogue resource: the linter exports none ([L] plan lists it as a follow-up). | [ADR 0003](../adr/0003-resources-and-prompts.md) |
 | H3 Ranking, filters, `as_of` | **Modified.** Ranking and filters built; `as_of` **parked**: the observatory has 16 dated snapshots but no index and an irregular date (2026-07-13), so a client would have to probe dates blind. LEI filter on changes **killed**: changelog records carry no LEI; `entry_id` filter instead. | [ADR 0002](../adr/0002-deterministic-search-ranking.md), [0005](../adr/0005-point-in-time-as-of.md) |
-| H4 Full linter/classifier options | **Parked as spec.** Needs a lock bump to 0.2.1 (owner), a `python-docx` extra and a file-input ADR. | [ADR 0006](../adr/0006-document-input-for-lint.md) |
+| H4 Full linter/classifier options | **Parked as spec.** The lock is now on 0.2.1 (2026-10-21); still needs a `python-docx` extra and a file-input ADR. | [ADR 0006](../adr/0006-document-input-for-lint.md) |
 | H5 Contract evals | **Confirmed.** 21 tasks; found one real inconsistency (register `invalid_input` without null provenance), fixed. Model-driven evals stay spec. | [ADR 0004](../adr/0004-contract-evals.md) |
 | H6 Ship Unreleased | **Confirmed, partly built.** `__version__`, `User-Agent`, `serverInfo.version`, agreement test and a proposed `0.2.0 (unreleased)` heading. Publishing is an owner action. | [ADR 0009](../adr/0009-release-workflow.md) |
 | H7 Docker, authenticated HTTP | **ADR only, owner decision.** | [ADR 0007](../adr/0007-docker-and-authenticated-http.md) |
@@ -121,7 +121,7 @@ jobs:
 No `secrets.*`; `id-token: write` only inside the two environments. Owner steps: create the Trusted Publisher on PyPI, the two environments with reviewers, then cut release 0.2.0 (bump `pyproject.toml` and both `server.json` versions together; the agreement test enforces it). This branch adds **no** workflow.
 
 ### H4 full linter and classifier options (spec)
-Expose `type`, `lang`, `strict`; return remediation, coverage and review-table JSON by running `micar-lint` with `--remediation-output` etc. into a temp dir; accept Markdown/XHTML text as a string and PDF/DOCX as base64 blobs (stdio and HTTP alike; never a server-side path over HTTP); add `python-docx` to the `lint` extra. Expose classifier `sources_payload`, `artifacts_payload`, `dossier_payload` and a schema-level `include_advisory`. Lock bump to 0.2.1 first. See ADR 0006.
+Expose `type`, `lang`, `strict`; return remediation, coverage and review-table JSON by running `micar-lint` with `--remediation-output` etc. into a temp dir; accept Markdown/XHTML text as a string and PDF/DOCX as base64 blobs (stdio and HTTP alike; never a server-side path over HTTP); add `python-docx` to the `lint` extra. Expose classifier `sources_payload`, `artifacts_payload`, `dossier_payload` and a schema-level `include_advisory`. The lock is already on 0.2.1. See ADR 0006.
 
 ### D3 client docs (spec)
 `docs/clients.md` with Claude Code (verified page: `claude mcp add [--scope project] <name> -- <command> [args...]`, `.mcp.json` with `mcpServers`), Claude Desktop (already in README), and Cursor, VS Code, Windsurf, Zed, Cline once their official pages can be read. Mark **tested** only clients exercised in a session; state that plain `uvx eu-reg-mcp` runs PyPI 0.1.1 until a release.
@@ -177,7 +177,7 @@ New or changed wording that describes legal effect or frames outputs (`NOTICE`, 
 
 1. **Publish 0.2.0** (CHANGELOG heading proposed) and set up Trusted Publishing and the MCP Registry per §5; `uvx eu-reg-mcp` still runs 0.1.1.
 2. **Behaviour change in 0.2.0**: missing extras and invalid JSON now return `isError: true`; register order of search results is now ranked.
-3. **Lock bump** to micar-whitepaper-linter 0.2.1 and eu-ai-act-classifier 0.2.1, then H4.
+3. ~~**Lock bump** to micar-whitepaper-linter 0.2.1 and eu-ai-act-classifier 0.2.1~~: done on 2026-10-21 at the owner's request; lint and classify output on the eval inputs is unchanged. H4 can follow.
 4. **Merge or keep** the two MCP surfaces for the classifier (this server's tool and the classifier's own server).
 5. **Truncation** of lint (19 KB) and classify (41 KB) responses: a cap would rewrite sibling output (rule 6) unless done as paging the sibling exposes.
 6. **Tool renaming** for consistent verb-first names (breaking; would need aliases).
