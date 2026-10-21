@@ -14,9 +14,9 @@ CHANGELOG = [
 
 
 def test_search_by_name_substring():
-    result = search_entries(SNAPSHOT, "skygate")
+    result = search_entries(SNAPSHOT, "sample ledger")
     assert result["total_matches"] == 1
-    assert result["results"][0]["entity_name"] == "SKYGATE Network GmbH"
+    assert result["results"][0]["entity_name"] == "Sample Ledger Labs GmbH"
     assert "notice" in result
 
 
@@ -49,11 +49,11 @@ def test_summary_counts_and_coverage():
 
 def test_changes_exclude_baseline_and_filter_by_type():
     result = recent_changes(CHANGELOG, limit=10)
-    assert result["total_changes"] == 2
-    assert result["changes"][0]["change"] in {"added", "removed"}
+    assert result["total_changes"] == 4
+    assert result["changes"][0]["change"] in {"changed", "missing"}
     removed = recent_changes(CHANGELOG, change_type="removed")
     assert removed["total_changes"] == 1
-    assert removed["changes"][0]["entity_name"] == "SKYGATE Network GmbH"
+    assert removed["changes"][0]["entity_name"] == "Former Example Token AG"
 
 
 def test_search_is_accent_and_case_insensitive():
@@ -68,20 +68,20 @@ def test_search_is_accent_and_case_insensitive():
                     {
                         "entry_id": "x1",
                         "register_slug": "casps",
-                        "entity_name": "Société Générale-Forge",
+                        "entity_name": "Société Exemple-Forge",
                     }
                 ],
             }
         ],
     }
-    assert search_entries(accented, "SOCIETE generale")["total_matches"] == 1
+    assert search_entries(accented, "SOCIETE exemple")["total_matches"] == 1
     assert search_entries(accented, "société")["total_matches"] == 1
 
 
 def test_search_results_are_verifiable():
     from datetime import date
 
-    result = search_entries(SNAPSHOT, "skygate", today=date(2026, 7, 10))
+    result = search_entries(SNAPSHOT, "sample ledger", today=date(2026, 7, 10))
     hit = result["results"][0]
     assert hit["entry_id"]
     assert hit["esma_source_url"].startswith("https://")
@@ -108,3 +108,44 @@ def test_changes_flag_whether_entry_is_still_listed():
     for record in result["changes"]:
         assert record["still_listed"] == (record["entry_id"] in listed)
     assert "still_listed" not in recent_changes(CHANGELOG)["changes"][0]
+
+
+def test_change_filters():
+    from datetime import date
+
+    def ids(**filters):
+        return [c["entry_id"] for c in recent_changes(CHANGELOG, **filters)["changes"]]
+
+    assert ids(since=date(2026, 7, 14), until=date(2026, 7, 14)) == ["a3", "c9"]
+    assert ids(until=date(2026, 7, 13)) == []
+    assert ids(member_state="mt") == ["c9"]
+    assert ids(entity="former example") == ["a3"]
+    assert ids(entry_id="c9") == ["c9"]
+    assert ids(register="casps") == []
+    assert ids(change_type="missing") == ["a2"]
+
+
+def test_change_lei_filter_is_exact_and_skips_records_without_lei():
+    def ids(lei):
+        return [c["entry_id"] for c in recent_changes(CHANGELOG, lei=lei)["changes"]]
+
+    assert ids("529900example lei0001".replace(" ", "")) == ["a1"]
+    assert ids("529900EXAMPLELEI000") == []  # no prefix matching
+    # The 2026-07-14 records predate the observatory's `lei` field.
+    assert ids("529900EXAMPLELEI0002") == ["a2"]
+
+
+def test_change_paging_reports_next_offset():
+    first = recent_changes(CHANGELOG, limit=1)
+    assert first["offset"] == 0 and first["next_offset"] == 1
+    last = recent_changes(CHANGELOG, limit=1, offset=3)
+    assert last["next_offset"] is None
+    second = recent_changes(CHANGELOG, limit=1, offset=1)
+    assert first["changes"][0] != second["changes"][0]
+
+
+def test_search_reports_next_offset_and_match_basis():
+    result = search_entries(SNAPSHOT, "example issuer gmbh")
+    assert result["next_offset"] is None
+    assert result["results"][0]["match"] == {"score": 1.0, "basis": "exact_name"}
+    assert search_entries(SNAPSHOT, "")["results"][0]["match"] is None

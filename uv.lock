@@ -1,5 +1,5 @@
 version = 1
-revision = 5
+revision = 3
 requires-python = ">=3.13"
 resolution-markers = [
     "python_full_version >= '3.15' and sys_platform == 'win32'",
@@ -259,14 +259,14 @@ wheels = [
 
 [[package]]
 name = "eu-ai-act-classifier"
-version = "0.2.0"
+version = "0.2.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/2e/22/4e595a651df6a825bc0409ee090df38abcd281c0aebeffbe4e36a2d25946/eu_ai_act_classifier-0.2.0.tar.gz", hash = "sha256:cca3bae05eb63d108892b74202b33ade763648032002f46ded94d612bdb004fc", size = 1638425, upload-time = "2026-10-15T09:10:49.143Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/4e/7e/f409caf4ee5a366bd2f30cba8e158d6868934ac7390afb15b8e00afbae50/eu_ai_act_classifier-0.2.1.tar.gz", hash = "sha256:db095b61ee0c1733067b47083684f679f1837553340bd1424b08a7250e500459", size = 1682658, upload-time = "2026-10-15T20:10:59.33Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a5/a8/7912ea33f370024fcc99a5de127082521ce44e0532cc48d890b9a33d8e57/eu_ai_act_classifier-0.2.0-py3-none-any.whl", hash = "sha256:73a6e2d5cf65f5f57500fe812e33c1d67d600b5d17e40ff2053f3f5a2051f0ca", size = 60005, upload-time = "2026-10-15T09:10:47.174Z" },
+    { url = "https://files.pythonhosted.org/packages/64/63/43a4783d81c7b927dab005ae4704e4ad9f5bc5341b793599e78f6e8ed22c/eu_ai_act_classifier-0.2.1-py3-none-any.whl", hash = "sha256:761719a3c596890a5a7f4c13f370005a5cefe227bbdf855f06dd74ab5d22c4e7", size = 60944, upload-time = "2026-10-15T20:10:57.837Z" },
 ]
 
 [[package]]
@@ -292,9 +292,9 @@ lint = [
 
 [package.metadata]
 requires-dist = [
-    { name = "eu-ai-act-classifier", marker = "extra == 'classify'", specifier = ">=0.2.0" },
-    { name = "mcp", specifier = ">=1.9,<2" },
-    { name = "micar-whitepaper-linter", marker = "extra == 'lint'", specifier = ">=0.2.0" },
+    { name = "eu-ai-act-classifier", marker = "extra == 'classify'", specifier = ">=0.2.1" },
+    { name = "mcp", specifier = ">=1.22,<2" },
+    { name = "micar-whitepaper-linter", marker = "extra == 'lint'", specifier = ">=0.2.1" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.10" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.6" },
@@ -567,15 +567,15 @@ wheels = [
 
 [[package]]
 name = "micar-whitepaper-linter"
-version = "0.2.0"
+version = "0.2.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "lxml" },
     { name = "pypdf" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c9/ee/df08c80b9c319e6181e68b20dce348f4226ae5d3a310dc6c801f82bc2aac/micar_whitepaper_linter-0.2.0.tar.gz", hash = "sha256:4e5f3f54047c638cee210c8019ee0493da2a489dfe0bdb077e1142cf198a952c", size = 397905, upload-time = "2026-10-15T09:10:53.107Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/7e/42/be40817028331a63360d49a0e03c17f3b67233ec9c8944ec69a72daf6f8b/micar_whitepaper_linter-0.2.1.tar.gz", hash = "sha256:6259b821b8f99203f397565e7929168eb773b85ce18834d8151d7af59b2f697f", size = 403030, upload-time = "2026-10-15T20:11:02.779Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/96/e0/64428d20513d5a562266e216c03fcd26fd4909309be285f9db3f5c43a79e/micar_whitepaper_linter-0.2.0-py3-none-any.whl", hash = "sha256:3721119d739926f4d1964a652de56ac6349fd6591c58ced45e3ad3416113b6ab", size = 74930, upload-time = "2026-10-15T09:10:51.358Z" },
+    { url = "https://files.pythonhosted.org/packages/0e/fa/1cff428ac2131f7db91159394e911f4bb3d7c9d80a2394f9d9ef6f382c3d/micar_whitepaper_linter-0.2.1-py3-none-any.whl", hash = "sha256:da6d8161e0a8c74086c22f4aec98059cd171b1d12069c9ec7eb41172acaa3eda", size = 75954, upload-time = "2026-10-15T20:11:01.309Z" },
 ]
 
 [[package]]

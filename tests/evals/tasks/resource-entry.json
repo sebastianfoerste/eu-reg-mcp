@@ -1,0 +1,18 @@
+{
+  "id": "resource-entry",
+  "description": "The entry template returns a dated entry.",
+  "setup": "fixtures",
+  "call": {
+    "resource": "micar://entry/a2"
+  },
+  "expect": {
+    "equals": {
+      "entry.entity_name": "Sample Ledger Labs GmbH",
+      "snapshot_date": "2026-07-07"
+    },
+    "present": [
+      "stale",
+      "notice"
+    ]
+  }
+}

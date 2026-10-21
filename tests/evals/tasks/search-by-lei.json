@@ -1,0 +1,20 @@
+{
+  "id": "search-by-lei",
+  "description": "An exact LEI ranks first with basis exact_lei.",
+  "setup": "fixtures",
+  "call": {
+    "tool": "search_micar_register",
+    "arguments": {
+      "query": "529900EXAMPLELEI0002"
+    }
+  },
+  "expect": {
+    "isError": false,
+    "equals": {
+      "total_matches": 1,
+      "results.0.entry_id": "a2",
+      "results.0.match.score": 1.0,
+      "results.0.match.basis": "exact_lei"
+    }
+  }
+}

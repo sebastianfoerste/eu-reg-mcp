@@ -1,0 +1,21 @@
+{
+  "id": "search-unknown-register",
+  "description": "An unknown register_slug is invalid_input, not an empty answer.",
+  "setup": "fixtures",
+  "call": {
+    "tool": "search_micar_register",
+    "arguments": {
+      "query": "x",
+      "register_slug": "nope"
+    }
+  },
+  "expect": {
+    "isError": true,
+    "equals": {
+      "code": "invalid_input"
+    },
+    "contains": {
+      "error": "register_slug"
+    }
+  }
+}

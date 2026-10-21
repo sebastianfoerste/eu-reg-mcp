@@ -1,0 +1,20 @@
+{
+  "id": "changes-filtered",
+  "description": "Filters narrow changes by date and member state.",
+  "setup": "fixtures",
+  "call": {
+    "tool": "micar_register_changes",
+    "arguments": {
+      "since": "2026-07-14",
+      "member_state": "MT"
+    }
+  },
+  "expect": {
+    "isError": false,
+    "equals": {
+      "total_changes": 1,
+      "changes.0.entry_id": "c9",
+      "next_offset": null
+    }
+  }
+}

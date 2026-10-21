@@ -37,8 +37,8 @@ The first two work without extras; the third needs the `classify` extra.
 claude mcp add eu-reg -- uvx eu-reg-mcp
 ```
 
-The register tools need no API key. For all five tools, add the `lint` and `classify` extras instead:
 The register tools need no API key. For all five tools, add the `lint` and `classify` extras instead. They need Python 3.13+, and `--python 3.13` makes uv use it even where an older Python is the default:
+
 ```bash
 claude mcp add eu-reg -- uvx --python 3.13 --from 'eu-reg-mcp[lint,classify]' eu-reg-mcp
 ```
@@ -60,13 +60,13 @@ claude mcp add eu-reg -- uvx --python 3.13 --from 'eu-reg-mcp[lint,classify]' eu
 For the extras, use `"args": ["--python", "3.13", "--from", "eu-reg-mcp[lint,classify]", "eu-reg-mcp"]`.
 </details>
 
-Without uv, run `pip install 'eu-reg-mcp[lint,classify]'` in a Python 3.13+ virtual environment and register its `eu-reg-mcp` by full path, e.g. `claude mcp add eu-reg -- /path/to/.venv/bin/eu-reg-mcp`; the environment need not be active. Install options and network use: [docs/tools.md](docs/tools.md#install).
+Without uv, run `pip install 'eu-reg-mcp[lint,classify]'` in a Python 3.13+ virtual environment and register its `eu-reg-mcp` by full path, e.g. `claude mcp add eu-reg -- /path/to/.venv/bin/eu-reg-mcp`; the environment need not be active. Install options and network use: [docs/tools.md](docs/tools.md#install). Zed, Gemini CLI, Continue and goose: [docs/clients.md](docs/clients.md).
 
 ## Example output
 
-> **Synthetic data.** Produced on 2026-10-14 by running this repo's register code (`register.search_entries` / `register.recent_changes`) against the **synthetic test fixtures** in `tests/fixtures/`, not the live register. The entity and its LEI are test data. Output shape is what a live call returns; values are not.
+> **Synthetic data.** Produced on 2026-10-21 by calling this repo's `search_micar_register` tool function against the **synthetic test fixtures** in `tests/fixtures/`, not the live register. The entities and LEIs are fictional test data. Output shape is what a live call returns; values are not.
 
-`search_micar_register(query="skygate")`:
+`search_micar_register(query="sample ledger")`, abridged: the response also has `data_age_days`, `stale`, `observatory_snapshot`, `offset`, `similar_names` and `warnings`, and each result `entry_id` and `esma_source_url`:
 
 ```json
 {
@@ -75,21 +75,26 @@ Without uv, run `pip install 'eu-reg-mcp[lint,classify]'` in a Python 3.13+ virt
   "results": [
     {
       "register": "other-wp",
-      "entity_name": "SKYGATE Network GmbH",
-      "lei": "984500BBFE52FE449926",
+      "entity_name": "Sample Ledger Labs GmbH",
+      "lei": "529900EXAMPLELEI0002",
       "member_state": "AT",
       "authority": "FMA",
-      "whitepaper_url": "WWW.SKYGATETOKEN.AT",
+      "whitepaper_url": "WWW.SAMPLE-LEDGER.EXAMPLE",
       "format_class": "unspecified",
-      "register_last_update": "30/12/2024"
+      "register_last_update": "30/12/2024",
+      "match": {
+        "score": 0.9,
+        "basis": "name_prefix_words"
+      }
     }
   ],
   "truncated": false,
+  "next_offset": null,
   "notice": "Facts from the public ESMA interim MiCAR register (Art. 109 MiCAR) as mirrored by the MiCAR Register Observatory. No legal assessment of any entity; not legal advice."
 }
 ```
 
-`micar_register_changes(change_type="removed")` returns the same kind of cited record (snapshot date, register, entity) and notes that *"the register itself does not state why"* an entry was removed. With the extras installed, the lint and classify tools cite the provision behind each finding, for example `Anhang I Teil A MiCAR` (MiCAR Annex I, Part A), `Art. 5(1)(f) AIA`, `Annex III(4)(a) AIA`, and `Art. 51 AIA` for a general-purpose AI model with systemic risk. Sample output from synthetic inputs: [docs/tools.md](docs/tools.md#sample-lint-and-classify-output).
+`match` says how the query string matched the name or LEI; it says nothing about the entity. `micar_register_changes(change_type="removed")` returns the same kind of cited record (snapshot date, register, entity) and notes that *"the register itself does not state why"* an entry was removed. With the extras installed, the lint and classify tools cite the provision behind each finding, for example `Anhang I Teil A MiCAR` (MiCAR Annex I, Part A), `Art. 5(1)(f) AIA`, `Annex III(4)(a) AIA`, and `Art. 51 AIA` for a general-purpose AI model with systemic risk. Sample output from synthetic inputs: [docs/tools.md](docs/tools.md#sample-lint-and-classify-output).
 
 ## Tools and data sources
 

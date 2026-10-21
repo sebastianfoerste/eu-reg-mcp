@@ -18,6 +18,8 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
+from eu_reg_mcp.errors import ToolFailure
+
 REVIEW_NOTICE = (
     "Deterministic rule output. Every finding is a candidate gap in the "
     "submitted text pending human legal review; extraction artifacts occur. "
@@ -60,20 +62,55 @@ def _linter_command() -> list[str] | None:
     return None
 
 
+LINT_TIMEOUT_SECONDS = 120
+
+
+def linter_available() -> bool:
+    return _linter_command() is not None
+
+
+def classifier_available() -> bool:
+    try:
+        return importlib.util.find_spec("eu_ai_act_classifier.local_api") is not None
+    except (ImportError, ValueError):
+        return False
+
+
+def _parse_object(raw: str, argument: str) -> dict[str, Any]:
+    try:
+        payload = json.loads(raw)
+    except json.JSONDecodeError as error:
+        raise ToolFailure(
+            "invalid_input",
+            f"{argument} is not valid JSON: {error}",
+            notice=REVIEW_NOTICE,
+            extra={"available": True},
+        ) from error
+    if not isinstance(payload, dict):
+        raise ToolFailure(
+            "invalid_input",
+            f"{argument} must be a JSON object.",
+            notice=REVIEW_NOTICE,
+            extra={"available": True},
+        )
+    return payload
+
+
+def _missing_extra(package: str, extra: str) -> ToolFailure:
+    return ToolFailure(
+        "extra_missing",
+        f"The `{extra}` extra is not installed.",
+        hint=_install_hint(package, extra),
+        notice=REVIEW_NOTICE,
+        extra={"available": False},
+    )
+
+
 def lint_whitepaper(whitepaper_json: str) -> dict[str, Any]:
     command = _linter_command()
     if command is None:
-        return {
-            "available": False,
-            "hint": _install_hint("micar-whitepaper-linter", "lint"),
-        }
-    try:
-        payload = json.loads(whitepaper_json)
-    except json.JSONDecodeError as error:
-        return {
-            "available": True,
-            "error": f"whitepaper_json is not valid JSON: {error}",
-        }
+        raise _missing_extra("micar-whitepaper-linter", "lint")
+    payload = _parse_object(whitepaper_json, "whitepaper_json")
 
     with tempfile.NamedTemporaryFile(
         "w", suffix=".json", delete=False, encoding="utf-8"
@@ -85,43 +122,62 @@ def lint_whitepaper(whitepaper_json: str) -> dict[str, Any]:
             [*command, path, "--json"],
             capture_output=True,
             text=True,
-            timeout=120,
+            timeout=LINT_TIMEOUT_SECONDS,
             check=False,
         )
+    except subprocess.TimeoutExpired as error:
+        raise ToolFailure(
+            "timeout",
+            f"micar-lint did not finish within {LINT_TIMEOUT_SECONDS} seconds.",
+            hint="Retry with a shorter draft, or run micar-lint locally.",
+            notice=REVIEW_NOTICE,
+            extra={"available": True},
+        ) from error
     finally:
         Path(path).unlink(missing_ok=True)
     if result.stdout.strip():
         try:
             report = json.loads(result.stdout)
-        except json.JSONDecodeError:
-            report = {"raw_output": result.stdout[:5000]}
+        except json.JSONDecodeError as error:
+            raise ToolFailure(
+                "upstream_failed",
+                "micar-lint output was not JSON.",
+                notice=REVIEW_NOTICE,
+                extra={"available": True, "raw_output": result.stdout[:5000]},
+            ) from error
         return {"available": True, "report": report, "notice": REVIEW_NOTICE}
-    return {
-        "available": True,
-        "error": (result.stderr or "linter produced no output")[:2000],
-    }
+    raise ToolFailure(
+        "upstream_failed",
+        (result.stderr or "linter produced no output")[:2000],
+        notice=REVIEW_NOTICE,
+        extra={"available": True},
+    )
 
 
 def classify_ai_system(profile_json: str) -> dict[str, Any]:
     try:
         from eu_ai_act_classifier.local_api import classify_payload, schema_payload
-    except ImportError:
-        return {
-            "available": False,
-            "hint": _install_hint("eu-ai-act-classifier", "classify"),
-        }
+    except ImportError as error:
+        raise _missing_extra("eu-ai-act-classifier", "classify") from error
     if not profile_json.strip():
         return {
             "available": True,
             "profile_schema": schema_payload(),
             "notice": "Empty profile: returning the expected SystemProfile schema.",
         }
+    payload = _parse_object(profile_json, "profile_json")
     try:
-        payload = json.loads(profile_json)
-    except json.JSONDecodeError as error:
-        return {"available": True, "error": f"profile_json is not valid JSON: {error}"}
+        classification = classify_payload(payload)
+    except ValueError as error:  # pydantic ValidationError: the profile is invalid
+        raise ToolFailure(
+            "invalid_input",
+            f"profile_json is not a valid SystemProfile: {error}"[:2000],
+            hint="Call with an empty profile_json to get the SystemProfile schema.",
+            notice=REVIEW_NOTICE,
+            extra={"available": True},
+        ) from error
     return {
         "available": True,
-        "classification": classify_payload(payload),
+        "classification": classification,
         "notice": REVIEW_NOTICE,
     }
