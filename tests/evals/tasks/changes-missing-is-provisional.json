@@ -14,6 +14,9 @@
       "total_changes": 1,
       "changes.0.change": "missing",
       "changes.0.entry_id": "a2"
+    },
+    "contains": {
+      "notice": "not a removal"
     }
   }
 }

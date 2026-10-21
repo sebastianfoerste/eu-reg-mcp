@@ -78,6 +78,10 @@ def test_entry_resource_matches_search_result():
     assert hit["results"][0] == entry
 
 
+def test_changes_resource_explains_missing_records():
+    assert "'missing' record is provisional" in read("micar://changes")["notice"]
+
+
 def test_unknown_entry_is_an_error():
     async def action(client):
         try:

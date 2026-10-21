@@ -53,7 +53,7 @@ Impact 1–5 on the lawyer's, drafter's or assessor's job; Fit names the rule; E
 
 | Item | Verdict | Evidence |
 | --- | --- | --- |
-| H1 Typed output, one error model | **Confirmed, modified.** Field-level schemas cost 4,576 B in `tools/list`; input-side bytes held at baseline. Errors are `isError` results whose `structuredContent` the Python client does not validate against `outputSchema` (`ClientSession.call_tool` skips validation when `isError`; Observed in mcp 1.28.1). | [ADR 0001](../adr/0001-typed-output-and-error-model.md) |
+| H1 Typed output, one error model | **Confirmed, modified.** Field-level schemas cost 4,576 B in `tools/list`; input-side bytes held at baseline. Errors are `isError` results whose JSON sits in the text block only, with no `structuredContent`: the spec requires `structuredContent` to match `outputSchema`, and while the Python client skips that check on `isError` (Observed in mcp 1.28.1), the TypeScript SDK client does not (Observed, typescript-sdk 1.x, read 2026-10-21). The first version sent `structuredContent` on errors; corrected after the 2026-10-21 audit. | [ADR 0001](../adr/0001-typed-output-and-error-model.md) |
 | H2 Resources, templates, prompts | **Confirmed.** No rule-catalogue resource: the linter exports none ([L] plan lists it as a follow-up). | [ADR 0003](../adr/0003-resources-and-prompts.md) |
 | H3 Ranking, filters, `as_of` | **Modified.** Ranking and filters built; `as_of` **parked**: the observatory has 16 dated snapshots but no index and an irregular date (2026-07-13), so a client would have to probe dates blind. An exact-LEI filter on changes is **built** (added after the 2026-10-21 audit: the research wrongly said changelog records carry no LEI; records from the 2026-10-19 snapshot on carry `lei`, older ones do not, so `entry_id` remains the filter for those). | [ADR 0002](../adr/0002-deterministic-search-ranking.md), [0005](../adr/0005-point-in-time-as-of.md) |
 | H4 Full linter/classifier options | **Parked as spec.** The lock is now on 0.2.1 (2026-10-21); still needs a `python-docx` extra and a file-input ADR. | [ADR 0006](../adr/0006-document-input-for-lint.md) |
@@ -79,7 +79,7 @@ Research questions, briefly: (1) 1.28.1 negotiates `2025-11-25`; stateless reque
 ### H1 — typed output and one error model (commit `a4c4eb9`)
 - **Story.** An agent can tell a failed lookup from an empty one, and recover.
 - **References.** Lex `response_model` routes; cyanheads typed codes; Ansvar `isError` text; Légifrance errors-as-text (anti-pattern).
-- **Adapted.** Pydantic response models per tool; schemas compacted (no generated titles, `X | None` folded to a type list). A `FastMCP` subclass maps a raised `ToolFailure`, and argument `ValidationError`s, to `isError` results with the same JSON in text and `structuredContent`. Cached-fallback answers carry `warnings`. Linter timeouts and non-JSON output are caught.
+- **Adapted.** Pydantic response models per tool; schemas compacted (no generated titles, `X | None` folded to a type list). A `FastMCP` subclass maps a raised `ToolFailure`, argument `ValidationError`s and any other exception inside a tool to `isError` results carrying the JSON in the text block only, with no `structuredContent`. Cached-fallback answers carry `warnings`. Linter timeouts and non-JSON output are caught.
 - **Different.** One code set for all tools rather than per-tool codes; the `notice` stays on errors; legacy keys (`available`, `hint`, `error`) kept.
 - **Behaviour change.** A missing extra or invalid JSON now sets `isError: true` (was an ordinary result). Listed under owner decisions for release notes.
 - **Dependency floor.** Tool titles and typed output need a newer SDK than the declared `mcp>=1.9`; the floor is now `mcp>=1.22,<2`, the oldest release the suite was run on and passed.
@@ -171,10 +171,11 @@ Line numbers as of the audit follow-up commit (2026-10-21):
 - `src/eu_reg_mcp/server.py:321–335` — prompt `check_register_status` (title, description, text; includes "do not assess whether the entity is authorised, compliant or trustworthy").
 - `src/eu_reg_mcp/server.py:339–356` — prompt `review_register_changes` (title, description, text), including the new sentence that a `missing` record is provisional and must not be reported as a removal.
 - `src/eu_reg_mcp/integrations.py:92, 102, 131–132, 144, 174–175` — error messages and hints for lint and classify.
-- `src/eu_reg_mcp/data.py:186–188` — the cached-fallback warning.
+- `src/eu_reg_mcp/data.py:186–189` — the cached-fallback warning (reworded 2026-10-21: the cached file may be older than the `snapshot_date` shown).
+- `src/eu_reg_mcp/register.py:314–320` — the per-answer notice of `micar_register_changes` (and `micar://changes`) now also says a `missing` record is provisional and not a removal.
 - `src/eu_reg_mcp/register.py:223` and `src/eu_reg_mcp/models.py:81–82, 120` — `"not a match"` label and the `match.score` / `similar_names` schema descriptions.
 - `docs/guardrails.md:8` — paragraph on prompts and scores.
-- `docs/tools.md` — the changes paragraph defining `missing` as provisional (line 15), the search ranking paragraph (line 13), "Typed output and errors" and "Resources and prompts" sections.
+- `docs/tools.md` — the changes paragraph defining `missing` as provisional (line 15), the `review_register_changes` row of the prompt table, the search ranking paragraph (line 13), "Typed output and errors" and "Resources and prompts" sections.
 - `docs/clients.md` — client setup instructions (operational, listed for completeness).
 - `README.md` — example output note, example (fictional entity) and the sentence that `match` says nothing about the entity.
 

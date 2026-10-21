@@ -185,7 +185,8 @@ def fallback_warnings(keys: Iterable[str]) -> list[str]:
     the last good copy after a failed refresh."""
     return [
         f"Refreshing {key} failed ({_fallbacks[key]}); this answer uses the last "
-        "good cached copy. Its snapshot_date shows how old it is."
+        f"good cached copy of {key}, which may be older than the snapshot_date "
+        "shown."
         for key in sorted(set(keys))
         if key in _fallbacks
     ]

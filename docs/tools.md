@@ -170,7 +170,7 @@ a code, and a missing extra or invalid JSON returned an ordinary result with
 | `micar://changes` | resource | The 50 newest changes, as `micar_register_changes` returns them |
 | `micar://entry/{entry_id}` | resource template | One entry by the `entry_id` that search results carry, with `snapshot_date`, `data_age_days`, `stale`, `warnings` and `notice`; an unknown id is an error |
 | `check_register_status(entity)` | prompt | Asks the model to search the register and report the facts, the snapshot date and staleness, to treat `similar_names` as non-matches and to make no assessment of the entity |
-| `review_register_changes(since="")` | prompt | Asks the model to summarise changes with their dates and to say, for each removal, that the register itself does not state why |
+| `review_register_changes(since="")` | prompt | Asks the model to summarise changes with their dates, to say for each removal that the register itself does not state why, and not to report a provisional `missing` record as a removal |
 
 Resources are read-only views of the same data the tools return; every
 register resource carries the snapshot date and the `notice`. A resource read

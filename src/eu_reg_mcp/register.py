@@ -313,6 +313,8 @@ def recent_changes(
         "changelog_source": f"{OBSERVATORY_DATA_URL}/changelog.jsonl",
         "notice": NOTICE
         + " A 'removed' record means the entry left the register export; the "
-        "register itself does not state why. 'still_listed' says whether the "
-        "entry is in the latest snapshot.",
+        "register itself does not state why. A 'missing' record is provisional: "
+        "the entry was absent from one export and is recorded as removed only if "
+        "the next export also lacks it, so it is not a removal. 'still_listed' "
+        "says whether the entry is in the latest snapshot.",
     }
