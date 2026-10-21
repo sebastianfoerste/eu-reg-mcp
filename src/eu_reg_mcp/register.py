@@ -274,9 +274,11 @@ def recent_changes(
     member_state: str = "",
     entity: str = "",
     entry_id: str = "",
+    lei: str = "",
     offset: int = 0,
 ) -> dict[str, Any]:
     state = member_state.strip().upper()
+    wanted_lei = _fold(lei)
     name = _fold(entity)
     first, last = (str(day) if day else None for day in (since, until))
     records = [
@@ -288,6 +290,8 @@ def recent_changes(
         and (not state or str(record.get("member_state", "")).upper() == state)
         and (not name or name in _fold(str(record.get("entity_name", ""))))
         and (not entry_id or record.get("entry_id") == entry_id)
+        # Only records from 2026-10-19 on carry `lei`; older ones never match.
+        and (not wanted_lei or _fold(str(record.get("lei") or "")) == wanted_lei)
         and (first is None or str(record.get("snapshot_date", "")) >= first)
         and (last is None or str(record.get("snapshot_date", "")) <= last)
     ]

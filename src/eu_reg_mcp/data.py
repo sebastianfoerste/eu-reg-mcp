@@ -14,7 +14,7 @@ import tempfile
 import time
 import urllib.error
 import urllib.request
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from pathlib import Path
 from typing import Any
 
@@ -169,19 +169,25 @@ def _stale(
 
 
 def load_snapshot() -> dict[str, Any]:
-    return _cached("latest.json", LATEST_URL, _parse_snapshot)
+    return _cached(SNAPSHOT_FILE, LATEST_URL, _parse_snapshot)
 
 
 def load_changelog() -> list[dict[str, Any]]:
-    return _cached("changelog.jsonl", CHANGELOG_URL, _parse_changelog)
+    return _cached(CHANGELOG_FILE, CHANGELOG_URL, _parse_changelog)
 
 
-def fallback_warnings() -> list[str]:
-    """One line per data file served from the last good copy, for `warnings`."""
+SNAPSHOT_FILE = "latest.json"
+CHANGELOG_FILE = "changelog.jsonl"
+
+
+def fallback_warnings(keys: Iterable[str]) -> list[str]:
+    """One line per data file, among those an answer read, that is served from
+    the last good copy after a failed refresh."""
     return [
-        f"Refreshing {key} failed ({reason}); this answer uses the last good "
-        "cached copy. Its snapshot_date shows how old it is."
-        for key, reason in sorted(_fallbacks.items())
+        f"Refreshing {key} failed ({_fallbacks[key]}); this answer uses the last "
+        "good cached copy. Its snapshot_date shows how old it is."
+        for key in sorted(set(keys))
+        if key in _fallbacks
     ]
 
 

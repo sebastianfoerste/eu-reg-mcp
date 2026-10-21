@@ -40,11 +40,13 @@ def call(name, arguments=None):
 
 def assert_error(result, code):
     assert result.isError is True
-    body = result.structuredContent
+    # Errors carry their JSON as text only: structuredContent must match the
+    # success outputSchema, and TypeScript clients validate it even on errors.
+    assert result.structuredContent is None
+    body = json.loads(result.content[0].text)
     assert body["code"] == code
     assert body["error"]
     assert body["notice"]
-    assert json.loads(result.content[0].text) == body
     return body
 
 
@@ -161,11 +163,14 @@ def test_cli_rejects_unknown_register(capsys):
 
 def test_change_filters_over_mcp(offline_data):
     tool, result = call(
-        "micar_register_changes", {"since": "2026-07-14", "member_state": "AT"}
+        "micar_register_changes",
+        {"since": "2026-07-14", "until": "2026-07-14", "member_state": "AT"},
     )
     jsonschema.validate(result.structuredContent, tool.outputSchema)
     assert [c["entry_id"] for c in result.structuredContent["changes"]] == ["a3"]
     assert result.structuredContent["changes"][0]["still_listed"] is False
+    _, by_lei = call("micar_register_changes", {"lei": "529900EXAMPLELEI0001"})
+    assert [c["entry_id"] for c in by_lei.structuredContent["changes"]] == ["a1"]
 
 
 def test_bad_date_is_invalid_input(offline_data):
@@ -193,3 +198,72 @@ def test_tools_list_input_side_stays_within_budget():
     for tool in listed:
         tool.pop("outputSchema", None)
     assert len(json.dumps(listed, separators=(",", ":"))) <= 2904
+
+
+@pytest.mark.parametrize(
+    ("name", "arguments", "patch"),
+    [
+        ("search_micar_register", {"query": "x"}, "eu_reg_mcp.register.search_entries"),
+        ("classify_eu_ai_act_system", {"profile_json": "{}"}, "classify"),
+    ],
+)
+def test_unexpected_exception_keeps_the_error_shape(
+    offline_data, monkeypatch, name, arguments, patch
+):
+    def boom(*_args, **_kwargs):
+        raise RuntimeError("injected")
+
+    if patch == "classify":
+        monkeypatch.setattr("eu_reg_mcp.integrations.classify_ai_system", boom)
+    else:
+        monkeypatch.setattr(patch, boom)
+    _, result = call(name, arguments)
+    body = assert_error(result, "upstream_failed")
+    assert "RuntimeError: injected" in body["error"]
+
+
+ERROR_CALLS = [
+    ("search_micar_register", {"query": "x", "register_slug": "nope"}),
+    ("micar_register_changes", {"since": "soon"}),
+    ("micar_register_changes", {"limit": "many"}),
+    ("lint_micar_whitepaper", {"whitepaper_json": "{not json"}),
+    ("classify_eu_ai_act_system", {"profile_json": "[]"}),
+]
+
+
+@pytest.mark.parametrize(("name", "arguments"), ERROR_CALLS)
+def test_error_results_never_contradict_the_output_schema(
+    offline_data, monkeypatch, name, arguments
+):
+    monkeypatch.setattr(
+        "eu_reg_mcp.integrations.shutil.which", lambda _: "/usr/bin/micar-lint"
+    )
+    tool, result = call(name, arguments)
+    assert result.isError is True
+    # The spec requires structuredContent to match outputSchema, and the
+    # TypeScript client checks it even on errors; ours sends none on errors.
+    if result.structuredContent is not None:
+        jsonschema.validate(result.structuredContent, tool.outputSchema)
+    assert json.loads(result.content[0].text)["code"]
+
+
+def test_fallback_warning_names_only_files_the_answer_read(monkeypatch, tmp_path):
+    monkeypatch.setenv("EU_REG_MCP_CACHE_DIR", str(tmp_path))
+    monkeypatch.setattr(data.time, "sleep", lambda _: None)
+    (tmp_path / "changelog.jsonl").write_bytes(
+        (FIXTURES / "changelog.jsonl").read_bytes()
+    )
+    fresh = (FIXTURES / "latest.json").read_bytes()
+
+    def changelog_down(url):
+        if url.endswith("changelog.jsonl"):
+            raise urllib.error.URLError("offline")
+        return fresh
+
+    monkeypatch.setattr(data, "_get", changelog_down)
+    data.clear_cache()
+    _, changes = call("micar_register_changes", {})
+    assert "changelog.jsonl" in changes.structuredContent["warnings"][0]
+    _, search = call("search_micar_register", {"query": "example"})
+    assert search.structuredContent["warnings"] == []
+    data.clear_cache()

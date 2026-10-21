@@ -1,0 +1,19 @@
+{
+  "id": "changes-by-lei",
+  "description": "An exact LEI finds the changes that carry it.",
+  "setup": "fixtures",
+  "call": {
+    "tool": "micar_register_changes",
+    "arguments": {
+      "lei": "529900EXAMPLELEI0001"
+    }
+  },
+  "expect": {
+    "isError": false,
+    "equals": {
+      "total_changes": 1,
+      "changes.0.entry_id": "a1",
+      "changes.0.lei": "529900EXAMPLELEI0001"
+    }
+  }
+}

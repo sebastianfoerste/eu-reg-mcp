@@ -47,7 +47,7 @@ def test_search_tool_end_to_end():
 
 def test_summary_and_changes_tools():
     assert dump(server.micar_register_summary())["snapshot_date"] == "2026-07-07"
-    assert dump(server.micar_register_changes(limit=5))["total_changes"] == 2
+    assert dump(server.micar_register_changes(limit=5))["total_changes"] == 4
 
 
 def test_cli_search_prints_json(capsys):

@@ -115,6 +115,7 @@ def test_version_is_single_sourced():
     [
         ("check_register_status", {"entity": "Example Issuer"}, "not matches"),
         ("review_register_changes", {"since": "2026-07-01"}, "does not state why"),
+        ("review_register_changes", {}, "do not report it as a removal"),
     ],
 )
 def test_prompts_carry_the_guardrails(name, arguments, must_say):
@@ -125,3 +126,24 @@ def test_prompts_carry_the_guardrails(name, arguments, must_say):
     assert "snapshot_date" in text
     assert must_say in text
     assert register.NOTICE in text
+
+
+@pytest.mark.parametrize(
+    "uri", ["micar://summary", "micar://changes", "micar://entry/a1"]
+)
+def test_resource_errors_carry_code_and_notice(monkeypatch, uri):
+    def unavailable():
+        raise data.DataError("could not load")
+
+    monkeypatch.setattr(data, "load_snapshot", unavailable)
+
+    async def action(client):
+        try:
+            await client.read_resource(uri)
+        except McpError as error:
+            return str(error)
+        return ""
+
+    message = session(action)
+    assert "data_unavailable: could not load" in message
+    assert register.NOTICE in message

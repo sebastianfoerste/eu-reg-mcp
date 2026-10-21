@@ -20,6 +20,7 @@ from eu_reg_mcp.integrations import REVIEW_NOTICE
 REGISTER_TOOLS = frozenset(
     {"search_micar_register", "micar_register_summary", "micar_register_changes"}
 )
+ALL_TOOLS = REGISTER_TOOLS | {"lint_micar_whitepaper", "classify_eu_ai_act_system"}
 # Register errors answer without a snapshot; they say so instead of omitting it.
 NO_SNAPSHOT = {"snapshot_date": None, "data_age_days": None, "stale": None}
 
@@ -38,7 +39,19 @@ class _Server(FastMCP):
                 return cause.to_result()
             if isinstance(cause, ValidationError) and cause.title.endswith("Arguments"):
                 return _invalid_arguments(name, cause).to_result()
-            raise
+            if cause is None or name not in ALL_TOOLS:
+                raise  # unknown tool and the like: protocol-level as before
+            return _unexpected(name, cause).to_result()
+
+
+def _unexpected(tool: str, error: BaseException) -> ToolFailure:
+    """Any other failure still answers in the one error shape, with its notice."""
+    message = f"Unexpected {type(error).__name__}: {error}"[:2000]
+    if tool in REGISTER_TOOLS:
+        return ToolFailure(
+            "upstream_failed", message, notice=register.NOTICE, extra=NO_SNAPSHOT
+        )
+    return ToolFailure("upstream_failed", message, notice=REVIEW_NOTICE)
 
 
 def _invalid_arguments(tool: str, error: ValidationError) -> ToolFailure:
@@ -80,8 +93,9 @@ mcp._mcp_server.version = __version__
 
 
 RegisterSlug = Literal["all", "other-wp", "emt-wp", "art-wp", "casps", "ncasp"]
-ChangeType = Literal["all", "added", "changed", "removed"]
+ChangeType = Literal["all", "added", "changed", "removed", "missing"]
 REGISTER_SLUGS: tuple[str, ...] = RegisterSlug.__args__  # type: ignore[attr-defined]
+CHANGE_TYPES: tuple[str, ...] = ChangeType.__args__  # type: ignore[attr-defined]
 
 # Register tools only read published data; lint/classify are local and pure.
 READ_ONLY = ToolAnnotations(readOnlyHint=True, idempotentHint=True, openWorldHint=True)
@@ -106,10 +120,15 @@ def _load[T](loader: Callable[[], T]) -> T:
         ) from error
 
 
-def _with_warnings(result: dict[str, Any]) -> dict[str, Any]:
-    """Add cached-fallback warnings, keeping `notice` the last key."""
+SNAPSHOT_ONLY = (data.SNAPSHOT_FILE,)
+SNAPSHOT_AND_CHANGELOG = (data.SNAPSHOT_FILE, data.CHANGELOG_FILE)
+
+
+def _with_warnings(result: dict[str, Any], files: Sequence[str]) -> dict[str, Any]:
+    """Add fallback warnings for the files this answer read; `notice` stays last."""
     body = {key: value for key, value in result.items() if key != "notice"}
-    return {**body, "warnings": data.fallback_warnings(), "notice": result["notice"]}
+    warnings = data.fallback_warnings(files)
+    return {**body, "warnings": warnings, "notice": result["notice"]}
 
 
 @mcp.tool(title="Search the MiCAR register", annotations=READ_ONLY)
@@ -130,19 +149,19 @@ def search_micar_register(
     result = register.search_entries(
         snapshot, query, register_slug, member_state, offset=offset
     )
-    return models.SearchResponse.model_validate(_with_warnings(result))
+    return models.SearchResponse.model_validate(_with_warnings(result, SNAPSHOT_ONLY))
 
 
 @mcp.tool(title="MiCAR register summary", annotations=READ_ONLY)
 def micar_register_summary() -> models.SummaryResponse:
     """Totals per MiCAR register and white paper format coverage."""
     result = register.summarize(_load(data.load_snapshot))
-    return models.SummaryResponse.model_validate(_with_warnings(result))
+    return models.SummaryResponse.model_validate(_with_warnings(result, SNAPSHOT_ONLY))
 
 
 def _summary_answer() -> models.SummaryResponse:
     result = register.summarize(_resource_load(data.load_snapshot))
-    return models.SummaryResponse.model_validate(_with_warnings(result))
+    return models.SummaryResponse.model_validate(_with_warnings(result, SNAPSHOT_ONLY))
 
 
 @mcp.tool(title="MiCAR register changes", annotations=READ_ONLY)
@@ -155,13 +174,14 @@ def micar_register_changes(
     member_state: str = "",
     entity: str = "",
     entry_id: str = "",
+    lei: str = "",
     offset: int = 0,
 ) -> models.ChangesResponse:
     """Register changes, newest first: additions, changes, removals.
 
     Filters: change_type, since/until (snapshot date), register_slug,
-    member_state, entity (name), entry_id. Pages: offset, next_offset.
-    still_listed: entry in latest snapshot.
+    member_state, entity, entry_id, lei. Pages: offset, next_offset.
+    still_listed: in latest snapshot. missing: provisional, not a removal.
     """
     result = register.recent_changes(
         _load(data.load_changelog),
@@ -174,9 +194,12 @@ def micar_register_changes(
         member_state=member_state,
         entity=entity,
         entry_id=entry_id,
+        lei=lei,
         offset=offset,
     )
-    return models.ChangesResponse.model_validate(_with_warnings(result))
+    return models.ChangesResponse.model_validate(
+        _with_warnings(result, SNAPSHOT_AND_CHANGELOG)
+    )
 
 
 @mcp.tool(title="Lint a MiCAR white paper", annotations=LOCAL_READ_ONLY)
@@ -209,12 +232,17 @@ def _json(result: BaseModel | dict[str, Any]) -> str:
     return json.dumps(result, ensure_ascii=False, indent=2)
 
 
+def _resource_error(code: str, message: str) -> ValueError:
+    # Resource reads have no isError result, so errors are JSON-RPC errors;
+    # the message carries the code and, like every answer, the notice.
+    return ValueError(f"{code}: {message} Notice: {register.NOTICE}")
+
+
 def _resource_load[T](loader: Callable[[], T]) -> T:
-    # Resource errors are protocol errors; keep the code in the message.
     try:
         return _load(loader)
     except ToolFailure as failure:
-        raise ValueError(f"{failure.code}: {failure.message}") from failure
+        raise _resource_error(failure.code, failure.message) from failure
 
 
 @mcp.resource(
@@ -265,7 +293,11 @@ def changes_resource() -> str:
         _resource_load(data.load_changelog),
         snapshot=_resource_load(data.load_snapshot),
     )
-    return _json(models.ChangesResponse.model_validate(_with_warnings(result)))
+    return _json(
+        models.ChangesResponse.model_validate(
+            _with_warnings(result, SNAPSHOT_AND_CHANGELOG)
+        )
+    )
 
 
 @mcp.resource(
@@ -277,11 +309,12 @@ def changes_resource() -> str:
 def entry_resource(entry_id: str) -> str:
     found = register.get_entry(_resource_load(data.load_snapshot), entry_id)
     if found is None:
-        raise ValueError(
+        raise _resource_error(
+            "invalid_input",
             f"entry_id {entry_id!r} is not in the latest snapshot; it may have "
-            "been removed (see micar_register_changes) or never existed."
+            "been removed (see micar_register_changes) or never existed.",
         )
-    return _json(_with_warnings(found))
+    return _json(_with_warnings(found, SNAPSHOT_ONLY))
 
 
 @mcp.prompt(
@@ -313,7 +346,10 @@ def review_register_changes(since: str = "") -> str:
         "type and register, stating the snapshot_date of the answer and the "
         "snapshot date of each change. For each removal, say that the entry "
         "left the register export and that the register itself does not state "
-        "why; do not suggest a reason. Use still_listed to say whether an "
+        "why; do not suggest a reason. A 'missing' record is provisional: the "
+        "entry was absent from one export and is recorded as removed only if "
+        "the next export also lacks it, so do not report it as a removal. "
+        "Use still_listed to say whether an "
         "entry is listed today. Report register facts only, with no legal "
         f"assessment of any entity. End with this notice: {register.NOTICE}"
     )
@@ -363,15 +399,14 @@ def main(argv: list[str] | None = None) -> None:
     sub.add_parser("summary", help="Totals per register and white paper formats.")
     changes = sub.add_parser("changes", help="Recent register changes.")
     changes.add_argument("--limit", type=int, default=50)
-    changes.add_argument(
-        "--type", default="all", choices=["all", "added", "changed", "removed"]
-    )
+    changes.add_argument("--type", default="all", choices=CHANGE_TYPES)
     changes.add_argument("--since", type=date.fromisoformat, help="YYYY-MM-DD.")
     changes.add_argument("--until", type=date.fromisoformat, help="YYYY-MM-DD.")
     changes.add_argument("--register", default="all", choices=REGISTER_SLUGS)
     changes.add_argument("--member-state", default="")
     changes.add_argument("--entity", default="", help="Entity-name substring.")
     changes.add_argument("--entry-id", default="")
+    changes.add_argument("--lei", default="", help="Exact LEI (newer records only).")
     changes.add_argument("--offset", type=int, default=0)
     args = parser.parse_args(argv)
 
@@ -402,6 +437,7 @@ def _run(args: argparse.Namespace) -> None:
                 args.member_state,
                 args.entity,
                 args.entry_id,
+                args.lei,
                 args.offset,
             )
         )

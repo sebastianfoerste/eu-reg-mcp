@@ -20,7 +20,7 @@ from pydantic import (
 
 
 def compact_schema(node: Any) -> Any:
-    """Drop generated titles and null defaults; fold `X | None` into a type list."""
+    """Drop generated titles and empty defaults; fold `X | None` into a type list."""
     if isinstance(node, list):
         return [compact_schema(item) for item in node]
     if not isinstance(node, dict):
@@ -29,8 +29,8 @@ def compact_schema(node: Any) -> Any:
     for key, value in node.items():
         if key == "title" and isinstance(value, str):
             continue
-        if key == "default" and value is None:
-            continue
+        if key == "default" and value in (None, ""):
+            continue  # "optional" is already said by `required`
         if key in ("properties", "$defs"):
             out[key] = {name: compact_schema(schema) for name, schema in value.items()}
         else:

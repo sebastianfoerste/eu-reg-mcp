@@ -74,6 +74,15 @@ def _setup(name: str, monkeypatch, tmp_path) -> None:
         monkeypatch.setattr(integrations.shutil, "which", lambda _: None)
         monkeypatch.setitem(sys.modules, "micar_linter", None)
         monkeypatch.setitem(sys.modules, "eu_ai_act_classifier.local_api", None)
+    if name == "lint_bad_output":
+        monkeypatch.setattr(integrations.shutil, "which", lambda _: "/bin/micar-lint")
+        monkeypatch.setattr(
+            integrations.subprocess,
+            "run",
+            lambda *_a, **_k: subprocess.CompletedProcess(
+                [], 1, "Traceback: not JSON", ""
+            ),
+        )
     if name == "lint_timeout":
         monkeypatch.setattr(integrations.shutil, "which", lambda _: "/bin/micar-lint")
 
@@ -110,6 +119,10 @@ def _run(call: dict[str, Any]) -> tuple[Any, bool | None]:
             if "tool" in call:
                 result = await client.call_tool(call["tool"], call["arguments"])
                 text = json.loads(result.content[0].text)
+                if result.isError:
+                    # Error JSON goes in the text block only (see errors.py).
+                    assert result.structuredContent is None
+                    return text, True
                 assert text == result.structuredContent, "text and structured differ"
                 return result.structuredContent, result.isError
             if "resource" in call:
@@ -121,7 +134,9 @@ def _run(call: dict[str, Any]) -> tuple[Any, bool | None]:
     return anyio.run(go)
 
 
-def _passthrough(kind: str, arguments: dict[str, Any], body: dict[str, Any]) -> None:
+def _passthrough(
+    kind: str, arguments: dict[str, Any], body: dict[str, Any], workdir: Path
+) -> None:
     """The sibling's output must arrive byte-for-byte as the sibling made it."""
     if kind == "classify":
         from eu_ai_act_classifier.local_api import classify_payload
@@ -131,14 +146,14 @@ def _passthrough(kind: str, arguments: dict[str, Any], body: dict[str, Any]) -> 
     if kind == "lint":
         command = integrations._linter_command()
         assert command is not None
-        draft = HERE / "_draft.json"
+        draft = workdir / "draft.json"
         draft.write_text(arguments["whitepaper_json"], encoding="utf-8")
-        try:
-            out = subprocess.run(
-                [*command, str(draft), "--json"], capture_output=True, text=True
-            )
-        finally:
-            draft.unlink(missing_ok=True)
+        out = subprocess.run(
+            [*command, str(draft), "--json"],
+            capture_output=True,
+            text=True,
+            timeout=integrations.LINT_TIMEOUT_SECONDS,
+        )
         assert body["report"] == json.loads(out.stdout)
 
 
@@ -177,7 +192,7 @@ def test_task(path, monkeypatch, tmp_path):
     if expect.get("contains_notice"):
         assert register.NOTICE in body["text"]
     if "passthrough" in expect:
-        _passthrough(expect["passthrough"], task["call"]["arguments"], body)
+        _passthrough(expect["passthrough"], task["call"]["arguments"], body, tmp_path)
 
     if "text" not in body:  # tool and resource answers, not prompt text
         assert body["notice"], "every answer keeps its notice"

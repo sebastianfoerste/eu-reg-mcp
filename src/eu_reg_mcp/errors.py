@@ -1,8 +1,10 @@
 """One error model for every tool: an isError result with a stable code.
 
 A tool raises ToolFailure; the server turns it into a CallToolResult with
-`isError: true`, the same JSON in a text block and in structuredContent, and
-the response's `notice`. Clients skip outputSchema validation on errors.
+`isError: true` and the error JSON (code, error, hint, notice) in its text
+block. It sends no structuredContent: the spec requires structuredContent to
+match the tool's outputSchema, which describes successes, and the TypeScript
+SDK client validates it even on errors.
 """
 
 from __future__ import annotations
@@ -16,7 +18,7 @@ ErrorCode = Literal[
     "data_unavailable",  # register data could not be loaded and no cache exists
     "extra_missing",  # the lint or classify extra is not installed
     "invalid_input",  # arguments failed validation or JSON did not parse
-    "upstream_failed",  # the linter or classifier failed or gave unusable output
+    "upstream_failed",  # the linter, classifier or data failed unexpectedly
     "timeout",  # the linter did not finish in time
 ]
 
@@ -53,7 +55,5 @@ class ToolFailure(Exception):
         body = self.payload()
         text = json.dumps(body, ensure_ascii=False, indent=2)
         return CallToolResult(
-            content=[TextContent(type="text", text=text)],
-            structuredContent=body,
-            isError=True,
+            content=[TextContent(type="text", text=text)], isError=True
         )

@@ -49,8 +49,8 @@ def test_summary_counts_and_coverage():
 
 def test_changes_exclude_baseline_and_filter_by_type():
     result = recent_changes(CHANGELOG, limit=10)
-    assert result["total_changes"] == 2
-    assert result["changes"][0]["change"] in {"added", "removed"}
+    assert result["total_changes"] == 4
+    assert result["changes"][0]["change"] in {"changed", "missing"}
     removed = recent_changes(CHANGELOG, change_type="removed")
     assert removed["total_changes"] == 1
     assert removed["changes"][0]["entity_name"] == "Former Example Token AG"
@@ -116,19 +116,31 @@ def test_change_filters():
     def ids(**filters):
         return [c["entry_id"] for c in recent_changes(CHANGELOG, **filters)["changes"]]
 
-    assert ids(since=date(2026, 7, 14)) == ["a3", "c9"]
+    assert ids(since=date(2026, 7, 14), until=date(2026, 7, 14)) == ["a3", "c9"]
     assert ids(until=date(2026, 7, 13)) == []
     assert ids(member_state="mt") == ["c9"]
     assert ids(entity="former example") == ["a3"]
     assert ids(entry_id="c9") == ["c9"]
     assert ids(register="casps") == []
+    assert ids(change_type="missing") == ["a2"]
+
+
+def test_change_lei_filter_is_exact_and_skips_records_without_lei():
+    def ids(lei):
+        return [c["entry_id"] for c in recent_changes(CHANGELOG, lei=lei)["changes"]]
+
+    assert ids("529900example lei0001".replace(" ", "")) == ["a1"]
+    assert ids("529900EXAMPLELEI000") == []  # no prefix matching
+    # The 2026-07-14 records predate the observatory's `lei` field.
+    assert ids("529900EXAMPLELEI0002") == ["a2"]
 
 
 def test_change_paging_reports_next_offset():
     first = recent_changes(CHANGELOG, limit=1)
     assert first["offset"] == 0 and first["next_offset"] == 1
+    last = recent_changes(CHANGELOG, limit=1, offset=3)
+    assert last["next_offset"] is None
     second = recent_changes(CHANGELOG, limit=1, offset=1)
-    assert second["next_offset"] is None
     assert first["changes"][0] != second["changes"][0]
 
 

@@ -12,7 +12,7 @@
 
 - `search_micar_register(query, register_slug="all", member_state="", offset=0)` — `query` is a case-insensitive entity-name substring or an exact LEI; `register_slug` is one of `all | other-wp | emt-wp | art-wp | casps | ncasp`; `member_state` is an optional two-letter code (DE, IE, MT, …); `offset` skips that many matches (results come 25 at a time; `truncated` says whether more follow and `next_offset` gives the next page, `null` on the last). Results are ranked, and each carries `match`: a `score` and its `basis` (`exact_lei` and `exact_name` 1.0, `name_without_legal_form` 0.95, `name_prefix_words` 0.9, `whole_words` 0.85, `name_prefix` 0.8, `word_start` 0.7, `substring` 0.6; equal scores keep register order). The score describes how the query string matched the name or LEI, nothing about the entity. When nothing matches, `similar_names` lists up to five names spelt similarly to the query (`similarity` ≥ 0.8, a `difflib` ratio after dropping legal-form suffixes such as GmbH or Ltd), each labelled `"not a match"`; LEI-shaped queries get none.
 - `micar_register_summary()` — no parameters.
-- `micar_register_changes(limit=50, change_type="all", since=None, until=None, register_slug="all", member_state="", entity="", entry_id="", offset=0)` — newest first. `change_type` is `all | added | changed | removed`; `since` and `until` are snapshot dates (`YYYY-MM-DD`, inclusive); `entity` is a case- and accent-insensitive name substring; `limit` is capped at 200; page with `offset` and `next_offset`. Change records carry no LEI (the observatory changelog has none), so filter by `entry_id` instead. The CLI mirrors these as `changes --since --until --register --member-state --entity --entry-id --offset` (default `--limit` is now 50, as in the tool).
+- `micar_register_changes(limit=50, change_type="all", since=None, until=None, register_slug="all", member_state="", entity="", entry_id="", lei="", offset=0)` — newest first. `change_type` is `all | added | changed | removed | missing`. A `missing` record is provisional: the observatory saw the entry absent from one export and records it as `removed` only if the next export also lacks it, so it is not a removal. `since` and `until` are snapshot dates (`YYYY-MM-DD`, inclusive); `entity` is a case- and accent-insensitive name substring; `lei` is an exact LEI. Only change records from the 2026-10-19 snapshot on carry an `lei` field (with `record_version`, `row_key`, `changed_fields` and others, passed through as published), so an LEI filter cannot find older changes; use `entry_id` for those. `limit` is capped at 200; page with `offset` and `next_offset`. The CLI mirrors these as `changes --type --since --until --register --member-state --entity --entry-id --lei --offset` (default `--limit` is now 50, as in the tool).
 - `lint_micar_whitepaper(whitepaper_json)` — a draft white paper as a JSON string.
 - `classify_eu_ai_act_system(profile_json="")` — a SystemProfile as JSON; an empty string returns the schema.
 
@@ -125,13 +125,18 @@ Every register answer carries what you need to check it:
 
 ## Typed output and errors
 
-Each tool declares a field-level `outputSchema`; a successful call returns the
-same object as `structuredContent` and as a JSON text block, so clients that
+Each tool declares a field-level `outputSchema` for its successful answers; a
+successful call returns the same object as `structuredContent` and as a JSON
+text block, so clients that
 read only text see the same data. `notice` is always the last key. Register
 answers also carry `warnings`: empty normally, one line per data file served
 from the last good cached copy after a failed refresh.
 
-A failed call returns `isError: true` with this object (also as text):
+A failed call returns `isError: true` with this object as JSON in its text
+block. It carries no `structuredContent`: the MCP spec requires
+`structuredContent` to match the tool's `outputSchema`, which describes
+successes, and the TypeScript SDK client checks it even on errors (`Client.callTool`,
+typescript-sdk 1.x, read 2026-10-21). Clients should parse the text block:
 
 ```json
 {
@@ -147,7 +152,7 @@ A failed call returns `isError: true` with this object (also as text):
 | `data_unavailable` | Register data could not be fetched and no cached copy exists |
 | `extra_missing` | The `lint` or `classify` extra is not installed; `hint` says how to add it, `available` is `false` |
 | `invalid_input` | Arguments failed validation (e.g. an unknown `register_slug`), the JSON did not parse or is not an object, or the SystemProfile is invalid |
-| `upstream_failed` | The linter failed or printed something other than JSON (`raw_output` holds the first 5,000 characters) |
+| `upstream_failed` | The linter failed or printed something other than JSON (`raw_output` holds the first 5,000 characters), or any other unexpected failure inside a tool (the message names the exception) |
 | `timeout` | The linter did not finish within 120 seconds |
 
 Errors from the three register tools also carry `snapshot_date`, `data_age_days` and `stale` as `null`: there was no snapshot behind the answer. `hint` is present when there is a concrete next step. The CLI prints the same
@@ -168,7 +173,11 @@ a code, and a missing extra or invalid JSON returned an ordinary result with
 | `review_register_changes(since="")` | prompt | Asks the model to summarise changes with their dates and to say, for each removal, that the register itself does not state why |
 
 Resources are read-only views of the same data the tools return; every
-register resource carries the snapshot date and the `notice`. Resource errors
-are protocol errors whose message starts with the error code (for example
-`data_unavailable: …`). `serverInfo.version` in the MCP handshake now reports
+register resource carries the snapshot date and the `notice`. A resource read
+has no `isError` result, so its errors are JSON-RPC errors (code 0 in mcp
+1.x). The SDK prefixes the message, so the error code appears inside it rather
+than at the start, and the register `notice` follows:
+`Error reading resource micar://summary: data_unavailable: could not load … Notice: …`.
+For the entry template the prefix is `Error creating resource from template: `,
+repeated twice by the SDK; an unknown `entry_id` gives `invalid_input`. `serverInfo.version` in the MCP handshake now reports
 this package's version (it reported the MCP SDK's before).

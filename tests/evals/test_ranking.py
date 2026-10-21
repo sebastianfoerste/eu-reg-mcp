@@ -28,31 +28,45 @@ def baseline_ids(query):
 
 
 def ranked_ids(query):
-    result = search_entries(SNAPSHOT, query)
-    hits = result["results"] or result["similar_names"]
-    return [hit["entry_id"] for hit in hits]
+    """Real matches only: `results`, never `similar_names`."""
+    return [hit["entry_id"] for hit in search_entries(SNAPSHOT, query)["results"]]
 
 
-def hit_rate(ids_for, k):
+def similar_ids(query):
+    """Suggestions labelled "not a match", for zero-match queries."""
+    return [hit["entry_id"] for hit in search_entries(SNAPSHOT, query)["similar_names"]]
+
+
+def hit_rate(ids_for, k, cases=None):
+    cases = QUERIES if cases is None else cases
     hits = sum(
-        any(i in case["expected"] for i in ids_for(case["query"])[:k])
-        for case in QUERIES
+        any(i in case["expected"] for i in ids_for(case["query"])[:k]) for case in cases
     )
-    return hits / len(QUERIES)
+    return hits / len(cases)
 
 
 def test_benchmark_size():
     assert len(QUERIES) >= 20
 
 
-def test_ranking_beats_baseline():
+def test_ranking_beats_baseline_on_real_matches():
+    # Ranking only reorders literal matches, so hit@5 cannot rise; hit@1 does.
     before = (hit_rate(baseline_ids, 1), hit_rate(baseline_ids, 5))
     after = (hit_rate(ranked_ids, 1), hit_rate(ranked_ids, 5))
-    print(f"hit@1 {before[0]:.2f} -> {after[0]:.2f}", end="; ")
+    print(f"real-match hit@1 {before[0]:.2f} -> {after[0]:.2f}", end="; ")
     print(f"hit@5 {before[1]:.2f} -> {after[1]:.2f}")
-    assert after[0] >= 0.9
-    assert after[1] == 1.0
     assert after[0] > before[0]
+    assert after[1] >= before[1]
+    matched = [case for case in QUERIES if ranked_ids(case["query"])]
+    assert hit_rate(ranked_ids, 1, matched) == 1.0
+
+
+def test_similar_names_recall_on_zero_match_queries():
+    # Reported apart from hit@k: these suggestions are not matches (rule 2).
+    zero = [case for case in QUERIES if not ranked_ids(case["query"])]
+    recall = hit_rate(similar_ids, 1, zero)
+    print(f"similar_names recall@1 {recall:.2f} on {len(zero)} zero-match queries")
+    assert zero and recall >= 0.9
 
 
 def test_exact_lei_and_exact_name_rank_first():
