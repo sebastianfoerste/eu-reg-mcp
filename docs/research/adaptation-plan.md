@@ -6,14 +6,15 @@ Inputs: [landscape](2026-10-competitive-landscape.md) · [feature matrix](featur
 
 | Measure | Baseline (`68303d6`) | After this branch | How measured |
 | --- | --- | --- | --- |
-| Tests | 39 passed | 107 passed (incl. 21 eval tasks, 6 ranking checks) | `uv run pytest -q` |
-| `tools/list`, whole (compact JSON) | 3,425 B (~856 tokens) | 7,480 B (~1,870 tokens) | scratch stdio client |
+| Tests | 39 passed | 125 passed (incl. 25 eval tasks, 7 ranking checks) | `uv run pytest -q` |
+| `tools/list`, whole (compact JSON) | 3,425 B (~856 tokens) | 7,478 B (~1,870 tokens) | scratch stdio client |
 | `tools/list` without `outputSchema` (names, titles, descriptions, inputs) | 2,904 B | 2,904 B, with 7 more parameters and 5 titles | `test_tools_list_input_side_stays_within_budget` |
 | Field-level `outputSchema` | 0 of 5 tools | 5 of 5 | contract tests |
 | Resources / templates / prompts | 0 / 0 / 0 | 3 / 1 / 2 | `resources/list`, `prompts/list` |
 | Error shapes | 4 (plain-text `isError`, Pydantic text, `{"available": false}`, `{"error": "…"}`) | 1 (`code`, `error`, `hint`, `notice`; 5 codes) | stdio transcript |
 | Register answers with `snapshot_date`, `stale` | 2 of 3 tools | 3 of 3 tools, 3 of 3 register resources, all register errors (as `null`) | evals |
-| Search hit@1 / hit@5 (22 fictional queries) | 0.18 / 0.36 | 1.00 / 1.00 | `tests/evals/test_ranking.py` |
+| Search real-match hit@1 / hit@5 (22 fictional queries; `results` only) | 0.18 / 0.36 | 0.36 / 0.36 (8 of 8 queries with a literal match now rank it first, was 4 of 8) | `tests/evals/test_ranking.py` |
+| `similar_names` recall@1 on the 14 zero-match queries (not matches) | none offered | 1.00 | same |
 | Response bytes: search / summary / changes | 1,739 / 1,737 / 2,292 | 2,011 / 1,772 / 2,827 | `CallToolResult`, fixtures |
 | Response bytes: lint / classify | 19,165 / 41,038 | 19,165 / 41,038 (unchanged: sibling output passes through) | same |
 | Wheel | 13,979 B | 22,409 B | `uv build` |
@@ -21,7 +22,7 @@ Inputs: [landscape](2026-10-competitive-landscape.md) · [feature matrix](featur
 | Declared `mcp` floor | `>=1.9` (1.10 and 1.12 fail 38 of these tests; ≤1.20 do not install beside current pydantic) | `>=1.22` (full suite passes on 1.22.0, 1.24.0, 1.26.0, 1.28.1) | `uv run --isolated --with mcp==X pytest` |
 | README words | 890 | 882 | `wc -w` |
 
-The ranking benchmark was written alongside the algorithm, so 1.00 overstates real-world precision; it shows the fix for the cases it names (partial-word collisions, legal-form variants, misspellings), not general recall. A live sanity check (not committed) showed no `similar_names` for nonsense queries.
+Until the 2026-10-21 audit these were reported as one figure (hit@1 0.18 → 1.00) that counted `similar_names` as hits; they are not matches (rule 2), so the two are now measured apart. Misspellings and legal-form variants (for example "Example Issuer AG" for "Example Issuer GmbH") still return zero matches by design: a different legal form may be a different entity, so they surface only as `similar_names`. The benchmark was written alongside the algorithm, so even these figures overstate real-world precision. A live sanity check (not committed) showed no `similar_names` for nonsense queries.
 
 ## 2. Best-of candidates
 
@@ -36,7 +37,7 @@ Impact 1–5 on the lawyer's, drafter's or assessor's job; Fit names the rule; E
 | H5 | Contract eval suite | Sentry (evals beside tests), mcp-eu-sparql (drift check) | 4 | pass (rule 6: no model) | M | Observed | D | **Built** |
 | H6 | Ship the unreleased items | MCP Registry, PyPI | 5 | pass if owner publishes | S | Observed | T | Version source and agreement test **built**; `release.yml` **spec** |
 | D1 | Titles and sharper descriptions within budget | GitHub/Cloudflare context complaints | 3 | pass | S | Observed | T | **Built** (with H1/H3) |
-| D3 | `docs/clients.md` for 6+ clients | Context7 (30+ clients, Claimed), Lex | 3 | pass | S | Claimed | T | **Spec**: only Claude Code docs were reachable |
+| D3 | `docs/clients.md` for 6+ clients | Context7 (30+ clients, Claimed), Lex | 3 | pass | S | Observed | T | **Built** on 2026-10-21 for 6 clients whose official docs were readable (see §3) |
 | H4 | Full linter/classifier options, document input | linter CLI, classifier `local_api` | 4 | pass with ADR | L | Observed | D | **Spec** ([ADR 0006](../adr/0006-document-input-for-lint.md)) |
 | D2 | `citation_links` (CELEX/ELI) | cyanheads, mcp-eu-sparql, Ansvar | 4 | **fail today**: EUR-Lex unreachable, links unverifiable | M | Claimed | D | **Parked** ([ADR 0008](../adr/0008-citation-links.md)) |
 | H7 | Docker and authenticated remote HTTP | Exa, GitHub, cyanheads | 3 | owner decision (rule 8) | M | Observed | T | **ADR only** ([0007](../adr/0007-docker-and-authenticated-http.md)) |
@@ -54,15 +55,15 @@ Impact 1–5 on the lawyer's, drafter's or assessor's job; Fit names the rule; E
 | --- | --- | --- |
 | H1 Typed output, one error model | **Confirmed, modified.** Field-level schemas cost 4,576 B in `tools/list`; input-side bytes held at baseline. Errors are `isError` results whose `structuredContent` the Python client does not validate against `outputSchema` (`ClientSession.call_tool` skips validation when `isError`; Observed in mcp 1.28.1). | [ADR 0001](../adr/0001-typed-output-and-error-model.md) |
 | H2 Resources, templates, prompts | **Confirmed.** No rule-catalogue resource: the linter exports none ([L] plan lists it as a follow-up). | [ADR 0003](../adr/0003-resources-and-prompts.md) |
-| H3 Ranking, filters, `as_of` | **Modified.** Ranking and filters built; `as_of` **parked**: the observatory has 16 dated snapshots but no index and an irregular date (2026-07-13), so a client would have to probe dates blind. LEI filter on changes **killed**: changelog records carry no LEI; `entry_id` filter instead. | [ADR 0002](../adr/0002-deterministic-search-ranking.md), [0005](../adr/0005-point-in-time-as-of.md) |
+| H3 Ranking, filters, `as_of` | **Modified.** Ranking and filters built; `as_of` **parked**: the observatory has 16 dated snapshots but no index and an irregular date (2026-07-13), so a client would have to probe dates blind. An exact-LEI filter on changes is **built** (added after the 2026-10-21 audit: the research wrongly said changelog records carry no LEI; records from the 2026-10-19 snapshot on carry `lei`, older ones do not, so `entry_id` remains the filter for those). | [ADR 0002](../adr/0002-deterministic-search-ranking.md), [0005](../adr/0005-point-in-time-as-of.md) |
 | H4 Full linter/classifier options | **Parked as spec.** The lock is now on 0.2.1 (2026-10-21); still needs a `python-docx` extra and a file-input ADR. | [ADR 0006](../adr/0006-document-input-for-lint.md) |
-| H5 Contract evals | **Confirmed.** 21 tasks; found one real inconsistency (register `invalid_input` without null provenance), fixed. Model-driven evals stay spec. | [ADR 0004](../adr/0004-contract-evals.md) |
-| H6 Ship Unreleased | **Confirmed, partly built.** `__version__`, `User-Agent`, `serverInfo.version`, agreement test and a proposed `0.2.0 (unreleased)` heading. Publishing is an owner action. | [ADR 0009](../adr/0009-release-workflow.md) |
+| H5 Contract evals | **Confirmed.** 25 tasks (21 at first, 4 added after the audit); found one real inconsistency (register `invalid_input` without null provenance), fixed. Model-driven evals stay spec. | [ADR 0004](../adr/0004-contract-evals.md) |
+| H6 Ship Unreleased | **Confirmed, partly built.** `__version__`, `User-Agent`, `serverInfo.version`, agreement test and a proposed `0.2.0 (unreleased)` heading. Publishing is an owner action: 0.2.0 goes to PyPI and, as a new version, to the existing MCP Registry entry (0.1.0 and 0.1.1 are listed since 2026-10-15; the first version of this plan wrongly said the server was not listed). | [ADR 0009](../adr/0009-release-workflow.md) |
 | H7 Docker, authenticated HTTP | **ADR only, owner decision.** | [ADR 0007](../adr/0007-docker-and-authenticated-http.md) |
-| H8 GLEIF | **Parked.** api.gleif.org unreachable; CC0 licence and throttling seen only in snippets (Claimed). | landscape §6 |
+| H8 GLEIF | **Parked.** api.gleif.org unreachable; CC0 licence and throttling seen only in snippets (Claimed). Precedent found 2026-10-21: cz-agents eu-registry queries GLEIF without auth and caches responses in SQLite for 7 days by default (README, Observed). | landscape §4, §6 |
 | D1 Descriptions and titles | **Confirmed.** 5 titles; descriptions tightened; input-side bytes 2,904 = baseline. | budget test |
 | D2 `citation_links` | **Parked.** EUR-Lex and CELLAR unreachable; CELEX `32023R1114` and ELI `reg/2023/1114/oj` seen only in snippets. Unverifiable means no link. | [ADR 0008](../adr/0008-citation-links.md) |
-| D3 `docs/clients.md` | **Parked as spec.** code.visualstudio.com and docs.cursor.com failed DNS; only Claude Code's MCP page was readable. Configs from memory are not allowed. | landscape §8 |
+| D3 `docs/clients.md` | **Built (2026-10-21).** Parking it was a mistake: official docs for Zed, Gemini CLI, Continue and goose are readable on GitHub. `docs/clients.md` covers those plus Claude Code and Claude Desktop, with source URLs and read dates; the two `uvx` command/args pairs were tested with a scratch stdio client against PyPI 0.1.1. VS Code, Cursor, Cline and Codex are listed as not reachable. | [docs/clients.md](../clients.md) |
 | D4 Guardrail skill | **Modified.** The two prompts now carry the guardrails inside MCP itself; a separate skill is low value until clients surface prompts poorly. Spec only. | — |
 | D5 MCP Apps | **Parked.** 1.28.1 could serve a `ui://` resource and tool `_meta`, so the SDK is not the blocker; a UI is a product decision. | [ADR 0010](../adr/0010-mcp-apps-view.md) |
 
@@ -87,7 +88,7 @@ Research questions, briefly: (1) 1.28.1 negotiates `2025-11-25`; stateless reque
 ### H3 — ranking, similar names, change filters (commit `aeaa47f`)
 - **Story.** A drafter who types "Orbit" or misspells a name finds the right entry first, and is told plainly when nothing matched.
 - **References.** yente `score`, `match` and per-feature explanations (`yente/scoring.py`, `yente/data/common.py`); cyanheads `notice` on empty results; Lex amendments search.
-- **Adapted.** Same match set as before (substring or exact LEI), ordered by tiers with `match.score` and `match.basis`; equal scores keep register order so paging is stable. With zero matches, ≤5 `similar_names` (`difflib` ratio ≥0.8 against the whole name or a same-length word run, after dropping trailing legal forms), each labelled `"not a match"`; none for LEI-shaped queries. Changes filter by `since`, `until`, `register_slug`, `member_state`, `entity`, `entry_id`, page with `offset`/`next_offset`.
+- **Adapted.** Same match set as before (substring or exact LEI), ordered by tiers with `match.score` and `match.basis`; equal scores keep register order so paging is stable. With zero matches, ≤5 `similar_names` (`difflib` ratio ≥0.8 against the whole name or a same-length word run, after dropping trailing legal forms), each labelled `"not a match"`; none for LEI-shaped queries. Changes filter by `since`, `until`, `register_slug`, `member_state`, `entity`, `entry_id` and exact `lei` (records from 2026-10-19 on), accept the provisional `missing` change type, and page with `offset`/`next_offset`.
 - **Different.** No fuzzy widening of the match set: a register answer never includes an entity the query did not literally match. Scores describe the string, never the entity.
 - **Tests.** `tests/evals/test_ranking.py`, `test_change_filters`, contract tests.
 
@@ -99,7 +100,7 @@ Research questions, briefly: (1) 1.28.1 negotiates `2025-11-25`; stateless reque
 
 ### H5 — contract evals (commit `e1896bc`)
 - **Story.** The maintainer can change wording or code and know the contract still holds.
-- **Built.** 21 JSON tasks plus runner; checks dates, notice placement, error codes, schema validity, unchanged sibling output (byte-equal to a direct `micar-lint --json` and `classify_payload` call), and no `compliance_status`/`risk_score`-style keys. A release-metadata test (versions, `mcp-name`, newest CHANGELOG heading).
+- **Built.** 25 JSON tasks plus runner (every error code including `upstream_failed`, the `missing` change type and the LEI filter); checks dates, notice placement, error codes, schema validity, unchanged sibling output (byte-equal to a direct `micar-lint --json` and `classify_payload` call), and no `compliance_status`/`risk_score`-style keys. A release-metadata test (versions, `mcp-name`, newest CHANGELOG heading).
 - **Spec only.** Model-driven evals (Sentry-style: a model answers "is X on the register?" and a grader checks the date and notice) need a key and network; not in CI.
 
 ## 5. Specs not built
@@ -123,14 +124,14 @@ No `secrets.*`; `id-token: write` only inside the two environments. Owner steps:
 ### H4 full linter and classifier options (spec)
 Expose `type`, `lang`, `strict`; return remediation, coverage and review-table JSON by running `micar-lint` with `--remediation-output` etc. into a temp dir; accept Markdown/XHTML text as a string and PDF/DOCX as base64 blobs (stdio and HTTP alike; never a server-side path over HTTP); add `python-docx` to the `lint` extra. Expose classifier `sources_payload`, `artifacts_payload`, `dossier_payload` and a schema-level `include_advisory`. The lock is already on 0.2.1. See ADR 0006.
 
-### D3 client docs (spec)
-`docs/clients.md` with Claude Code (verified page: `claude mcp add [--scope project] <name> -- <command> [args...]`, `.mcp.json` with `mcpServers`), Claude Desktop (already in README), and Cursor, VS Code, Windsurf, Zed, Cline once their official pages can be read. Mark **tested** only clients exercised in a session; state that plain `uvx eu-reg-mcp` runs PyPI 0.1.1 until a release.
+### D3 client docs (built 2026-10-21)
+See [docs/clients.md](../clients.md). Still to add once their official pages can be read: VS Code, Cursor, Cline, Codex.
 
 ### D4 guardrail skill (spec)
 An optional `SKILL.md` restating the prompts' rules for clients without prompt support. Wording is legal-effect: maintainer review first.
 
 ### H8 GLEIF (parked)
-Opt-in `--enable-gleif` flag, `openWorldHint=True`, cached per LEI, mocked in tests, documented in `SECURITY.md`; returns GLEIF's legal name and status beside, never inside, register facts. Blocked until api.gleif.org terms and rate limits can be read.
+Opt-in `--enable-gleif` flag, `openWorldHint=True`, cached per LEI, mocked in tests, documented in `SECURITY.md`; returns GLEIF's legal name and status beside, never inside, register facts. Blocked until api.gleif.org terms and rate limits can be read. Precedent: cz-agents eu-registry (MIT) calls GLEIF without auth and caches responses in SQLite with a 7-day default TTL (`GLEIF_CACHE_PATH`, `GLEIF_CACHE_TTL_DAYS`); the same per-LEI disk cache would fit rule 7.
 
 ## 6. Anti-patterns tested
 
@@ -161,21 +162,25 @@ None.
 
 New or changed wording that describes legal effect or frames outputs (`NOTICE`, `REVIEW_NOTICE` and the server `instructions` are unchanged):
 
-- `src/eu_reg_mcp/server.py:115–199` — tool titles and the rewritten tool descriptions (search, summary, changes, lint, classify).
-- `src/eu_reg_mcp/server.py:53, 60, 100–104` — error hints (`See the tool's inputSchema…`, the `data_unavailable` hint).
-- `src/eu_reg_mcp/server.py:222–274` — resource titles and descriptions; `:281–283` unknown-entry message ("may have been removed … or never existed").
-- `src/eu_reg_mcp/server.py:288–300` — prompt `check_register_status` (title, description, text; includes "do not assess whether the entity is authorised, compliant or trustworthy").
-- `src/eu_reg_mcp/server.py:306–318` — prompt `review_register_changes` (title, description, text).
+Line numbers as of the audit follow-up commit (2026-10-21):
+
+- `src/eu_reg_mcp/server.py:134–222` — tool titles and the rewritten tool descriptions (search, summary, changes, lint, classify), including the changes description's "missing: provisional, not a removal" (line 184).
+- `src/eu_reg_mcp/server.py:49, 66, 73, 114–117` — error messages and hints (`Unexpected …`, `See the tool's inputSchema…`, the `data_unavailable` hint).
+- `src/eu_reg_mcp/server.py:238` — resource error messages now end with `Notice: ` and the register `NOTICE`.
+- `src/eu_reg_mcp/server.py:250–308` — resource titles and descriptions; `:314–316` unknown-entry message ("may have been removed … or never existed").
+- `src/eu_reg_mcp/server.py:321–335` — prompt `check_register_status` (title, description, text; includes "do not assess whether the entity is authorised, compliant or trustworthy").
+- `src/eu_reg_mcp/server.py:339–356` — prompt `review_register_changes` (title, description, text), including the new sentence that a `missing` record is provisional and must not be reported as a removal.
 - `src/eu_reg_mcp/integrations.py:92, 102, 131–132, 144, 174–175` — error messages and hints for lint and classify.
-- `src/eu_reg_mcp/data.py:182–183` — the cached-fallback warning.
+- `src/eu_reg_mcp/data.py:186–188` — the cached-fallback warning.
 - `src/eu_reg_mcp/register.py:223` and `src/eu_reg_mcp/models.py:81–82, 120` — `"not a match"` label and the `match.score` / `similar_names` schema descriptions.
-- `docs/guardrails.md:8` — new paragraph on prompts and scores.
-- `docs/tools.md` — search ranking paragraph (line 13), "Typed output and errors" (from line 126), "Resources and prompts" (from line 159).
-- `README.md` — example output note and example (fictional entity).
+- `docs/guardrails.md:8` — paragraph on prompts and scores.
+- `docs/tools.md` — the changes paragraph defining `missing` as provisional (line 15), the search ranking paragraph (line 13), "Typed output and errors" and "Resources and prompts" sections.
+- `docs/clients.md` — client setup instructions (operational, listed for completeness).
+- `README.md` — example output note, example (fictional entity) and the sentence that `match` says nothing about the entity.
 
 ## 10. Needs owner decision
 
-1. **Publish 0.2.0** (CHANGELOG heading proposed) and set up Trusted Publishing and the MCP Registry per §5; `uvx eu-reg-mcp` still runs 0.1.1.
+1. **Publish 0.2.0** (CHANGELOG heading proposed) to PyPI and as a new version of the existing MCP Registry entry (0.1.0 and 0.1.1 are listed, both published 2026-10-15); optionally move both to CI with Trusted Publishing per §5. `uvx eu-reg-mcp` still runs 0.1.1.
 2. **Behaviour change in 0.2.0**: missing extras and invalid JSON now return `isError: true`; register order of search results is now ranked.
 3. ~~**Lock bump** to micar-whitepaper-linter 0.2.1 and eu-ai-act-classifier 0.2.1~~: done on 2026-10-21 at the owner's request, with the `lint`/`classify` extras floors raised to `>=0.2.1`; lint and classify output on the eval inputs is unchanged. H4 can follow.
 4. **Merge or keep** the two MCP surfaces for the classifier (this server's tool and the classifier's own server).
@@ -186,6 +191,6 @@ New or changed wording that describes legal effect or frames outputs (`NOTICE`, 
 
 ## 11. Sibling follow-ups (record only; not done here)
 
-- **micar-register-observatory:** publish `data/snapshots/index.json` (dates and file names) so `as_of` can pick the latest snapshot on or before a date without listing the repo; add `lei` to changelog records so changes can be filtered by LEI.
+- **micar-register-observatory:** publish `data/snapshots/index.json` (dates and file names) so `as_of` can pick the latest snapshot on or before a date without listing the repo. (An earlier version also asked for `lei` on changelog records; they already carry it from the 2026-10-19 snapshot on, so that follow-up was withdrawn.)
 - **micar-whitepaper-linter:** a rule-catalogue export (JSON) that this server could expose as a resource; its PR #30 adds `--sarif-output`, `--summary-output` and `--annotations-output`, which a later wrapper could pass through once released.
 - **eu-ai-act-classifier:** its PR #31 adds human-readable labels (`catalog.py`) and a guided intake (`intake.py`); once released, the wrapper could expose the intake schema as a resource. Until then eu-reg-mcp keeps working against 0.2.0/0.2.1 from PyPI.

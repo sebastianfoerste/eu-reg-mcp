@@ -5,7 +5,7 @@
 
 ## Context
 
-The CHANGELOG's unreleased items (CLI, HTTP, provenance and now this branch) are not on PyPI, so `uvx eu-reg-mcp` runs 0.1.1 and documentation describes features users do not get. eu-reg-mcp is not listed in the MCP Registry (registry search for `eu-reg` returned nothing, 2026-10-20) although `server.json` exists.
+The CHANGELOG's unreleased items (CLI, HTTP, provenance and now this branch) are not on PyPI, so `uvx eu-reg-mcp` runs 0.1.1 and documentation describes features users do not get. eu-reg-mcp is listed in the MCP Registry as `io.github.sebastianfoerste/eu-reg-mcp` 0.1.0 and 0.1.1, both published 2026-10-15 (registry API, read 2026-10-21; the first version of this ADR wrongly said it was not listed).
 
 ## Decision (proposed)
 
@@ -14,4 +14,4 @@ The CHANGELOG's unreleased items (CLI, HTTP, provenance and now this branch) are
 
 ## Consequences
 
-- Owner actions: PyPI Trusted Publisher, the two environments, `mcp-publisher` namespace verification. This branch adds no workflow.
+- Owner actions: PyPI Trusted Publisher and the two environments. The `io.github.sebastianfoerste` namespace already publishes (0.1.0 and 0.1.1 went out on 2026-10-15), so the registry job only has to publish 0.2.0 to the existing entry, now from CI via GitHub OIDC rather than by hand. This branch adds no workflow.

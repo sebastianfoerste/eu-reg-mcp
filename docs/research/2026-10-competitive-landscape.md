@@ -7,7 +7,7 @@ Companion documents: [feature matrix](feature-matrix.csv) · [design teardown](d
 ## 1. Method
 
 - **Scope.** MCP servers and tools that a crypto-asset compliance lawyer, a MiCAR white paper drafter or an AI Act assessor would put next to eu-reg-mcp, plus best-in-class MCP servers from other categories as pattern donors.
-- **Evidence tags.** **Observed**: seen in source, a README, a registry record or a live response. **Claimed**: marketing, listings or search snippets only. **Inferred**: my reasoning. A row's tag is its weakest claim. Every source was accessed on **2026-10-20** unless another date is given.
+- **Evidence tags.** **Observed**: seen in source, a README, a registry record or a live response. **Claimed**: marketing, listings or search snippets only. **Inferred**: my reasoning. A row's tag is its weakest claim, in the order Observed, Claimed, Inferred (Inferred weakest). Every source was accessed on **2026-10-20** unless another date is given.
 - **Reuse of sibling research.** The sibling sessions for [micar-whitepaper-linter](https://github.com/sebastianfoerste/micar-whitepaper-linter/pull/30) and [eu-ai-act-classifier](https://github.com/sebastianfoerste/eu-ai-act-classifier/pull/31) ran the same day under the same network limits. Their research on shared competitors is reused, not repeated, and cited as **[L]** (linter: `docs/research/2026-10-competitive-landscape.md` on branch `feat/competitive-adaptation-2026-10`) and **[C]** (classifier: same path and branch). Those PRs are unmerged; nothing here depends on them.
 - **Clean room.** Only patterns are adapted. No code was copied (no `THIRD_PARTY_NOTICES.md` needed). Tool and parameter names are cited; no tool descriptions are reproduced. Review mining keeps complaint themes and issue numbers only.
 
@@ -57,11 +57,13 @@ Every gap listed in the prompt was confirmed: `micar_register_changes` lacks `sn
 | 14 | FR | Registre MiCA ESMA prestataires PSCA outil de recherche API | No ESMA API; MiCA CASP Tracker coverage limits |
 | 15 | EN | MiCA Crypto Alliance CASP tracker directory LEI filter | Tracker fields (Claimed) |
 
-Registry searches (`registry.modelcontextprotocol.io/v0/servers?search=`, Observed): `mica` → `io.github.CSOAI-ORG/mica-crypto-mcp`, `com.micarequirements/site`; `regulation` → `eu.ansvar/eu-regulations` and Ansvar mirrors; `eur-lex` → `io.github.cyanheads/eur-lex-mcp-server` (versions 0.1.1–0.19.0); `eu-reg` → **no entry: eu-reg-mcp is not published to the MCP Registry** although `server.json` exists.
+Registry searches (`registry.modelcontextprotocol.io/v0/servers?search=`, Observed): `mica` → `io.github.CSOAI-ORG/mica-crypto-mcp`, `com.micarequirements/site`; `regulation` → `eu.ansvar/eu-regulations` and Ansvar mirrors; `eur-lex` → `io.github.cyanheads/eur-lex-mcp-server` (versions 0.1.1–0.19.0); `eu-reg` → see the correction below.
+
+> **Correction (2026-10-21 audit).** The first version of this document said the `eu-reg` search returned no entry and that eu-reg-mcp was not in the MCP Registry. That was wrong (the query result was mis-parsed). Re-run on 2026-10-21 (`/v0/servers?search=eu-reg`, HTTP 200, Observed), it returns `io.github.sebastianfoerste/eu-reg-mcp` **0.1.0** (published 2026-10-15T09:35:02Z) and **0.1.1** (published 2026-10-15T20:31:09Z, `isLatest`), plus `eu.ansvar/eu-regulations` (latest published 2026-07-13), `io.github.Ansvar-Systems/eu-regulations-mcp` 0.7.1 (2026-01-29) and `dev.cz-agents/eu-registry` (first published 2026-05-20; 0.8.0 latest, 2026-10-02). eu-reg-mcp is therefore listed; releasing 0.2.0 means publishing a new version to the existing entry.
 
 Owner's awesome-lists: reused from [L] §A.3 (Observed there): `awesome-eu-fintech-regulation` lists only the owner's own MiCA tools; the other lists hold no third-party MiCA register or white paper tool.
 
-## 4. Products (24 rows in the matrix)
+## 4. Products (33 products in the matrix, one per row, plus this repo's baseline row)
 
 ### Direct competitors (MiCAR register, EU-regulation MCP, AI Act MCP)
 
@@ -87,7 +89,8 @@ Owner's awesome-lists: reused from [L] §A.3 (Observed there): `awesome-eu-finte
 - **COMPL-AI** — Apache-2.0 AI Act technical interpretation plus benchmarks. Observed README; not an MCP server.
 - **OpenSanctions yente** — MIT; entity matching API returning `score`, a `match` boolean against a threshold, and per-feature subscores with explanations. Observed (code at `9a2bb5e`, `yente/scoring.py`, `yente/data/common.py`).
 - **eurlex (Python)** — MIT; fetch by CELEX and parse articles into a DataFrame. Observed README.
-- **CUBE**, **Regology** — RegTech suites; hosts unreachable, no snippets read. Unknown.
+- **CUBE**, **Regology** — seed-list names only; hosts unreachable and no snippet read, so every cell in their matrix rows is `unknown` (an earlier version filled some cells without a source; corrected 2026-10-21).
+- **cz-agents eu-registry** (`dev.cz-agents/eu-registry`, MIT per npm) — added 2026-10-21 after the audit: EU/EEA company lookup across 16 countries via national registries, GLEIF/LEI and VIES; npm and a hosted endpoint; caches GLEIF responses in SQLite with a 7-day default TTL. Not a MiCAR register tool, but the closest precedent for H8 (GLEIF enrichment). Observed ([README](https://github.com/martinhavel/cz-agents-mcp/tree/main/packages/eu-registry), registry record).
 
 ### Pattern donors
 
@@ -121,7 +124,7 @@ Owner's awesome-lists: reused from [L] §A.3 (Observed there): `awesome-eu-finte
 | Requirement | Result |
 | --- | --- |
 | ≥12 searches EN/DE/FR | 15: 10 EN, 2 DE (#4, #8), 3 FR (#5, #9, #14) |
-| ≥15 products | 24 rows in the matrix |
+| ≥15 products | 33 products, one per row (bundled rows split on 2026-10-21) |
 | ≥8 teardowns incl. Ansvar, Lex, Légifrance | 8 in [design-teardown.md](design-teardown.md) |
 | Code read for ≥3 OSS projects | 4: Ansvar comprehensive-eu-law-mcp, mcp-server-legifrance, yente, Lex |
 | Review mining for ≥3 products | 4: github-mcp-server, context7, Lex, Ansvar |
@@ -139,6 +142,6 @@ Owner's awesome-lists: reused from [L] §A.3 (Observed there): `awesome-eu-finte
 | casptracker.eu | proxy 403 (`connect_rejected`) | Tracker rows Claimed |
 | micarequirements.com | status 000 | Registry record only |
 | modelcontextprotocol.io | status 000 | Spec read from GitHub instead |
-| code.visualstudio.com, docs.cursor.com | `ENOTFOUND` | D3 client docs could not be verified beyond Claude Code |
+| code.visualstudio.com, docs.cursor.com | `ENOTFOUND` | VS Code and Cursor configs not given. On 2026-10-21 the Zed, Gemini CLI, Continue and goose docs were read on GitHub instead, and [docs/clients.md](../clients.md) was written from them |
 | holisticai.com, credo.ai, saidot.ai, trail-ml.com, artificialintelligenceact.eu, cube.global, regology.com | not retried; failed for [C] and [L] the same day | Rows Claimed or unknown |
 | raw README of conformi-eu/conformi-search-mcp | HTTP 404 | Row Claimed |

@@ -81,6 +81,6 @@ The classifier ships its own MCP tools (`classify_ai_system`, `classify_ai_syste
 | Resources and prompts | cyanheads templates; Légifrance prompt | none | H2 |
 | Citation UX | cyanheads CELEX/ELI resolution; mcp-eu-sparql URLs | Plain strings from siblings | D2 parked (EUR-Lex unreachable) |
 | CLI parity | — | `search` lacks `--offset`; `--register` unchecked; limit default 20 vs 50 | P0 / H1 |
-| Onboarding | Context7 30+ clients; Lexbeam connector directory | 2 clients, not in MCP Registry | D3 spec, H6 spec |
+| Onboarding | Context7 30+ clients; Lexbeam connector directory | 2 clients in the README; in the MCP Registry at 0.1.1 (an earlier version of this table said it was not listed; corrected 2026-10-21) | D3 built for 6 clients; H6 spec |
 | Evals | Sentry evals beside unit tests; mcp-eu-sparql drift check | none | H5 |
 | MCP Apps | none of the eight | none | D5 parked |
