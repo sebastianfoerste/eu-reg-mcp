@@ -10,11 +10,11 @@
 
 ## Parameters
 
-- `search_micar_register(query, register_slug="all", member_state="")` — `query` is a case-insensitive entity-name substring or an exact LEI; `register_slug` is one of `all | other-wp | emt-wp | art-wp | casps | ncasp`; `member_state` is an optional two-letter code (DE, IE, MT, …).
-- `micar_register_summary()` — no parameters.
-- `micar_register_changes(limit=50, change_type="all")` — `change_type` is `all | added | changed | removed`.
-- `lint_micar_whitepaper(whitepaper_json)` — a draft white paper as a JSON string.
-- `classify_eu_ai_act_system(profile_json="")` — a SystemProfile as JSON; an empty string returns the schema.
+- `search_micar_register(query, register_slug="all", member_state="", offset=0)`: `query` is a case- and accent-insensitive entity-name substring or an exact LEI; `register_slug` is one of `all | other-wp | emt-wp | art-wp | casps | ncasp`; `member_state` is an optional two-letter code (DE, IE, MT, …); results come 25 at a time, and `offset` skips that many matches (`truncated` says whether more follow).
+- `micar_register_summary()`: no parameters.
+- `micar_register_changes(limit=50, change_type="all")`: `change_type` is `all | added | changed | removed`.
+- `lint_micar_whitepaper(whitepaper_json)`: a draft white paper as a JSON string.
+- `classify_eu_ai_act_system(profile_json="")`: a SystemProfile as JSON; an empty string returns the schema.
 
 ## Install
 
@@ -43,7 +43,7 @@ eu-reg-mcp                                # starts the server over stdio
 
 Register data comes from the [MiCAR Register Observatory](https://github.com/sebastianfoerste/micar-register-observatory), which snapshots the public ESMA register weekly (Art. 109 VO (EU) 2023/1114). The server reads the observatory's `data/latest.json` and `data/changelog.jsonl` from GitHub raw (`src/eu_reg_mcp/data.py`) and caches them in memory for one hour. The three register tools therefore need network access to GitHub; they do not contact ESMA directly. A fetch that fails with a transient error (timeout, connection error, HTTP 429 or 5xx) is tried up to three times. Each fetched copy that passes validation is also saved to disk, in `$EU_REG_MCP_CACHE_DIR` if set, else `$XDG_CACHE_HOME/eu-reg-mcp` or `~/.cache/eu-reg-mcp`. If the observatory files are unreachable or invalid, the register tools fall back to the last good copy (in memory, then on disk) and raise an error only if there is none. Before 0.1.1 a failed fetch raised an error at once, with no retry or fallback.
 
-The linter is [micar-whitepaper-linter](https://github.com/sebastianfoerste/micar-whitepaper-linter) (36 rules mapped to Annex I–III); the classifier is [eu-ai-act-classifier](https://github.com/sebastianfoerste/eu-ai-act-classifier). Both are separate packages from their own repositories, MIT-licensed like this server. Without the extras, both tools return an install hint instead of failing. The hint gives the `uvx --from` form with both extras, the `claude mcp remove` and `claude mcp add` commands that re-register the server that way in Claude Code, and the `pip install` command for a virtual environment (see [Install](#install)).
+The linter is [micar-whitepaper-linter](https://github.com/sebastianfoerste/micar-whitepaper-linter) (36 rules mapped to Annexes I to III); the classifier is [eu-ai-act-classifier](https://github.com/sebastianfoerste/eu-ai-act-classifier). Both are separate packages from their own repositories, MIT-licensed like this server. Without the extras, both tools return an install hint instead of failing. The hint gives the `uvx --python 3.13 --from` form with both extras, the `claude mcp remove` and `claude mcp add` commands that re-register the server that way in Claude Code, and the `pip install` command for a virtual environment (see [Install](#install)).
 
 ## Sample lint and classify output
 
@@ -114,9 +114,12 @@ localhost or behind your own access control.
 
 Every register answer carries what you need to check it:
 
-- `snapshot_date`, `data_age_days` and `stale` (true when the mirrored data is
-  more than 10 days old, i.e. a weekly refresh was missed);
-- `observatory_snapshot`, the published data file the answer was computed from;
-- per result, the register `entry_id` and `esma_source_url`, the ESMA file the
-  entry came from;
-- per change record, `still_listed`: whether the entry is in the latest snapshot.
+- search and summary answers: `snapshot_date`, `data_age_days` and `stale`
+  (true when the mirrored data is more than 10 days old, i.e. a weekly refresh
+  was missed), and `observatory_snapshot`, the published data file the answer
+  was computed from;
+- per search result, the register `entry_id` and `esma_source_url`, the ESMA
+  file the entry came from; per register in the summary, its `esma_source_url`;
+- change answers: `changelog_source`, the published change log file, and per
+  change record its `snapshot_date`, `entry_id` and `still_listed`: whether the
+  entry is in the latest snapshot.
