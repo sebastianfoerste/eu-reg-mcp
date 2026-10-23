@@ -12,7 +12,7 @@ In this document, "the user" is the person who runs the session and publishes th
 
 ### 1. Check the release
 
-The install command takes eu-reg-mcp from [PyPI](https://pypi.org/project/eu-reg-mcp/), not from `main`. Record only with a release that requires `mcp` below 2 and includes the classify changes from pull request #4: validation errors come back as a result, and every classify response carries the review notice. Step 3 records the version that ran. Without the upper bound, uv installs mcp 2.x, which removed `mcp.server.fastmcp`: the server's import of that module fails, and the server does not start.
+The install command takes eu-reg-mcp from [PyPI](https://pypi.org/project/eu-reg-mcp/), not from `main`. Record only with a release that requires `mcp` below 2 and includes the classify changes from pull request #4: an empty profile returns the JSON schema and an example, a rejected profile comes back with `validation_errors` and the schema, and every classify response carries the review notice. Step 3 records the version that ran. Without the upper bound, uv installs mcp 2.x, which removed `mcp.server.fastmcp`: the server's import of that module fails, and the server does not start.
 
 On 16 October 2026 no release qualifies. PyPI has 0.1.0 and 0.1.1. Both require `mcp<2,>=1.2`, but neither contains #4: for an empty profile both return the classifier's lists of allowed values instead of the JSON schema and an example, and both return an invalid profile as a tool error. Record only with a later release that passes the check below.
 
