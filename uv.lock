@@ -259,14 +259,14 @@ wheels = [
 
 [[package]]
 name = "eu-ai-act-classifier"
-version = "0.2.0"
+version = "0.2.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/2e/22/4e595a651df6a825bc0409ee090df38abcd281c0aebeffbe4e36a2d25946/eu_ai_act_classifier-0.2.0.tar.gz", hash = "sha256:cca3bae05eb63d108892b74202b33ade763648032002f46ded94d612bdb004fc", size = 1638425, upload-time = "2026-10-15T09:10:49.143Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/0f/30/96e3cfa3bee018c77cf6f20ff21e1b84707e7f885fb943bcefbc3df996aa/eu_ai_act_classifier-0.2.2.tar.gz", hash = "sha256:3be9a271d0a624d5dbd792179e4648da8a893419f037880f209e6da0edb4126f", size = 2079229, upload-time = "2026-10-23T10:37:00.097Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a5/a8/7912ea33f370024fcc99a5de127082521ce44e0532cc48d890b9a33d8e57/eu_ai_act_classifier-0.2.0-py3-none-any.whl", hash = "sha256:73a6e2d5cf65f5f57500fe812e33c1d67d600b5d17e40ff2053f3f5a2051f0ca", size = 60005, upload-time = "2026-10-15T09:10:47.174Z" },
+    { url = "https://files.pythonhosted.org/packages/f4/7e/c9920c8728ea185462bdfc90a119f7e1eb8b82750c2d078a87d6a104d82b/eu_ai_act_classifier-0.2.2-py3-none-any.whl", hash = "sha256:8c55d44ca6a1691b28177af573b2635c7655e47e7b66eeb67641769d8bfc620b", size = 91964, upload-time = "2026-10-23T10:36:58.789Z" },
 ]
 
 [[package]]
@@ -292,7 +292,7 @@ lint = [
 
 [package.metadata]
 requires-dist = [
-    { name = "eu-ai-act-classifier", marker = "extra == 'classify'", specifier = ">=0.2.0" },
+    { name = "eu-ai-act-classifier", marker = "extra == 'classify'", specifier = ">=0.2.2" },
     { name = "mcp", specifier = ">=1.9,<2" },
     { name = "micar-whitepaper-linter", marker = "extra == 'lint'", specifier = ">=0.2.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.10" },

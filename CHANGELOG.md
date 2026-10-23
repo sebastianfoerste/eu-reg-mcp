@@ -11,6 +11,7 @@
 - Tools declare read-only annotations and enum parameters (`register_slug`, `change_type`); search pages with `offset`. Minimum mcp is now 1.9 (still below 2).
 - Docs pin `--python 3.13` wherever the `lint`/`classify` extras are installed with uvx.
 - Test fixtures and the README example use invented entities only; a fixture row copied from the live register, and the removal event invented for it, are gone. A new test checks that fixture LEIs fail the check digits, fixture URLs use reserved hosts and the change log agrees with the snapshot.
+- The `classify` extra requires eu-ai-act-classifier 0.2.2 or newer (was 0.2.0), which has the corrected Regulation (EU) 2026/1744 dates, including the 2 December 2026 entry in its application timeline.
 
 ## 0.1.1 (2026-10-15)
 
