@@ -37,7 +37,7 @@ def test_tools_are_registered():
 
 
 def test_search_tool_end_to_end():
-    result = server.search_micar_register("skygate")
+    result = server.search_micar_register("testnet")
     assert result["total_matches"] == 1
 
 
@@ -47,7 +47,7 @@ def test_summary_and_changes_tools():
 
 
 def test_cli_search_prints_json(capsys):
-    server.main(["search", "skygate"])
+    server.main(["search", "testnet"])
     out = json.loads(capsys.readouterr().out)
     assert out["total_matches"] >= 1
     assert out["results"][0]["entry_id"]

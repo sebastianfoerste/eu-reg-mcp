@@ -7,6 +7,7 @@ import pytest
 from eu_reg_mcp.integrations import (
     EXAMPLE_PROFILE,
     REVIEW_NOTICE,
+    SCHEMA_HINT,
     classify_ai_system,
     lint_whitepaper,
 )
@@ -33,6 +34,13 @@ def classifier():
 
 
 UVX_COMMAND = 'uvx --python 3.13 --from "eu-reg-mcp[lint,classify]" eu-reg-mcp'
+
+# For tests that run the installed classifier. CI installs the classify extra,
+# so they run there; a missing package, not a broken one, skips them.
+requires_classifier = pytest.mark.skipif(
+    importlib.util.find_spec("eu_ai_act_classifier") is None,
+    reason="eu-ai-act-classifier (the classify extra) is not installed",
+)
 
 
 def write_fake_linter(directory, label):
@@ -185,7 +193,7 @@ def test_classify_rejects_non_object_json(classifier):
 def test_classify_unknown_field_returns_validation_error_with_schema(classifier):
     result = classify_ai_system(json.dumps({"name": "x", "use_case": "credit"}))
     assert result["available"] is True
-    assert "SystemProfile schema" in result["error"]
+    assert "not a valid SystemProfile" in result["error"]
     assert {"field": "use_case", "type": "extra_forbidden"} == {
         key: result["validation_errors"][0][key] for key in ("field", "type")
     }
@@ -218,3 +226,42 @@ def test_classify_annex_iii_5b_deployer_is_high_risk_with_art_26_and_27(classifi
     }
     assert {"Art. 26 AIA", "Art. 27 AIA"} <= deployer_items
     assert classification["disclaimer"]
+
+
+@requires_classifier
+def test_classify_timeline_has_2_december_2026_entry():
+    # Regulation (EU) 2026/1744 entries, new in classifier 0.2.2 (the floor of
+    # the classify extra); 0.2.0 and 0.2.1 have none.
+    profile = {"name": "x", "roles": ["provider"], "annex_iii_area": "III.4.a"}
+    result = classify_ai_system(json.dumps(profile))
+    assert result["available"] is True
+    dates = [entry["applies_from"] for entry in result["classification"]["timeline"]]
+    assert "2026-12-02" in dates
+
+
+@requires_classifier
+def test_classify_returns_error_for_invalid_profile():
+    # Classifier 0.2.2 rejects a non-ISO date with a pydantic ValidationError.
+    profile = {
+        "name": "x",
+        "roles": ["provider"],
+        "annex_iii_area": "III.4.a",
+        "placing_on_market_date": "March 2026",
+    }
+    result = classify_ai_system(json.dumps(profile))
+    assert result["available"] is True
+    assert "classification" not in result
+    assert "not a valid SystemProfile" in result["error"]
+    assert "placing_on_market_date" in result["error"]
+
+
+@requires_classifier
+@pytest.mark.parametrize("profile_json", ["[]", "123", '"x"', "null"])
+def test_classify_returns_error_for_non_object_json(profile_json):
+    result = classify_ai_system(profile_json)
+    assert result == {
+        "available": True,
+        "error": "profile_json must be a JSON object",
+        "hint": SCHEMA_HINT,
+        "notice": REVIEW_NOTICE,
+    }
