@@ -108,7 +108,11 @@ uvx eu-reg-mcp changes --type removed --limit 10
 To serve MCP over HTTP instead of stdio (for clients that connect by URL), run
 `uvx eu-reg-mcp --transport streamable-http --host 127.0.0.1 --port 8000`; the
 endpoint is `http://127.0.0.1:8000/mcp`. It has no authentication, so keep it on
-localhost or behind your own access control.
+localhost or behind your own access control. With recent mcp releases, only
+requests whose Host header is `localhost`, `127.0.0.1` or `[::1]` with a port
+(such as `localhost:8000`) are answered, whatever address `--host` binds to: a
+reverse proxy must send such a Host header, otherwise the server returns
+HTTP 421.
 
 ## Verifiable answers
 
@@ -116,10 +120,10 @@ Every register answer carries what you need to check it:
 
 - search and summary answers: `snapshot_date`, `data_age_days` and `stale`
   (true when the mirrored data is more than 10 days old, i.e. a weekly refresh
-  was missed), and `observatory_snapshot`, the published data file the answer
-  was computed from;
+  was missed), and `observatory_snapshot`, the observatory file the server
+  reads (on `main`; use `snapshot_date` to find the matching revision);
 - per search result, the register `entry_id` and `esma_source_url`, the ESMA
   file the entry came from; per register in the summary, its `esma_source_url`;
-- change answers: `changelog_source`, the published change log file, and per
-  change record its `snapshot_date`, `entry_id` and `still_listed`: whether the
-  entry is in the latest snapshot.
+- change answers: `changelog_source`, the observatory change log file the
+  server reads (on `main`), and per change record its `snapshot_date`,
+  `entry_id` and `still_listed`: whether the entry is in the latest snapshot.
