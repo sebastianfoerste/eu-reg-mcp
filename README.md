@@ -9,15 +9,6 @@
 
 Scope today: the ESMA interim MiCAR register (search, summary, change tracking), MiCAR white paper linting, and EU AI Act risk-tier classification. Other EU regulation is not covered.
 
-<!--
-  Screenshot/GIF placeholder — to be added.
-  Capture a real session: Claude Code or Claude Desktop with eu-reg-mcp connected, answering
-  one of the register questions under "Try it now", with the snapshot date visible in the answer.
-  Then replace this comment and the note below with the image.
--->
-
-> *Screenshot/GIF placeholder — to be added*
-
 ## Who it's for
 
 - **Crypto-asset compliance and legal teams** looking up entities on the ESMA interim MiCAR register (white papers, authorised CASPs, non-compliant entities) and tracking what changes on it, including removals.
@@ -46,8 +37,8 @@ The first two work without extras; the third needs the `classify` extra.
 claude mcp add eu-reg -- uvx eu-reg-mcp
 ```
 
-The register tools need no API key. For all five tools, add the `lint` and `classify` extras instead:
 The register tools need no API key. For all five tools, add the `lint` and `classify` extras instead. They need Python 3.13+, and `--python 3.13` makes uv use it even where an older Python is the default:
+
 ```bash
 claude mcp add eu-reg -- uvx --python 3.13 --from 'eu-reg-mcp[lint,classify]' eu-reg-mcp
 ```
@@ -77,9 +68,9 @@ For a scripted Claude Code session on a life insurer's pricing model, with its r
 
 ## Example output
 
-> **Synthetic data.** Produced on 2026-10-14 by running this repo's register code (`register.search_entries` / `register.recent_changes`) against the **synthetic test fixtures** in `tests/fixtures/`, not the live register. The entity and its LEI are test data. Output shape is what a live call returns; values are not.
+> **Synthetic data.** Produced on 2026-10-23 by running this repo's register code (`register.search_entries`) against the **synthetic test fixtures** in `tests/fixtures/`, not the live register. The entity and its LEI are invented. Fields shown are what a live call returns; values are not.
 
-`search_micar_register(query="skygate")`:
+`search_micar_register(query="testnet")` (abridged: `entry_id`, `esma_source_url`, `data_age_days`, `stale`, `observatory_snapshot` and `offset` omitted):
 
 ```json
 {
@@ -88,13 +79,13 @@ For a scripted Claude Code session on a life insurer's pricing model, with its r
   "results": [
     {
       "register": "other-wp",
-      "entity_name": "SKYGATE Network GmbH",
-      "lei": "984500BBFE52FE449926",
-      "member_state": "AT",
-      "authority": "FMA",
-      "whitepaper_url": "WWW.SKYGATETOKEN.AT",
+      "entity_name": "Example Testnet GmbH",
+      "lei": "529900EXAMPLELEI0002",
+      "member_state": "LU",
+      "authority": "CSSF",
+      "whitepaper_url": "WWW.EXAMPLE-TESTNET.EXAMPLE",
       "format_class": "unspecified",
-      "register_last_update": "30/12/2024"
+      "register_last_update": "01/01/2026"
     }
   ],
   "truncated": false,

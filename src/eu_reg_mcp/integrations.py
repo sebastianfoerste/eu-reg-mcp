@@ -130,7 +130,7 @@ def classify_ai_system(profile_json: str) -> dict[str, Any]:
     try:
         from eu_ai_act_classifier.local_api import classify_payload
         from eu_ai_act_classifier.models import SystemProfile
-        from pydantic import ValidationError
+        from pydantic import ValidationError  # the classifier's own dependency
     except ImportError:
         return {
             "available": False,
@@ -164,7 +164,7 @@ def classify_ai_system(profile_json: str) -> dict[str, Any]:
     if not isinstance(payload, dict):
         return {
             "available": True,
-            "error": "profile_json must be a JSON object (a SystemProfile).",
+            "error": "profile_json must be a JSON object",
             "hint": SCHEMA_HINT,
             "notice": REVIEW_NOTICE,
         }
@@ -173,10 +173,7 @@ def classify_ai_system(profile_json: str) -> dict[str, Any]:
     except ValidationError as error:
         return {
             "available": True,
-            "error": (
-                "profile_json does not match the SystemProfile schema "
-                f"({error.error_count()} validation error(s))."
-            ),
+            "error": f"profile_json is not a valid SystemProfile: {error}",
             "validation_errors": [
                 {
                     "field": ".".join(str(part) for part in detail["loc"]),
