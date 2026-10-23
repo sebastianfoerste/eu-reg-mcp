@@ -14,7 +14,7 @@ In this document, "the user" is the person who runs the session and publishes th
 
 The install command takes eu-reg-mcp from [PyPI](https://pypi.org/project/eu-reg-mcp/), not from `main`. Record only with a release that requires `mcp` below 2 and includes the classify changes from pull request #4: an empty profile returns the JSON schema and an example, a rejected profile comes back with `validation_errors` and the schema, and every classify response carries the review notice. Step 3 records the version that ran. Without the upper bound, uv installs mcp 2.x, which removed `mcp.server.fastmcp`: the server's import of that module fails, and the server does not start.
 
-On 16 October 2026 no release qualifies. PyPI has 0.1.0 and 0.1.1. Both require `mcp<2,>=1.2`, but neither contains #4: for an empty profile both return the classifier's lists of allowed values instead of the JSON schema and an example, and both return an invalid profile as a tool error. Record only with a later release that passes the check below.
+On 23 October 2026 no release qualifies. PyPI has 0.1.0, 0.1.1 and 0.1.2. All three require `mcp` below 2, but none contains #4: for an empty profile all three return the classifier's lists of allowed values instead of the JSON schema and an example. For an invalid profile, 0.1.0 and 0.1.1 return a tool error, and 0.1.2 returns an `error` in the result, without `validation_errors`, the schema or the review notice. Record only with a later release that passes the check below.
 
 To check, run:
 
@@ -22,15 +22,15 @@ To check, run:
 uvx --python 3.13 --from 'eu-reg-mcp[lint,classify]' python -c 'import importlib.metadata as m; print(m.version("eu-reg-mcp"), m.requires("eu-reg-mcp"))'
 ```
 
-It prints the eu-reg-mcp version that uvx installs, then that version's requirements. Look for two things. The version must be above 0.1.1, and its release tag on GitHub (`v` and the version) must contain the merge commit of pull request #4. The requirements must include an `mcp` requirement with the upper bound `<2`; 0.1.0 and 0.1.1 list `mcp<2,>=1.2`, which is how the package metadata writes `mcp>=1.2,<2`. If the version is 0.1.0 or 0.1.1, do not record.
+It prints the eu-reg-mcp version that uvx installs, then that version's requirements. Look for two things. The version must be above 0.1.2, and its release tag on GitHub (`v` and the version) must contain the merge commit of pull request #4. The requirements must include an `mcp` requirement with the upper bound `<2`; 0.1.0 and 0.1.1 list `mcp<2,>=1.2` and 0.1.2 lists `mcp<2,>=1.9`, which is how the package metadata writes `mcp>=1.2,<2` and `mcp>=1.9,<2`. If the version is 0.1.0, 0.1.1 or 0.1.2, do not record.
 
-Run on 16 October 2026 at 13:54 UTC, the command printed:
+Run on 23 October 2026 at 15:21 UTC, the command printed:
 
 ```text
-0.1.1 ['mcp<2,>=1.2', "eu-ai-act-classifier>=0.2.0; extra == 'classify'", "mypy>=1.10; extra == 'dev'", "pytest>=8.0; extra == 'dev'", "ruff>=0.6; extra == 'dev'", "micar-whitepaper-linter>=0.2.0; extra == 'lint'"]
+0.1.2 ['mcp<2,>=1.9', "eu-ai-act-classifier>=0.2.2; extra == 'classify'", "mypy>=1.10; extra == 'dev'", "pytest>=8.0; extra == 'dev'", "ruff>=0.6; extra == 'dev'", "micar-whitepaper-linter>=0.2.0; extra == 'lint'"]
 ```
 
-That is 0.1.1, which does not contain #4, so do not record yet.
+That is 0.1.2, which does not contain #4, so do not record yet.
 
 ### 2. Install in a new, empty directory outside any project
 
