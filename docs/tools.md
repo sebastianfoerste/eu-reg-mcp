@@ -14,7 +14,7 @@
 - `micar_register_summary()`: no parameters.
 - `micar_register_changes(limit=50, change_type="all")`: `change_type` is `all | added | changed | removed`.
 - `lint_micar_whitepaper(whitepaper_json)`: a draft white paper as a JSON string.
-- `classify_eu_ai_act_system(profile_json="")`: a SystemProfile as JSON. On `main`, an empty string returns the profile's JSON schema and an example, and a profile the classifier rejects comes back in the result with `validation_errors` and the schema. 0.1.0, 0.1.1 and 0.1.2, the releases on PyPI on 23 October 2026, return the classifier's lists of allowed values (roles, Annex III areas and others) for an empty string. For a profile the classifier rejects, 0.1.2 returns an `error` in the result, without `validation_errors`, the schema or the review notice; in 0.1.0 and 0.1.1 the invalid profile reaches the client as a tool error. [CHANGELOG.md](../CHANGELOG.md) names the release that adds the new behaviour.
+- `classify_eu_ai_act_system(profile_json="")`: a SystemProfile as JSON. On `main`, an empty string returns the profile's JSON schema and an example, and a profile the classifier rejects comes back in the result with `validation_errors` and the schema. 0.1.0, 0.1.1 and 0.1.2, the releases on PyPI on 23 October 2026, return the classifier's lists of allowed values (roles, Annex III areas and others) for an empty string. For a profile the classifier rejects, 0.1.2 returns an `error` in the result, without `validation_errors`, the schema or the review notice; in 0.1.0 and 0.1.1 the invalid profile reaches the client as a tool error. [CHANGELOG.md](../CHANGELOG.md) lists these changes under Unreleased until a release ships them, then under that release.
 
 ## Install
 
