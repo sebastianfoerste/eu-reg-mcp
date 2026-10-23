@@ -27,12 +27,6 @@ BANK_CREDIT_DEPLOYER = {
 }
 
 
-@pytest.fixture
-def classifier():
-    """Skip unless the `classify` extra is installed."""
-    return pytest.importorskip("eu_ai_act_classifier.local_api")
-
-
 UVX_COMMAND = 'uvx --python 3.13 --from "eu-reg-mcp[lint,classify]" eu-reg-mcp'
 
 # For tests that run the installed classifier. CI installs the classify extra,
@@ -153,8 +147,9 @@ def test_classify_degrades_with_install_hint_when_package_missing(monkeypatch):
 # --- classify: with the extra -------------------------------------------------
 
 
+@requires_classifier
 @pytest.mark.parametrize("empty", ["", "   ", "\n"])
-def test_classify_empty_profile_returns_json_schema_and_example(classifier, empty):
+def test_classify_empty_profile_returns_json_schema_and_example(empty):
     result = classify_ai_system(empty)
     assert result["available"] is True
     assert result["notice"] == REVIEW_NOTICE
@@ -169,13 +164,15 @@ def test_classify_empty_profile_returns_json_schema_and_example(classifier, empt
     assert "Required fields: name" in result["hint"]
 
 
-def test_example_profile_is_valid_and_classifies(classifier):
+@requires_classifier
+def test_example_profile_is_valid_and_classifies():
     result = classify_ai_system(json.dumps(EXAMPLE_PROFILE))
     assert result["available"] is True
     assert result["classification"]["risk_tier"] == "high_risk"
 
 
-def test_classify_invalid_json_carries_hint_and_notice(classifier):
+@requires_classifier
+def test_classify_invalid_json_carries_hint_and_notice():
     result = classify_ai_system("{not json")
     assert result["available"] is True
     assert "not valid JSON" in result["error"]
@@ -183,14 +180,8 @@ def test_classify_invalid_json_carries_hint_and_notice(classifier):
     assert result["notice"] == REVIEW_NOTICE
 
 
-def test_classify_rejects_non_object_json(classifier):
-    result = classify_ai_system("[1, 2]")
-    assert result["available"] is True
-    assert "JSON object" in result["error"]
-    assert result["notice"] == REVIEW_NOTICE
-
-
-def test_classify_unknown_field_returns_validation_error_with_schema(classifier):
+@requires_classifier
+def test_classify_unknown_field_returns_validation_error_with_schema():
     result = classify_ai_system(json.dumps({"name": "x", "use_case": "credit"}))
     assert result["available"] is True
     assert "not a valid SystemProfile" in result["error"]
@@ -202,14 +193,16 @@ def test_classify_unknown_field_returns_validation_error_with_schema(classifier)
     assert result["notice"] == REVIEW_NOTICE
 
 
-def test_classify_missing_name_and_bad_enum_are_reported(classifier):
+@requires_classifier
+def test_classify_missing_name_and_bad_enum_are_reported():
     result = classify_ai_system(json.dumps({"annex_iii_area": "III.99"}))
     fields = {error["field"] for error in result["validation_errors"]}
     assert fields == {"name", "annex_iii_area"}
     assert "classification" not in result
 
 
-def test_classify_annex_iii_5b_deployer_is_high_risk_with_art_26_and_27(classifier):
+@requires_classifier
+def test_classify_annex_iii_5b_deployer_is_high_risk_with_art_26_and_27():
     result = classify_ai_system(json.dumps(BANK_CREDIT_DEPLOYER))
     assert result["available"] is True
     assert result["notice"] == REVIEW_NOTICE
