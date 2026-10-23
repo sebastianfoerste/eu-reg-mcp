@@ -10,6 +10,7 @@
 - Weekly live-data check and an unlocked PyPI install smoke test in CI.
 - Tools declare read-only annotations and enum parameters (`register_slug`, `change_type`); search pages with `offset`. Minimum mcp is now 1.9 (still below 2).
 - Docs pin `--python 3.13` wherever the `lint`/`classify` extras are installed with uvx.
+- Test fixtures and the README example use invented entities only; a fixture row copied from the live register, and the removal event invented for it, are gone. A new test checks that fixture LEIs fail the check digits, fixture URLs use reserved hosts and the change log agrees with the snapshot.
 
 ## 0.1.1 (2026-10-15)
 

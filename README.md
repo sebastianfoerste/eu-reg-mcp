@@ -37,8 +37,8 @@ The first two work without extras; the third needs the `classify` extra.
 claude mcp add eu-reg -- uvx eu-reg-mcp
 ```
 
-The register tools need no API key. For all five tools, add the `lint` and `classify` extras instead:
 The register tools need no API key. For all five tools, add the `lint` and `classify` extras instead. They need Python 3.13+, and `--python 3.13` makes uv use it even where an older Python is the default:
+
 ```bash
 claude mcp add eu-reg -- uvx --python 3.13 --from 'eu-reg-mcp[lint,classify]' eu-reg-mcp
 ```
@@ -64,9 +64,9 @@ Without uv, run `pip install 'eu-reg-mcp[lint,classify]'` in a Python 3.13+ virt
 
 ## Example output
 
-> **Synthetic data.** Produced on 2026-10-20 by running this repo's register code (`register.search_entries` / `register.recent_changes`) against the **synthetic test fixtures** in `tests/fixtures/`, not the live register, and abridged. The entity and its LEI are invented. Fields shown are what a live call returns; values are not.
+> **Synthetic data.** Produced on 2026-10-23 by running this repo's register code (`register.search_entries`) against the **synthetic test fixtures** in `tests/fixtures/`, not the live register. The entity and its LEI are invented. Fields shown are what a live call returns; values are not.
 
-`search_micar_register(query="network")`:
+`search_micar_register(query="testnet")` (abridged: `entry_id`, `esma_source_url`, `data_age_days`, `stale`, `observatory_snapshot` and `offset` omitted):
 
 ```json
 {
@@ -75,13 +75,13 @@ Without uv, run `pip install 'eu-reg-mcp[lint,classify]'` in a Python 3.13+ virt
   "results": [
     {
       "register": "other-wp",
-      "entity_name": "Example Network GmbH",
+      "entity_name": "Example Testnet GmbH",
       "lei": "529900EXAMPLELEI0002",
-      "member_state": "AT",
-      "authority": "FMA",
-      "whitepaper_url": "WWW.EXAMPLE-NETWORK.EXAMPLE",
+      "member_state": "LU",
+      "authority": "CSSF",
+      "whitepaper_url": "WWW.EXAMPLE-TESTNET.EXAMPLE",
       "format_class": "unspecified",
-      "register_last_update": "30/12/2024"
+      "register_last_update": "01/01/2026"
     }
   ],
   "truncated": false,
