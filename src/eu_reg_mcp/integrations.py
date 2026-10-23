@@ -105,6 +105,7 @@ def lint_whitepaper(whitepaper_json: str) -> dict[str, Any]:
 def classify_ai_system(profile_json: str) -> dict[str, Any]:
     try:
         from eu_ai_act_classifier.local_api import classify_payload, schema_payload
+        from pydantic import ValidationError  # the classifier's own dependency
     except ImportError:
         return {
             "available": False,
@@ -120,8 +121,17 @@ def classify_ai_system(profile_json: str) -> dict[str, Any]:
         payload = json.loads(profile_json)
     except json.JSONDecodeError as error:
         return {"available": True, "error": f"profile_json is not valid JSON: {error}"}
+    if not isinstance(payload, dict):
+        return {"available": True, "error": "profile_json must be a JSON object"}
+    try:
+        classification = classify_payload(payload)
+    except ValidationError as error:
+        return {
+            "available": True,
+            "error": f"profile_json is not a valid SystemProfile: {error}",
+        }
     return {
         "available": True,
-        "classification": classify_payload(payload),
+        "classification": classification,
         "notice": REVIEW_NOTICE,
     }

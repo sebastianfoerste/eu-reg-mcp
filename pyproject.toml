@@ -23,7 +23,7 @@ lint = [
     "micar-whitepaper-linter>=0.2.0",
 ]
 classify = [
-    "eu-ai-act-classifier>=0.2.0",
+    "eu-ai-act-classifier>=0.2.2",
 ]
 
 [project.urls]

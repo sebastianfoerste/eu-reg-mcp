@@ -47,7 +47,7 @@ The linter is [micar-whitepaper-linter](https://github.com/sebastianfoerste/mica
 
 ## Sample lint and classify output
 
-> **Synthetic inputs.** Produced on 2026-10-15 by calling both tools over MCP stdio on `uvx --from 'eu-reg-mcp[lint,classify]' eu-reg-mcp`, which installed eu-reg-mcp 0.1.0, micar-whitepaper-linter 0.2.0 and eu-ai-act-classifier 0.2.0 from PyPI. The inputs are made up; the outputs are abridged as noted.
+> **Synthetic inputs.** Produced on 2026-10-15 by calling both tools over MCP stdio on `uvx --from 'eu-reg-mcp[lint,classify]' eu-reg-mcp`, which installed eu-reg-mcp 0.1.0, micar-whitepaper-linter 0.2.0 and eu-ai-act-classifier 0.2.0 from PyPI. The inputs are made up; the outputs are abridged as noted. The classify excerpts, including the obligation list and the two further profiles, are unchanged with eu-ai-act-classifier 0.2.2, the minimum version of the `classify` extra.
 
 `lint_micar_whitepaper` on a `"type": "other"` draft that has only a notification date, a language statement and a one-sentence offeror section. The report's summary is `{"pass": 2, "review": 1, "missing": 13, "blockers": 11, "total": 16}`; this is the finding marked `review` (its `source_anchor` omitted):
 
