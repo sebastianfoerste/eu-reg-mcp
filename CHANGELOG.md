@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- `classify_eu_ai_act_system` also returns `validation_errors` (field, message, type), the SystemProfile JSON schema and a hint when the classifier rejects the profile. An empty `profile_json` returns that schema, a synthetic example profile and the required fields, instead of the classifier's lists of allowed values, which 0.1.2 returns (`annex_i_sections` among them); the JSON schema lists the same prohibited-practice codes, Annex I sections, Annex III areas and roles as enums under `$defs`.
+- Every lint and classify result carries the review notice in `notice`, install hints and input errors included. 0.1.2 attaches it only to lint reports and classifications, and its empty-profile result has a `notice` with a different message.
+- CI installs the checkout with uvx, lists the five tools over MCP stdio and calls classify, lint and the register summary (`scripts/smoke_list_tools.py --check-register`); `make smoke` runs the same check without the register call. The weekly live-data workflow runs the check, register call included, against the PyPI release.
+
 ## 0.1.2 (2026-10-23)
 
 - Register answers are verifiable: each search result carries its `entry_id` and the ESMA source file (`esma_source_url`), and each register in the summary carries its `esma_source_url`; search and summary responses state `snapshot_date`, `data_age_days`, `stale` and the observatory data file the server reads (`observatory_snapshot`, on `main`; use `snapshot_date` to find the matching revision), and change responses name the observatory change log file the server reads (`changelog_source`, on `main`).
