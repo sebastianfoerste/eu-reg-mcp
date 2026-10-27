@@ -164,7 +164,7 @@ def test_cli_rejects_unknown_register(capsys):
 def test_change_filters_over_mcp(offline_data):
     tool, result = call(
         "micar_register_changes",
-        {"since": "2026-07-14", "until": "2026-07-14", "member_state": "AT"},
+        {"since": "2026-07-07", "until": "2026-07-07", "member_state": "MT"},
     )
     jsonschema.validate(result.structuredContent, tool.outputSchema)
     assert [c["entry_id"] for c in result.structuredContent["changes"]] == ["a3"]
@@ -179,9 +179,9 @@ def test_bad_date_is_invalid_input(offline_data):
 
 
 def test_cli_changes_filters(offline_data, capsys):
-    server.main(["changes", "--since", "2026-07-14", "--entity", "new issuer"])
+    server.main(["changes", "--since", "2026-07-07", "--entity", "testnet"])
     out = json.loads(capsys.readouterr().out)
-    assert [c["entry_id"] for c in out["changes"]] == ["c9"]
+    assert [c["entry_id"] for c in out["changes"]] == ["a2"]
 
 
 def test_tools_list_input_side_stays_within_budget():

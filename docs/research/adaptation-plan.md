@@ -181,7 +181,7 @@ Line numbers as of the audit follow-up commit (2026-10-21):
 
 ## 10. Needs owner decision
 
-1. **Publish 0.2.0** (CHANGELOG heading proposed) to PyPI and as a new version of the existing MCP Registry entry (0.1.0 and 0.1.1 are listed, both published 2026-10-15); optionally move both to CI with Trusted Publishing per §5. `uvx eu-reg-mcp` still runs 0.1.1.
+1. **Publish 0.2.0** (CHANGELOG heading proposed) to PyPI and as a new version of the existing MCP Registry entry. As of 2026-10-27, PyPI has 0.1.2 (released 2026-10-23 on `main`) but the registry still lists 0.1.1 as latest (0.1.0 and 0.1.1, both published 2026-10-15), so 0.1.2 never reached the registry; optionally move both to CI with Trusted Publishing per §5. `uvx eu-reg-mcp` still runs 0.1.1.
 2. **Behaviour change in 0.2.0**: missing extras and invalid JSON now return `isError: true`; register order of search results is now ranked.
 3. ~~**Lock bump** to micar-whitepaper-linter 0.2.1 and eu-ai-act-classifier 0.2.1~~: done on 2026-10-21 at the owner's request, with the `lint`/`classify` extras floors raised to `>=0.2.1`; lint and classify output on the eval inputs is unchanged. H4 can follow.
 4. **Merge or keep** the two MCP surfaces for the classifier (this server's tool and the classifier's own server).

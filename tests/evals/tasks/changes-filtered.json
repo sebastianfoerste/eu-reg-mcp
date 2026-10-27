@@ -5,7 +5,7 @@
   "call": {
     "tool": "micar_register_changes",
     "arguments": {
-      "since": "2026-07-14",
+      "since": "2026-07-07",
       "member_state": "MT"
     }
   },
@@ -13,7 +13,8 @@
     "isError": false,
     "equals": {
       "total_changes": 1,
-      "changes.0.entry_id": "c9",
+      "changes.0.entry_id": "a3",
+      "changes.0.still_listed": false,
       "next_offset": null
     }
   }

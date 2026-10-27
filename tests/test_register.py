@@ -14,9 +14,9 @@ CHANGELOG = [
 
 
 def test_search_by_name_substring():
-    result = search_entries(SNAPSHOT, "sample ledger")
+    result = search_entries(SNAPSHOT, "testnet")
     assert result["total_matches"] == 1
-    assert result["results"][0]["entity_name"] == "Sample Ledger Labs GmbH"
+    assert result["results"][0]["entity_name"] == "Example Testnet GmbH"
     assert "notice" in result
 
 
@@ -53,7 +53,7 @@ def test_changes_exclude_baseline_and_filter_by_type():
     assert result["changes"][0]["change"] in {"changed", "missing"}
     removed = recent_changes(CHANGELOG, change_type="removed")
     assert removed["total_changes"] == 1
-    assert removed["changes"][0]["entity_name"] == "Former Example Token AG"
+    assert removed["changes"][0]["entity_name"] == "Example Withdrawn AG"
 
 
 def test_search_is_accent_and_case_insensitive():
@@ -81,7 +81,7 @@ def test_search_is_accent_and_case_insensitive():
 def test_search_results_are_verifiable():
     from datetime import date
 
-    result = search_entries(SNAPSHOT, "sample ledger", today=date(2026, 7, 10))
+    result = search_entries(SNAPSHOT, "testnet", today=date(2026, 7, 10))
     hit = result["results"][0]
     assert hit["entry_id"]
     assert hit["esma_source_url"].startswith("https://")
@@ -107,6 +107,13 @@ def test_changes_flag_whether_entry_is_still_listed():
     }
     for record in result["changes"]:
         assert record["still_listed"] == (record["entry_id"] in listed)
+    by_change = {r["change"]: r["still_listed"] for r in result["changes"]}
+    assert by_change == {
+        "added": True,
+        "removed": False,
+        "changed": True,
+        "missing": False,  # absent from this export, so not listed
+    }
     assert "still_listed" not in recent_changes(CHANGELOG)["changes"][0]
 
 
@@ -116,13 +123,15 @@ def test_change_filters():
     def ids(**filters):
         return [c["entry_id"] for c in recent_changes(CHANGELOG, **filters)["changes"]]
 
-    assert ids(since=date(2026, 7, 14), until=date(2026, 7, 14)) == ["a3", "c9"]
-    assert ids(until=date(2026, 7, 13)) == []
-    assert ids(member_state="mt") == ["c9"]
-    assert ids(entity="former example") == ["a3"]
-    assert ids(entry_id="c9") == ["c9"]
+    newest_first = ["a4", "a1", "a3", "a2"]
+    assert ids(since=date(2026, 7, 7), until=date(2026, 7, 7)) == newest_first
+    assert ids(until=date(2026, 7, 6)) == []
+    assert ids(since=date(2026, 7, 8)) == []
+    assert ids(member_state="mt") == ["a3"]
+    assert ids(entity="example withdrawn") == ["a3"]
+    assert ids(entry_id="a2") == ["a2"]
     assert ids(register="casps") == []
-    assert ids(change_type="missing") == ["a2"]
+    assert ids(change_type="missing") == ["a4"]
 
 
 def test_change_lei_filter_is_exact_and_skips_records_without_lei():
@@ -132,7 +141,7 @@ def test_change_lei_filter_is_exact_and_skips_records_without_lei():
     assert ids("529900example lei0001".replace(" ", "")) == ["a1"]
     assert ids("529900EXAMPLELEI000") == []  # no prefix matching
     # The 2026-07-14 records predate the observatory's `lei` field.
-    assert ids("529900EXAMPLELEI0002") == ["a2"]
+    assert ids("529900EXAMPLELEI0004") == ["a4"]
 
 
 def test_change_paging_reports_next_offset():

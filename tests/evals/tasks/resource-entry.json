@@ -7,7 +7,7 @@
   },
   "expect": {
     "equals": {
-      "entry.entity_name": "Sample Ledger Labs GmbH",
+      "entry.entity_name": "Example Testnet GmbH",
       "snapshot_date": "2026-07-07"
     },
     "present": [

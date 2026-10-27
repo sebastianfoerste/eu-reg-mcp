@@ -64,9 +64,9 @@ Without uv, run `pip install 'eu-reg-mcp[lint,classify]'` in a Python 3.13+ virt
 
 ## Example output
 
-> **Synthetic data.** Produced on 2026-10-21 by calling this repo's `search_micar_register` tool function against the **synthetic test fixtures** in `tests/fixtures/`, not the live register. The entities and LEIs are fictional test data. Output shape is what a live call returns; values are not.
+> **Synthetic data.** Produced on 2026-10-27 by calling this repo's `search_micar_register` tool function against the **synthetic test fixtures** in `tests/fixtures/`, not the live register. The entity and its LEI are invented. Output shape is what a live call returns; values are not.
 
-`search_micar_register(query="sample ledger")`, abridged: the response also has `data_age_days`, `stale`, `observatory_snapshot`, `offset`, `similar_names` and `warnings`, and each result `entry_id` and `esma_source_url`:
+`search_micar_register(query="testnet")`, abridged: the response also has `data_age_days`, `stale`, `observatory_snapshot`, `offset`, `similar_names` and `warnings`, and each result `entry_id` and `esma_source_url`:
 
 ```json
 {
@@ -75,16 +75,16 @@ Without uv, run `pip install 'eu-reg-mcp[lint,classify]'` in a Python 3.13+ virt
   "results": [
     {
       "register": "other-wp",
-      "entity_name": "Sample Ledger Labs GmbH",
+      "entity_name": "Example Testnet GmbH",
       "lei": "529900EXAMPLELEI0002",
-      "member_state": "AT",
-      "authority": "FMA",
-      "whitepaper_url": "WWW.SAMPLE-LEDGER.EXAMPLE",
+      "member_state": "LU",
+      "authority": "CSSF",
+      "whitepaper_url": "WWW.EXAMPLE-TESTNET.EXAMPLE",
       "format_class": "unspecified",
-      "register_last_update": "30/12/2024",
+      "register_last_update": "01/01/2026",
       "match": {
-        "score": 0.9,
-        "basis": "name_prefix_words"
+        "score": 0.85,
+        "basis": "whole_words"
       }
     }
   ],

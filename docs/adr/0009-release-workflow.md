@@ -5,7 +5,7 @@
 
 ## Context
 
-The CHANGELOG's unreleased items (CLI, HTTP, provenance and now this branch) are not on PyPI, so `uvx eu-reg-mcp` runs 0.1.1 and documentation describes features users do not get. eu-reg-mcp is listed in the MCP Registry as `io.github.sebastianfoerste/eu-reg-mcp` 0.1.0 and 0.1.1, both published 2026-10-15 (registry API, read 2026-10-21; the first version of this ADR wrongly said it was not listed).
+The CHANGELOG's unreleased items (CLI, HTTP, provenance and now this branch) are not on PyPI, so `uvx eu-reg-mcp` ran 0.1.1 and documentation described features users did not get. (Update 2026-10-27: `main` released 0.1.2 to PyPI on 2026-10-23, but the MCP Registry still lists 0.1.1 as latest, the same drift a CI publishing job would prevent.) eu-reg-mcp is listed in the MCP Registry as `io.github.sebastianfoerste/eu-reg-mcp` 0.1.0 and 0.1.1, both published 2026-10-15 (registry API, read 2026-10-21; the first version of this ADR wrongly said it was not listed).
 
 ## Decision (proposed)
 

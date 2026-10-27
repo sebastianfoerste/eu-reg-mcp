@@ -10,11 +10,11 @@
 
 ## Parameters
 
-- `search_micar_register(query, register_slug="all", member_state="", offset=0)` — `query` is a case-insensitive entity-name substring or an exact LEI; `register_slug` is one of `all | other-wp | emt-wp | art-wp | casps | ncasp`; `member_state` is an optional two-letter code (DE, IE, MT, …); `offset` skips that many matches (results come 25 at a time; `truncated` says whether more follow and `next_offset` gives the next page, `null` on the last). Results are ranked, and each carries `match`: a `score` and its `basis` (`exact_lei` and `exact_name` 1.0, `name_without_legal_form` 0.95, `name_prefix_words` 0.9, `whole_words` 0.85, `name_prefix` 0.8, `word_start` 0.7, `substring` 0.6; equal scores keep register order). The score describes how the query string matched the name or LEI, nothing about the entity. When nothing matches, `similar_names` lists up to five names spelt similarly to the query (`similarity` ≥ 0.8, a `difflib` ratio after dropping legal-form suffixes such as GmbH or Ltd), each labelled `"not a match"`; LEI-shaped queries get none.
-- `micar_register_summary()` — no parameters.
-- `micar_register_changes(limit=50, change_type="all", since=None, until=None, register_slug="all", member_state="", entity="", entry_id="", lei="", offset=0)` — newest first. `change_type` is `all | added | changed | removed | missing`. A `missing` record is provisional: the observatory saw the entry absent from one export and records it as `removed` only if the next export also lacks it, so it is not a removal. `since` and `until` are snapshot dates (`YYYY-MM-DD`, inclusive); `entity` is a case- and accent-insensitive name substring; `lei` is an exact LEI. Only change records from the 2026-10-19 snapshot on carry an `lei` field (with `record_version`, `row_key`, `changed_fields` and others, passed through as published), so an LEI filter cannot find older changes; use `entry_id` for those. `limit` is capped at 200; page with `offset` and `next_offset`. The CLI mirrors these as `changes --type --since --until --register --member-state --entity --entry-id --lei --offset` (default `--limit` is now 50, as in the tool).
-- `lint_micar_whitepaper(whitepaper_json)` — a draft white paper as a JSON string.
-- `classify_eu_ai_act_system(profile_json="")` — a SystemProfile as JSON; an empty string returns the schema.
+- `search_micar_register(query, register_slug="all", member_state="", offset=0)`: `query` is a case- and accent-insensitive entity-name substring or an exact LEI; `register_slug` is one of `all | other-wp | emt-wp | art-wp | casps | ncasp`; `member_state` is an optional two-letter code (DE, IE, MT, …); `offset` skips that many matches (results come 25 at a time; `truncated` says whether more follow and `next_offset` gives the next page, `null` on the last). Results are ranked, and each carries `match`: a `score` and its `basis` (`exact_lei` and `exact_name` 1.0, `name_without_legal_form` 0.95, `name_prefix_words` 0.9, `whole_words` 0.85, `name_prefix` 0.8, `word_start` 0.7, `substring` 0.6; equal scores keep register order). The score describes how the query string matched the name or LEI, nothing about the entity. When nothing matches, `similar_names` lists up to five names spelt similarly to the query (`similarity` ≥ 0.8, a `difflib` ratio after dropping legal-form suffixes such as GmbH or Ltd), each labelled `"not a match"`; LEI-shaped queries get none.
+- `micar_register_summary()`: no parameters.
+- `micar_register_changes(limit=50, change_type="all", since=None, until=None, register_slug="all", member_state="", entity="", entry_id="", lei="", offset=0)`: newest first. `change_type` is `all | added | changed | removed | missing`. A `missing` record is provisional: the observatory saw the entry absent from one export and records it as `removed` only if the next export also lacks it, so it is not a removal. `since` and `until` are snapshot dates (`YYYY-MM-DD`, inclusive); `entity` is a case- and accent-insensitive name substring; `lei` is an exact LEI. Only change records from the 2026-10-19 snapshot on carry an `lei` field (with `record_version`, `row_key`, `changed_fields` and others, passed through as published), so an LEI filter cannot find older changes; use `entry_id` for those. `limit` is capped at 200; page with `offset` and `next_offset`. The CLI mirrors these as `changes --type --since --until --register --member-state --entity --entry-id --lei --offset` (default `--limit` is now 50, as in the tool).
+- `lint_micar_whitepaper(whitepaper_json)`: a draft white paper as a JSON string.
+- `classify_eu_ai_act_system(profile_json="")`: a SystemProfile as JSON; an empty string returns the schema.
 
 ## Install
 
@@ -43,11 +43,11 @@ eu-reg-mcp                                # starts the server over stdio
 
 Register data comes from the [MiCAR Register Observatory](https://github.com/sebastianfoerste/micar-register-observatory), which snapshots the public ESMA register weekly (Art. 109 VO (EU) 2023/1114). The server reads the observatory's `data/latest.json` and `data/changelog.jsonl` from GitHub raw (`src/eu_reg_mcp/data.py`) and caches them in memory for one hour. The three register tools therefore need network access to GitHub; they do not contact ESMA directly. A fetch that fails with a transient error (timeout, connection error, HTTP 429 or 5xx) is tried up to three times. Each fetched copy that passes validation is also saved to disk, in `$EU_REG_MCP_CACHE_DIR` if set, else `$XDG_CACHE_HOME/eu-reg-mcp` or `~/.cache/eu-reg-mcp`. If the observatory files are unreachable or invalid, the register tools fall back to the last good copy (in memory, then on disk) and raise an error only if there is none. Before 0.1.1 a failed fetch raised an error at once, with no retry or fallback.
 
-The linter is [micar-whitepaper-linter](https://github.com/sebastianfoerste/micar-whitepaper-linter) (36 rules mapped to Annex I–III); the classifier is [eu-ai-act-classifier](https://github.com/sebastianfoerste/eu-ai-act-classifier). Both are separate packages from their own repositories, MIT-licensed like this server. Without the extras, both tools return an `extra_missing` error whose `hint` says how to install them. The hint gives the `uvx --from` form with both extras, the `claude mcp remove` and `claude mcp add` commands that re-register the server that way in Claude Code, and the `pip install` command for a virtual environment (see [Install](#install)).
+The linter is [micar-whitepaper-linter](https://github.com/sebastianfoerste/micar-whitepaper-linter) (36 rules mapped to Annexes I to III); the classifier is [eu-ai-act-classifier](https://github.com/sebastianfoerste/eu-ai-act-classifier). Both are separate packages from their own repositories, MIT-licensed like this server. Without the extras, both tools return an `extra_missing` error whose `hint` says how to install them. The hint gives the `uvx --from` form with both extras, the `claude mcp remove` and `claude mcp add` commands that re-register the server that way in Claude Code, and the `pip install` command for a virtual environment (see [Install](#install)).
 
 ## Sample lint and classify output
 
-> **Synthetic inputs.** Produced on 2026-10-15 by calling both tools over MCP stdio on `uvx --from 'eu-reg-mcp[lint,classify]' eu-reg-mcp`, which installed eu-reg-mcp 0.1.0, micar-whitepaper-linter 0.2.0 and eu-ai-act-classifier 0.2.0 from PyPI. The inputs are made up; the outputs are abridged as noted.
+> **Synthetic inputs.** Produced on 2026-10-15 by calling both tools over MCP stdio on `uvx --from 'eu-reg-mcp[lint,classify]' eu-reg-mcp`, which installed eu-reg-mcp 0.1.0, micar-whitepaper-linter 0.2.0 and eu-ai-act-classifier 0.2.0 from PyPI. The inputs are made up; the outputs are abridged as noted. The classify excerpts, including the obligation list and the two further profiles, are unchanged with eu-ai-act-classifier 0.2.2, the minimum version of the `classify` extra.
 
 `lint_micar_whitepaper` on a `"type": "other"` draft that has only a notification date, a language statement and a one-sentence offeror section. The report's summary is `{"pass": 2, "review": 1, "missing": 13, "blockers": 11, "total": 16}`; this is the finding marked `review` (its `source_anchor` omitted):
 
@@ -109,19 +109,25 @@ uvx eu-reg-mcp changes --type removed --limit 10
 To serve MCP over HTTP instead of stdio (for clients that connect by URL), run
 `uvx eu-reg-mcp --transport streamable-http --host 127.0.0.1 --port 8000`; the
 endpoint is `http://127.0.0.1:8000/mcp`. It has no authentication, so keep it on
-localhost or behind your own access control.
+localhost or behind your own access control. With recent mcp releases, only
+requests whose Host header is `localhost`, `127.0.0.1` or `[::1]` with a port
+(such as `localhost:8000`) are answered, whatever address `--host` binds to: a
+reverse proxy must send such a Host header, otherwise the server returns
+HTTP 421.
 
 ## Verifiable answers
 
 Every register answer carries what you need to check it:
 
-- `snapshot_date`, `data_age_days` and `stale` (true when the mirrored data is
-  more than 10 days old, i.e. a weekly refresh was missed), on search, summary
-  and changes alike;
-- `observatory_snapshot`, the published data file the answer was computed from;
-- per result, the register `entry_id` and `esma_source_url`, the ESMA file the
-  entry came from;
-- per change record, `still_listed`: whether the entry is in the latest snapshot.
+- search, summary and change answers: `snapshot_date`, `data_age_days` and
+  `stale` (true when the mirrored data is more than 10 days old, i.e. a weekly
+  refresh was missed), and `observatory_snapshot`, the observatory file the
+  server reads (on `main`; use `snapshot_date` to find the matching revision);
+- per search result, the register `entry_id` and `esma_source_url`, the ESMA
+  file the entry came from; per register in the summary, its `esma_source_url`;
+- change answers also carry `changelog_source`, the observatory change log file
+  the server reads (on `main`), and per change record its `snapshot_date`,
+  `entry_id` and `still_listed`: whether the entry is in the latest snapshot.
 
 ## Typed output and errors
 

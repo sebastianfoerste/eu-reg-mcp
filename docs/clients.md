@@ -5,14 +5,15 @@ command, `uvx eu-reg-mcp`, or, for all five tools, with
 `uvx --python 3.13 --from 'eu-reg-mcp[lint,classify]' eu-reg-mcp`.
 
 > **Released version.** Plain `uvx eu-reg-mcp` runs the latest PyPI release
-> (0.1.1 on 2026-10-21), not unreleased changes from this repository; see
+> (0.1.2 on 2026-10-27), not unreleased changes from this repository; see
 > [development.md](development.md) to run `main`.
 
-**Tested** means the exact `command` and `args` below were started on
-2026-10-21 by a scratch MCP stdio client (mcp 1.28.1), which completed the
-handshake and listed all five tools from PyPI 0.1.1. It does not mean the
-client application itself was run. Each format comes from the client's
-official documentation at the URL given, read on 2026-10-21.
+**Tested** means the exact `command` and `args` below were started by a
+scratch MCP stdio client, which completed the handshake and listed all five
+tools: on 2026-10-21 against PyPI 0.1.1 (mcp 1.28.1 client) and again on
+2026-10-27 against PyPI 0.1.2 (mcp 1.30.0 client). It does not mean the client
+application itself was run. Each format comes from the client's official
+documentation at the URL given, read on 2026-10-21.
 
 | Client | Where the config lives | Source (read 2026-10-21) |
 | --- | --- | --- |
@@ -23,7 +24,7 @@ official documentation at the URL given, read on 2026-10-21.
 | Continue | `.continue/mcpServers/*.yaml` | [continue docs/customize/deep-dives/mcp.mdx](https://github.com/continuedev/continue/blob/main/docs/customize/deep-dives/mcp.mdx) |
 | goose | `~/.config/goose/config.yaml`, `extensions` | [goose using-extensions.md](https://github.com/block/goose/blob/main/documentation/docs/getting-started/using-extensions.md) |
 
-Tested command and args (both, 2026-10-21):
+Tested command and args (both, 2026-10-21 and 2026-10-27):
 
 - `uvx` with `["eu-reg-mcp"]`
 - `uvx` with `["--python", "3.13", "--from", "eu-reg-mcp[lint,classify]", "eu-reg-mcp"]`

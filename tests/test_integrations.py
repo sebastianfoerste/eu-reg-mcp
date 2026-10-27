@@ -1,3 +1,4 @@
+import importlib.util
 import json
 import subprocess
 import sys
@@ -8,6 +9,13 @@ from eu_reg_mcp.errors import ToolFailure
 from eu_reg_mcp.integrations import classify_ai_system, lint_whitepaper
 
 UVX_COMMAND = 'uvx --python 3.13 --from "eu-reg-mcp[lint,classify]" eu-reg-mcp'
+
+# For tests that run the installed classifier. CI installs the classify extra,
+# so they run there; a missing package, not a broken one, skips them.
+requires_classifier = pytest.mark.skipif(
+    importlib.util.find_spec("eu_ai_act_classifier") is None,
+    reason="eu-ai-act-classifier (the classify extra) is not installed",
+)
 
 
 def write_fake_linter(directory, label):
@@ -150,3 +158,40 @@ def test_classify_invalid_profile_is_invalid_input():
         classify_ai_system("{}")
     assert failure.value.code == "invalid_input"
     assert "SystemProfile" in failure.value.message
+
+
+@requires_classifier
+def test_classify_timeline_has_2_december_2026_entry():
+    # Regulation (EU) 2026/1744 entries, new in classifier 0.2.2 (the floor of
+    # the classify extra); 0.2.0 and 0.2.1 have none.
+    profile = {"name": "x", "roles": ["provider"], "annex_iii_area": "III.4.a"}
+    result = classify_ai_system(json.dumps(profile))
+    assert result["available"] is True
+    dates = [entry["applies_from"] for entry in result["classification"]["timeline"]]
+    assert "2026-12-02" in dates
+
+
+@requires_classifier
+def test_classify_rejects_invalid_profile_as_invalid_input():
+    # Classifier 0.2.2 rejects a non-ISO date with a pydantic ValidationError.
+    profile = {
+        "name": "x",
+        "roles": ["provider"],
+        "annex_iii_area": "III.4.a",
+        "placing_on_market_date": "March 2026",
+    }
+    with pytest.raises(ToolFailure) as failure:
+        classify_ai_system(json.dumps(profile))
+    body = failure.value.payload()
+    assert body["code"] == "invalid_input" and body["available"] is True
+    assert "not a valid SystemProfile" in body["error"]
+    assert "placing_on_market_date" in body["error"]
+
+
+@requires_classifier
+@pytest.mark.parametrize("profile_json", ["[]", "123", '"x"', "null"])
+def test_classify_rejects_non_object_json_as_invalid_input(profile_json):
+    with pytest.raises(ToolFailure) as failure:
+        classify_ai_system(profile_json)
+    assert failure.value.code == "invalid_input"
+    assert failure.value.message == "profile_json must be a JSON object."
