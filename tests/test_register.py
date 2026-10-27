@@ -49,8 +49,8 @@ def test_summary_counts_and_coverage():
 
 def test_changes_exclude_baseline_and_filter_by_type():
     result = recent_changes(CHANGELOG, limit=10)
-    assert result["total_changes"] == 2
-    assert result["changes"][0]["change"] in {"added", "removed"}
+    assert result["total_changes"] == 4
+    assert result["changes"][0]["change"] in {"changed", "missing"}
     removed = recent_changes(CHANGELOG, change_type="removed")
     assert removed["total_changes"] == 1
     assert removed["changes"][0]["entity_name"] == "Example Withdrawn AG"
@@ -108,5 +108,53 @@ def test_changes_flag_whether_entry_is_still_listed():
     for record in result["changes"]:
         assert record["still_listed"] == (record["entry_id"] in listed)
     by_change = {r["change"]: r["still_listed"] for r in result["changes"]}
-    assert by_change == {"added": True, "removed": False}
+    assert by_change == {
+        "added": True,
+        "removed": False,
+        "changed": True,
+        "missing": False,  # absent from this export, so not listed
+    }
     assert "still_listed" not in recent_changes(CHANGELOG)["changes"][0]
+
+
+def test_change_filters():
+    from datetime import date
+
+    def ids(**filters):
+        return [c["entry_id"] for c in recent_changes(CHANGELOG, **filters)["changes"]]
+
+    newest_first = ["a4", "a1", "a3", "a2"]
+    assert ids(since=date(2026, 7, 7), until=date(2026, 7, 7)) == newest_first
+    assert ids(until=date(2026, 7, 6)) == []
+    assert ids(since=date(2026, 7, 8)) == []
+    assert ids(member_state="mt") == ["a3"]
+    assert ids(entity="example withdrawn") == ["a3"]
+    assert ids(entry_id="a2") == ["a2"]
+    assert ids(register="casps") == []
+    assert ids(change_type="missing") == ["a4"]
+
+
+def test_change_lei_filter_is_exact_and_skips_records_without_lei():
+    def ids(lei):
+        return [c["entry_id"] for c in recent_changes(CHANGELOG, lei=lei)["changes"]]
+
+    assert ids("529900example lei0001".replace(" ", "")) == ["a1"]
+    assert ids("529900EXAMPLELEI000") == []  # no prefix matching
+    # The 2026-07-14 records predate the observatory's `lei` field.
+    assert ids("529900EXAMPLELEI0004") == ["a4"]
+
+
+def test_change_paging_reports_next_offset():
+    first = recent_changes(CHANGELOG, limit=1)
+    assert first["offset"] == 0 and first["next_offset"] == 1
+    last = recent_changes(CHANGELOG, limit=1, offset=3)
+    assert last["next_offset"] is None
+    second = recent_changes(CHANGELOG, limit=1, offset=1)
+    assert first["changes"][0] != second["changes"][0]
+
+
+def test_search_reports_next_offset_and_match_basis():
+    result = search_entries(SNAPSHOT, "example issuer gmbh")
+    assert result["next_offset"] is None
+    assert result["results"][0]["match"] == {"score": 1.0, "basis": "exact_name"}
+    assert search_entries(SNAPSHOT, "")["results"][0]["match"] is None

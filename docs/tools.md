@@ -10,9 +10,9 @@
 
 ## Parameters
 
-- `search_micar_register(query, register_slug="all", member_state="", offset=0)`: `query` is a case- and accent-insensitive entity-name substring or an exact LEI; `register_slug` is one of `all | other-wp | emt-wp | art-wp | casps | ncasp`; `member_state` is an optional two-letter code (DE, IE, MT, …); results come 25 at a time, and `offset` skips that many matches (`truncated` says whether more follow).
+- `search_micar_register(query, register_slug="all", member_state="", offset=0)`: `query` is a case- and accent-insensitive entity-name substring or an exact LEI; `register_slug` is one of `all | other-wp | emt-wp | art-wp | casps | ncasp`; `member_state` is an optional two-letter code (DE, IE, MT, …); `offset` skips that many matches (results come 25 at a time; `truncated` says whether more follow and `next_offset` gives the next page, `null` on the last). Results are ranked, and each carries `match`: a `score` and its `basis` (`exact_lei` and `exact_name` 1.0, `name_without_legal_form` 0.95, `name_prefix_words` 0.9, `whole_words` 0.85, `name_prefix` 0.8, `word_start` 0.7, `substring` 0.6; equal scores keep register order). The score describes how the query string matched the name or LEI, nothing about the entity. When nothing matches, `similar_names` lists up to five names spelt similarly to the query (`similarity` ≥ 0.8, a `difflib` ratio after dropping legal-form suffixes such as GmbH or Ltd), each labelled `"not a match"`; LEI-shaped queries get none.
 - `micar_register_summary()`: no parameters.
-- `micar_register_changes(limit=50, change_type="all")`: `change_type` is `all | added | changed | removed`.
+- `micar_register_changes(limit=50, change_type="all", since=None, until=None, register_slug="all", member_state="", entity="", entry_id="", lei="", offset=0)`: newest first. `change_type` is `all | added | changed | removed | missing`. A `missing` record is provisional: the observatory saw the entry absent from one export and records it as `removed` only if the next export also lacks it, so it is not a removal. `since` and `until` are snapshot dates (`YYYY-MM-DD`, inclusive); `entity` is a case- and accent-insensitive name substring; `lei` is an exact LEI. Only change records from the 2026-10-19 snapshot on carry an `lei` field (with `record_version`, `row_key`, `changed_fields` and others, passed through as published), so an LEI filter cannot find older changes; use `entry_id` for those. `limit` is capped at 200; page with `offset` and `next_offset`. The CLI mirrors these as `changes --type --since --until --register --member-state --entity --entry-id --lei --offset` (default `--limit` is now 50, as in the tool).
 - `lint_micar_whitepaper(whitepaper_json)`: a draft white paper as a JSON string.
 - `classify_eu_ai_act_system(profile_json="")`: a SystemProfile as JSON; an empty string returns the schema.
 
@@ -43,7 +43,7 @@ eu-reg-mcp                                # starts the server over stdio
 
 Register data comes from the [MiCAR Register Observatory](https://github.com/sebastianfoerste/micar-register-observatory), which snapshots the public ESMA register weekly (Art. 109 VO (EU) 2023/1114). The server reads the observatory's `data/latest.json` and `data/changelog.jsonl` from GitHub raw (`src/eu_reg_mcp/data.py`) and caches them in memory for one hour. The three register tools therefore need network access to GitHub; they do not contact ESMA directly. A fetch that fails with a transient error (timeout, connection error, HTTP 429 or 5xx) is tried up to three times. Each fetched copy that passes validation is also saved to disk, in `$EU_REG_MCP_CACHE_DIR` if set, else `$XDG_CACHE_HOME/eu-reg-mcp` or `~/.cache/eu-reg-mcp`. If the observatory files are unreachable or invalid, the register tools fall back to the last good copy (in memory, then on disk) and raise an error only if there is none. Before 0.1.1 a failed fetch raised an error at once, with no retry or fallback.
 
-The linter is [micar-whitepaper-linter](https://github.com/sebastianfoerste/micar-whitepaper-linter) (36 rules mapped to Annexes I to III); the classifier is [eu-ai-act-classifier](https://github.com/sebastianfoerste/eu-ai-act-classifier). Both are separate packages from their own repositories, MIT-licensed like this server. Without the extras, both tools return an install hint instead of failing. The hint gives the `uvx --python 3.13 --from` form with both extras, the `claude mcp remove` and `claude mcp add` commands that re-register the server that way in Claude Code, and the `pip install` command for a virtual environment (see [Install](#install)).
+The linter is [micar-whitepaper-linter](https://github.com/sebastianfoerste/micar-whitepaper-linter) (36 rules mapped to Annexes I to III); the classifier is [eu-ai-act-classifier](https://github.com/sebastianfoerste/eu-ai-act-classifier). Both are separate packages from their own repositories, MIT-licensed like this server. Without the extras, both tools return an `extra_missing` error whose `hint` says how to install them. The hint gives the `uvx --from` form with both extras, the `claude mcp remove` and `claude mcp add` commands that re-register the server that way in Claude Code, and the `pip install` command for a virtual environment (see [Install](#install)).
 
 ## Sample lint and classify output
 
@@ -99,8 +99,9 @@ Two more profiles: workplace emotion recognition (`"prohibited_practices": ["5.1
 The same register tools work without an MCP client and print JSON:
 
 ```bash
-uvx eu-reg-mcp search "societe generale"       # case- and accent-insensitive
-uvx eu-reg-mcp search 969500FX8K40ZDW4F377      # exact LEI
+uvx eu-reg-mcp search "<entity name>"          # case- and accent-insensitive substring
+uvx eu-reg-mcp search "<20-character LEI>"     # exact LEI
+uvx eu-reg-mcp search "<entity name>" --offset 25   # next page of 25
 uvx eu-reg-mcp summary
 uvx eu-reg-mcp changes --type removed --limit 10
 ```
@@ -118,12 +119,71 @@ HTTP 421.
 
 Every register answer carries what you need to check it:
 
-- search and summary answers: `snapshot_date`, `data_age_days` and `stale`
-  (true when the mirrored data is more than 10 days old, i.e. a weekly refresh
-  was missed), and `observatory_snapshot`, the observatory file the server
-  reads (on `main`; use `snapshot_date` to find the matching revision);
+- search, summary and change answers: `snapshot_date`, `data_age_days` and
+  `stale` (true when the mirrored data is more than 10 days old, i.e. a weekly
+  refresh was missed), and `observatory_snapshot`, the observatory file the
+  server reads (on `main`; use `snapshot_date` to find the matching revision);
 - per search result, the register `entry_id` and `esma_source_url`, the ESMA
   file the entry came from; per register in the summary, its `esma_source_url`;
-- change answers: `changelog_source`, the observatory change log file the
-  server reads (on `main`), and per change record its `snapshot_date`,
+- change answers also carry `changelog_source`, the observatory change log file
+  the server reads (on `main`), and per change record its `snapshot_date`,
   `entry_id` and `still_listed`: whether the entry is in the latest snapshot.
+
+## Typed output and errors
+
+Each tool declares a field-level `outputSchema` for its successful answers; a
+successful call returns the same object as `structuredContent` and as a JSON
+text block, so clients that
+read only text see the same data. `notice` is always the last key. Register
+answers also carry `warnings`: empty normally, one line per data file served
+from the last good cached copy after a failed refresh.
+
+A failed call returns `isError: true` with this object as JSON in its text
+block. It carries no `structuredContent`: the MCP spec requires
+`structuredContent` to match the tool's `outputSchema`, which describes
+successes, and the TypeScript SDK client checks it even on errors (`Client.callTool`,
+typescript-sdk 1.x, read 2026-10-21). Clients should parse the text block:
+
+```json
+{
+  "code": "data_unavailable",
+  "error": "could not load https://raw.githubusercontent.com/…/latest.json: …",
+  "hint": "The observatory data on raw.githubusercontent.com could not be fetched …",
+  "notice": "…"
+}
+```
+
+| `code` | When |
+| --- | --- |
+| `data_unavailable` | Register data could not be fetched and no cached copy exists |
+| `extra_missing` | The `lint` or `classify` extra is not installed; `hint` says how to add it, `available` is `false` |
+| `invalid_input` | Arguments failed validation (e.g. an unknown `register_slug`), the JSON did not parse or is not an object, or the SystemProfile is invalid |
+| `upstream_failed` | The linter failed or printed something other than JSON (`raw_output` holds the first 5,000 characters), or any other unexpected failure inside a tool (the message names the exception) |
+| `timeout` | The linter did not finish within 120 seconds |
+
+Errors from the three register tools also carry `snapshot_date`, `data_age_days` and `stale` as `null`: there was no snapshot behind the answer. `hint` is present when there is a concrete next step. The CLI prints the same
+object and exits with status 1; an unknown `--register` is rejected with
+status 2. Before this change, register failures were plain-text errors without
+a code, and a missing extra or invalid JSON returned an ordinary result with
+`available`/`hint` or `error`.
+
+## Resources and prompts
+
+| URI or name | Kind | What it returns |
+| --- | --- | --- |
+| `eu-reg://about` | resource | Server version, the observatory files read, outbound hosts, the staleness threshold, which extras are installed, the error codes and both notices |
+| `micar://summary` | resource | The same answer as `micar_register_summary` |
+| `micar://changes` | resource | The 50 newest changes, as `micar_register_changes` returns them |
+| `micar://entry/{entry_id}` | resource template | One entry by the `entry_id` that search results carry, with `snapshot_date`, `data_age_days`, `stale`, `warnings` and `notice`; an unknown id is an error |
+| `check_register_status(entity)` | prompt | Asks the model to search the register and report the facts, the snapshot date and staleness, to treat `similar_names` as non-matches and to make no assessment of the entity |
+| `review_register_changes(since="")` | prompt | Asks the model to summarise changes with their dates, to say for each removal that the register itself does not state why, and not to report a provisional `missing` record as a removal |
+
+Resources are read-only views of the same data the tools return; every
+register resource carries the snapshot date and the `notice`. A resource read
+has no `isError` result, so its errors are JSON-RPC errors (code 0 in mcp
+1.x). The SDK prefixes the message, so the error code appears inside it rather
+than at the start, and the register `notice` follows:
+`Error reading resource micar://summary: data_unavailable: could not load … Notice: …`.
+For the entry template the prefix is `Error creating resource from template: `,
+repeated twice by the SDK; an unknown `entry_id` gives `invalid_input`. `serverInfo.version` in the MCP handshake now reports
+this package's version (it reported the MCP SDK's before).

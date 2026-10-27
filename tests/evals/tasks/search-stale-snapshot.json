@@ -1,0 +1,20 @@
+{
+  "id": "search-stale-snapshot",
+  "description": "An old snapshot is flagged stale.",
+  "setup": "fixtures",
+  "call": {
+    "tool": "search_micar_register",
+    "arguments": {
+      "query": ""
+    }
+  },
+  "expect": {
+    "isError": false,
+    "equals": {
+      "stale": true
+    },
+    "greater": {
+      "data_age_days": 10
+    }
+  }
+}

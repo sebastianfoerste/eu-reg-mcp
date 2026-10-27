@@ -1,0 +1,22 @@
+{
+  "id": "changes-missing-is-provisional",
+  "description": "A 'missing' record can be filtered and is never presented as a removal.",
+  "setup": "fixtures",
+  "call": {
+    "tool": "micar_register_changes",
+    "arguments": {
+      "change_type": "missing"
+    }
+  },
+  "expect": {
+    "isError": false,
+    "equals": {
+      "total_changes": 1,
+      "changes.0.change": "missing",
+      "changes.0.entry_id": "a4"
+    },
+    "contains": {
+      "notice": "not a removal"
+    }
+  }
+}

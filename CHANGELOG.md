@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.2.0 (unreleased)
+
+- `micar_register_changes` now states `snapshot_date`, `data_age_days`, `stale` and `observatory_snapshot`, like search and summary.
+- CLI `search --offset` pages through matches.
+- Typed output: every tool declares a field-level `outputSchema` and a `title`; register answers add `warnings` (cached-fallback notes).
+- One error model: failures return `isError: true` with a JSON text block holding `code` (`data_unavailable`, `extra_missing`, `invalid_input`, `upstream_failed`, `timeout`), `error`, `hint` and `notice`, and no `structuredContent` (which must match the success `outputSchema`; TypeScript clients check it even on errors). Any unexpected exception inside a tool becomes `upstream_failed`. Cached-fallback `warnings` name only the data files an answer read. Resource read errors carry the code and the register `notice` in their message. A missing extra or invalid JSON is now an error result, not an ordinary one; linter timeouts are caught. The CLI prints the error and exits 1, and rejects an unknown `--register`.
+- Contract evals: 25 golden tasks in `tests/evals/tasks/` run through an MCP client on fictional fixtures (dates, notice, error codes, unchanged sibling output, no compliance-style keys), plus a test that versions and the registry name agree. The heading above proposes 0.2.0; publishing stays a maintainer step.
+- Errors from register tools always carry `snapshot_date`, `data_age_days` and `stale` (as `null`).
+- Resources `eu-reg://about`, `micar://summary`, `micar://changes` and the template `micar://entry/{entry_id}`; prompts `check_register_status` and `review_register_changes` that ask for the snapshot date and keep the review framing.
+- Single-source `__version__`: the HTTP `User-Agent` and the MCP `serverInfo.version` (which reported the SDK's version) now state this package's version.
+- The `lint` extra requires micar-whitepaper-linter 0.2.1 or newer (was 0.2.0); the lockfile uses 0.2.1, and eu-ai-act-classifier 0.2.2 as in 0.1.2.
+- Ranked search: each result carries `match` (`score` and `basis`, string matching only); `next_offset` pages; with no match, `similar_names` lists up to five similarly spelt names, each labelled "not a match". On a 22-query synthetic benchmark, real-match hit@1 rose from 0.18 to 0.36 (hit@5 unchanged at 0.36, since ranking only reorders literal matches); on the 14 queries with no match, `similar_names` put the intended entry first every time, as a suggestion, not a match.
+- `micar_register_changes` filters by `since`, `until`, `register_slug`, `member_state`, `entity`, `entry_id` and exact `lei` (change records carry an LEI from the 2026-10-19 snapshot on), accepts the provisional change type `missing` (explained in the answer's `notice`: not a removal), and pages with `offset`/`next_offset`; the CLI mirrors them, and `changes --limit` now defaults to 50 like the tool.
+- `classify_eu_ai_act_system` reports an invalid profile or a `profile_json` that is not a JSON object as an `invalid_input` error result (`isError: true`, with `code`, `hint` and `notice`) instead of 0.1.2's ordinary `{"available": true, "error": ...}` result.
+- Minimum mcp is now 1.22 (was 1.9; still below 2): typed output and tool titles need it, and it is the oldest release this test suite passes on.
+
 ## 0.1.2 (2026-10-23)
 
 - Register answers are verifiable: each search result carries its `entry_id` and the ESMA source file (`esma_source_url`), and each register in the summary carries its `esma_source_url`; search and summary responses state `snapshot_date`, `data_age_days`, `stale` and the observatory data file the server reads (`observatory_snapshot`, on `main`; use `snapshot_date` to find the matching revision), and change responses name the observatory change log file the server reads (`changelog_source`, on `main`).

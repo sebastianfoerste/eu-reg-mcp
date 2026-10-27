@@ -1,0 +1,22 @@
+{
+  "id": "changes-removal-unexplained",
+  "description": "A removal says the register does not state why and is no longer listed.",
+  "setup": "fixtures",
+  "call": {
+    "tool": "micar_register_changes",
+    "arguments": {
+      "change_type": "removed"
+    }
+  },
+  "expect": {
+    "isError": false,
+    "equals": {
+      "changes.0.entry_id": "a3",
+      "changes.0.still_listed": false,
+      "snapshot_date": "2026-07-07"
+    },
+    "contains": {
+      "notice": "does not state why"
+    }
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "id": "register-offline-no-cache",
+  "description": "No network and no cache: data_unavailable with null provenance.",
+  "setup": "offline",
+  "call": {
+    "tool": "search_micar_register",
+    "arguments": {
+      "query": "x"
+    }
+  },
+  "expect": {
+    "isError": true,
+    "equals": {
+      "code": "data_unavailable",
+      "snapshot_date": null,
+      "stale": null
+    },
+    "present": [
+      "hint",
+      "notice"
+    ]
+  }
+}

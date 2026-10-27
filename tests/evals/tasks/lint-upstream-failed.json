@@ -1,0 +1,18 @@
+{
+  "id": "lint-upstream-failed",
+  "description": "A linter that prints something other than JSON is upstream_failed, with the raw output.",
+  "setup": "lint_bad_output",
+  "call": {
+    "tool": "lint_micar_whitepaper",
+    "arguments": {
+      "whitepaper_json": "{\"type\": \"other\", \"sections\": {\"offeror\": \"Example Issuer GmbH is the offeror of the token described in this white paper.\"}}"
+    }
+  },
+  "expect": {
+    "isError": true,
+    "equals": {
+      "code": "upstream_failed",
+      "raw_output": "Traceback: not JSON"
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "id": "register-cached-fallback",
+  "description": "A failed refresh with a cached copy answers with a warning.",
+  "setup": "fallback",
+  "call": {
+    "tool": "micar_register_summary",
+    "arguments": {}
+  },
+  "expect": {
+    "isError": false,
+    "equals": {
+      "snapshot_date": "2026-07-07"
+    },
+    "contains": {
+      "warnings.0": "last good cached copy"
+    }
+  }
+}

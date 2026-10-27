@@ -1,5 +1,5 @@
 version = 1
-revision = 5
+revision = 3
 requires-python = ">=3.13"
 resolution-markers = [
     "python_full_version >= '3.15' and sys_platform == 'win32'",
@@ -293,8 +293,8 @@ lint = [
 [package.metadata]
 requires-dist = [
     { name = "eu-ai-act-classifier", marker = "extra == 'classify'", specifier = ">=0.2.2" },
-    { name = "mcp", specifier = ">=1.9,<2" },
-    { name = "micar-whitepaper-linter", marker = "extra == 'lint'", specifier = ">=0.2.0" },
+    { name = "mcp", specifier = ">=1.22,<2" },
+    { name = "micar-whitepaper-linter", marker = "extra == 'lint'", specifier = ">=0.2.1" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.10" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.6" },

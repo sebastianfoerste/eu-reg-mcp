@@ -1,0 +1,17 @@
+{
+  "id": "prompt-review-changes",
+  "description": "The changes prompt keeps removals unexplained and missing records provisional.",
+  "setup": "fixtures",
+  "call": {
+    "prompt": "review_register_changes",
+    "arguments": {
+      "since": "2026-07-01"
+    }
+  },
+  "expect": {
+    "contains": {
+      "text": "does not state why"
+    },
+    "contains_notice": true
+  }
+}

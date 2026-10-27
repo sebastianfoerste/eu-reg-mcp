@@ -1,9 +1,11 @@
 import importlib.util
 import json
+import subprocess
 import sys
 
 import pytest
 
+from eu_reg_mcp.errors import ToolFailure
 from eu_reg_mcp.integrations import classify_ai_system, lint_whitepaper
 
 UVX_COMMAND = 'uvx --python 3.13 --from "eu-reg-mcp[lint,classify]" eu-reg-mcp'
@@ -38,17 +40,24 @@ def test_lint_degrades_with_install_hint_when_binary_missing(monkeypatch):
     monkeypatch.setattr("eu_reg_mcp.integrations.shutil.which", lambda _: None)
     # Hide the module fallback too, whether or not the lint extra is installed.
     monkeypatch.setitem(sys.modules, "micar_linter", None)
-    result = lint_whitepaper(json.dumps({"title": "x"}))
+    with pytest.raises(ToolFailure) as failure:
+        lint_whitepaper(json.dumps({"title": "x"}))
+    result = failure.value.payload()
+    assert result["code"] == "extra_missing"
     assert result["available"] is False
     assert "eu-reg-mcp[lint]" in result["hint"]
     assert f"claude mcp add eu-reg -- {UVX_COMMAND}" in result["hint"]
+    assert result["notice"]
 
 
 def test_lint_rejects_invalid_json(monkeypatch):
     monkeypatch.setattr(
         "eu_reg_mcp.integrations.shutil.which", lambda _: "/usr/bin/micar-lint"
     )
-    result = lint_whitepaper("{not json")
+    with pytest.raises(ToolFailure) as failure:
+        lint_whitepaper("{not json")
+    result = failure.value.payload()
+    assert result["code"] == "invalid_input"
     assert result["available"] is True
     assert "not valid JSON" in result["error"]
 
@@ -96,10 +105,59 @@ def test_classify_degrades_with_install_hint_when_package_missing(monkeypatch):
     # Simulate the classify extra being absent: a None entry in sys.modules
     # makes the import fail even if the extra is installed.
     monkeypatch.setitem(sys.modules, "eu_ai_act_classifier.local_api", None)
-    result = classify_ai_system("{}")
+    with pytest.raises(ToolFailure) as failure:
+        classify_ai_system("{}")
+    result = failure.value.payload()
+    assert result["code"] == "extra_missing"
     assert result["available"] is False
     assert "eu-reg-mcp[classify]" in result["hint"]
     assert UVX_COMMAND in result["hint"]
+
+
+def test_lint_timeout_is_a_timeout_error(monkeypatch):
+    monkeypatch.setattr(
+        "eu_reg_mcp.integrations.shutil.which", lambda _: "/usr/bin/micar-lint"
+    )
+
+    def slow(*_args, **kwargs):
+        raise subprocess.TimeoutExpired("micar-lint", kwargs["timeout"])
+
+    monkeypatch.setattr("eu_reg_mcp.integrations.subprocess.run", slow)
+    with pytest.raises(ToolFailure) as failure:
+        lint_whitepaper(json.dumps({"type": "other", "sections": {}}))
+    assert failure.value.code == "timeout"
+
+
+def test_lint_non_json_output_is_upstream_failure(monkeypatch):
+    monkeypatch.setattr(
+        "eu_reg_mcp.integrations.shutil.which", lambda _: "/usr/bin/micar-lint"
+    )
+    monkeypatch.setattr(
+        "eu_reg_mcp.integrations.subprocess.run",
+        lambda *_a, **_k: subprocess.CompletedProcess([], 0, "not json", ""),
+    )
+    with pytest.raises(ToolFailure) as failure:
+        lint_whitepaper(json.dumps({"type": "other", "sections": {}}))
+    assert failure.value.code == "upstream_failed"
+    assert failure.value.payload()["raw_output"] == "not json"
+
+
+@pytest.mark.parametrize("raw", ["[]", '"text"'])
+def test_inputs_must_be_json_objects(monkeypatch, raw):
+    monkeypatch.setattr(
+        "eu_reg_mcp.integrations.shutil.which", lambda _: "/usr/bin/micar-lint"
+    )
+    with pytest.raises(ToolFailure) as failure:
+        lint_whitepaper(raw)
+    assert failure.value.code == "invalid_input"
+
+
+def test_classify_invalid_profile_is_invalid_input():
+    pytest.importorskip("eu_ai_act_classifier.local_api")
+    with pytest.raises(ToolFailure) as failure:
+        classify_ai_system("{}")
+    assert failure.value.code == "invalid_input"
+    assert "SystemProfile" in failure.value.message
 
 
 @requires_classifier
@@ -114,7 +172,7 @@ def test_classify_timeline_has_2_december_2026_entry():
 
 
 @requires_classifier
-def test_classify_returns_error_for_invalid_profile():
+def test_classify_rejects_invalid_profile_as_invalid_input():
     # Classifier 0.2.2 rejects a non-ISO date with a pydantic ValidationError.
     profile = {
         "name": "x",
@@ -122,15 +180,18 @@ def test_classify_returns_error_for_invalid_profile():
         "annex_iii_area": "III.4.a",
         "placing_on_market_date": "March 2026",
     }
-    result = classify_ai_system(json.dumps(profile))
-    assert result["available"] is True
-    assert "classification" not in result
-    assert "not a valid SystemProfile" in result["error"]
-    assert "placing_on_market_date" in result["error"]
+    with pytest.raises(ToolFailure) as failure:
+        classify_ai_system(json.dumps(profile))
+    body = failure.value.payload()
+    assert body["code"] == "invalid_input" and body["available"] is True
+    assert "not a valid SystemProfile" in body["error"]
+    assert "placing_on_market_date" in body["error"]
 
 
 @requires_classifier
 @pytest.mark.parametrize("profile_json", ["[]", "123", '"x"', "null"])
-def test_classify_returns_error_for_non_object_json(profile_json):
-    result = classify_ai_system(profile_json)
-    assert result == {"available": True, "error": "profile_json must be a JSON object"}
+def test_classify_rejects_non_object_json_as_invalid_input(profile_json):
+    with pytest.raises(ToolFailure) as failure:
+        classify_ai_system(profile_json)
+    assert failure.value.code == "invalid_input"
+    assert failure.value.message == "profile_json must be a JSON object."
