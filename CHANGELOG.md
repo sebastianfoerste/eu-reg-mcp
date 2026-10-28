@@ -1,12 +1,12 @@
 # Changelog
 
-## 0.2.0 (unreleased)
+## 0.2.0 (2026-10-28)
 
 - `micar_register_changes` now states `snapshot_date`, `data_age_days`, `stale` and `observatory_snapshot`, like search and summary.
 - CLI `search --offset` pages through matches.
 - Typed output: every tool declares a field-level `outputSchema` and a `title`; register answers add `warnings` (cached-fallback notes).
 - One error model: failures return `isError: true` with a JSON text block holding `code` (`data_unavailable`, `extra_missing`, `invalid_input`, `upstream_failed`, `timeout`), `error`, `hint` and `notice`, and no `structuredContent` (which must match the success `outputSchema`; TypeScript clients check it even on errors). Any unexpected exception inside a tool becomes `upstream_failed`. Cached-fallback `warnings` name only the data files an answer read. Resource read errors carry the code and the register `notice` in their message. A missing extra or invalid JSON is now an error result, not an ordinary one; linter timeouts are caught. The CLI prints the error and exits 1, and rejects an unknown `--register`.
-- Contract evals: 25 golden tasks in `tests/evals/tasks/` run through an MCP client on fictional fixtures (dates, notice, error codes, unchanged sibling output, no compliance-style keys), plus a test that versions and the registry name agree. The heading above proposes 0.2.0; publishing stays a maintainer step.
+- Contract evals: 25 golden tasks in `tests/evals/tasks/` run through an MCP client on fictional fixtures (dates, notice, error codes, unchanged sibling output, no compliance-style keys), plus a test that versions and the registry name agree.
 - Errors from register tools always carry `snapshot_date`, `data_age_days` and `stale` (as `null`).
 - Resources `eu-reg://about`, `micar://summary`, `micar://changes` and the template `micar://entry/{entry_id}`; prompts `check_register_status` and `review_register_changes` that ask for the snapshot date and keep the review framing.
 - Single-source `__version__`: the HTTP `User-Agent` and the MCP `serverInfo.version` (which reported the SDK's version) now state this package's version.
