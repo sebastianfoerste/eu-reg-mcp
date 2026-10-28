@@ -177,10 +177,17 @@ class ClassifyResponse(_Model):
     available: bool
     classification: dict[str, Any] | None = None
     profile_schema: dict[str, Any] | None = None
+    profile_json_schema: dict[str, Any] | None = None
     example_profile: dict[str, Any] | None = None
     hint: str | None = None
     notice: str
 
     _omit_if_none = frozenset(
-        {"classification", "profile_schema", "example_profile", "hint"}
+        {
+            "classification",
+            "profile_schema",
+            "profile_json_schema",
+            "example_profile",
+            "hint",
+        }
     )

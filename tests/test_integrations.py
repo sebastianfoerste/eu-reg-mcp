@@ -253,6 +253,14 @@ def test_classify_empty_profile_returns_schema_and_example(empty):
     assert {"roles", "annex_iii_areas", "prohibited_practices"} <= set(schema)
     assert {"artifacts", "dossier_schema", "review_posture"} <= set(schema)
     assert "III.5.b" in schema["annex_iii_areas"]
+    # The field-level JSON schema names every field, including the singular
+    # annex_iii_area that the plural annex_iii_areas list above does not.
+    json_schema = result["profile_json_schema"]
+    assert json_schema["required"] == ["name"]
+    assert json_schema["additionalProperties"] is False
+    assert {"annex_iii_area", "derogation", "placing_on_market_date"} <= set(
+        json_schema["properties"]
+    )
     assert result["example_profile"] == EXAMPLE_PROFILE
     assert "Required fields: name;" in result["hint"]
     assert "classification" not in result

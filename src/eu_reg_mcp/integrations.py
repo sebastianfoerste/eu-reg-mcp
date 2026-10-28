@@ -130,9 +130,9 @@ def _invalid_profile(error: ValidationError) -> ToolFailure:
             "message": item["msg"],
             "type": item["type"],
         }
-        for item in error.errors(include_url=False)
+        for item in error.errors()
     ]
-    fields = ", ".join(dict.fromkeys(detail["field"] for detail in details))
+    fields = ", ".join(detail["field"] for detail in details)
     message = f"profile_json is not a valid SystemProfile. Invalid fields: {fields}."
     return ToolFailure(
         "invalid_input",
@@ -208,23 +208,28 @@ def classify_ai_system(profile_json: str) -> dict[str, Any]:
     except ImportError as error:
         raise _missing_extra("eu-ai-act-classifier", "classify") from error
     if not profile_json.strip():
-        required = SystemProfile.model_json_schema().get("required", [])
+        json_schema = SystemProfile.model_json_schema()
+        required = json_schema.get("required", [])
         return {
             "available": True,
             "profile_schema": schema_payload(),
+            "profile_json_schema": json_schema,
             "example_profile": EXAMPLE_PROFILE,
             "hint": (
-                "Empty profile: returning the expected SystemProfile schema and "
-                "one synthetic example profile. Pass a profile as JSON to "
-                f"classify it. Required fields: {', '.join(required) or 'none'}; "
-                "unknown fields are rejected."
+                "Empty profile: returning the SystemProfile JSON schema (every "
+                "field, in profile_json_schema), the classifier's allowed values "
+                "(in profile_schema) and one synthetic example profile. Pass a "
+                "profile as JSON to classify it. Required fields: "
+                f"{', '.join(required) or 'none'}; unknown fields are rejected."
             ),
             "notice": REVIEW_NOTICE,
         }
     payload = _parse_object(profile_json, "profile_json", hint=SCHEMA_HINT)
     try:
         classification = classify_payload(payload)
-    except ValidationError as error:  # the classifier rejected the profile
+    except ValidationError as error:
+        if error.title != SystemProfile.__name__:
+            raise  # not the profile; the server reports it as upstream_failed
         raise _invalid_profile(error) from error
     return {
         "available": True,
