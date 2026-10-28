@@ -1,0 +1,23 @@
+{
+  "id": "lint-synthetic-draft",
+  "description": "A synthetic draft returns the linter's report unchanged, with the review notice.",
+  "setup": "fixtures",
+  "call": {
+    "tool": "lint_micar_whitepaper",
+    "arguments": {
+      "whitepaper_json": "{\"type\": \"other\", \"sections\": {\"notification_date\": \"2026-09-01\", \"offeror\": \"Example Issuer GmbH is the offeror of the token described in this white paper.\"}}"
+    }
+  },
+  "expect": {
+    "isError": false,
+    "equals": {
+      "available": true
+    },
+    "present": [
+      "report.findings",
+      "report.summary"
+    ],
+    "passthrough": "lint",
+    "requires": "lint"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "id": "lint-invalid-json",
+  "description": "Invalid JSON is invalid_input.",
+  "setup": "fixtures",
+  "call": {
+    "tool": "lint_micar_whitepaper",
+    "arguments": {
+      "whitepaper_json": "{not json"
+    }
+  },
+  "expect": {
+    "isError": true,
+    "equals": {
+      "code": "invalid_input"
+    },
+    "requires": "lint"
+  }
+}

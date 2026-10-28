@@ -1,0 +1,21 @@
+{
+  "id": "classify-extra-missing",
+  "description": "Without the classify extra: extra_missing with an install hint.",
+  "setup": "no_extras",
+  "call": {
+    "tool": "classify_eu_ai_act_system",
+    "arguments": {
+      "profile_json": "{}"
+    }
+  },
+  "expect": {
+    "isError": true,
+    "equals": {
+      "code": "extra_missing",
+      "available": false
+    },
+    "contains": {
+      "hint": "eu-reg-mcp[classify]"
+    }
+  }
+}

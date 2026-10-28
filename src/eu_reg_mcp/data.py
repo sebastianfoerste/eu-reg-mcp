@@ -14,9 +14,11 @@ import tempfile
 import time
 import urllib.error
 import urllib.request
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from pathlib import Path
 from typing import Any
+
+from eu_reg_mcp import __version__
 
 OBSERVATORY_RAW = (
     "https://raw.githubusercontent.com/sebastianfoerste/micar-register-observatory/main"
@@ -24,7 +26,9 @@ OBSERVATORY_RAW = (
 LATEST_URL = f"{OBSERVATORY_RAW}/data/latest.json"
 CHANGELOG_URL = f"{OBSERVATORY_RAW}/data/changelog.jsonl"
 
-USER_AGENT = "eu-reg-mcp/0.1 (+https://github.com/sebastianfoerste/eu-reg-mcp)"
+USER_AGENT = (
+    f"eu-reg-mcp/{__version__} (+https://github.com/sebastianfoerste/eu-reg-mcp)"
+)
 
 CACHE_TTL_SECONDS = 3600  # register moves weekly; an hour is generous
 FETCH_ATTEMPTS = 3
@@ -34,6 +38,8 @@ FETCH_TIMEOUT_SECONDS = 30
 log = logging.getLogger(__name__)
 
 _cache: dict[str, tuple[float, Any]] = {}
+# Files currently served from the last good copy after a failed refresh.
+_fallbacks: dict[str, str] = {}
 
 
 class DataError(RuntimeError):
@@ -137,12 +143,14 @@ def _cached(key: str, url: str, parse: Callable[[bytes], Any]) -> Any:
         if stale is None:
             raise DataError(f"could not load {url}: {exc}") from exc
         log.warning("using stale cached %s after fetch failure: %s", key, exc)
+        _fallbacks[key] = str(exc)
         return stale
     try:
         _write_atomic(path, raw)
     except OSError as exc:
         log.warning("could not write cache file %s: %s", path, exc)
     _cache[key] = (now, value)
+    _fallbacks.pop(key, None)
     return value
 
 
@@ -161,13 +169,30 @@ def _stale(
 
 
 def load_snapshot() -> dict[str, Any]:
-    return _cached("latest.json", LATEST_URL, _parse_snapshot)
+    return _cached(SNAPSHOT_FILE, LATEST_URL, _parse_snapshot)
 
 
 def load_changelog() -> list[dict[str, Any]]:
-    return _cached("changelog.jsonl", CHANGELOG_URL, _parse_changelog)
+    return _cached(CHANGELOG_FILE, CHANGELOG_URL, _parse_changelog)
+
+
+SNAPSHOT_FILE = "latest.json"
+CHANGELOG_FILE = "changelog.jsonl"
+
+
+def fallback_warnings(keys: Iterable[str]) -> list[str]:
+    """One line per data file, among those an answer read, that is served from
+    the last good copy after a failed refresh."""
+    return [
+        f"Refreshing {key} failed ({_fallbacks[key]}); this answer uses the last "
+        f"good cached copy of {key}, which may be older than the snapshot_date "
+        "shown."
+        for key in sorted(set(keys))
+        if key in _fallbacks
+    ]
 
 
 def clear_cache() -> None:
     """Drop the in-memory cache (the on-disk stale fallback is kept)."""
     _cache.clear()
+    _fallbacks.clear()

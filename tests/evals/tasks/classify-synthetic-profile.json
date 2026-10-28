@@ -1,0 +1,23 @@
+{
+  "id": "classify-synthetic-profile",
+  "description": "A synthetic profile returns the classifier's output unchanged, with the review notice.",
+  "setup": "fixtures",
+  "call": {
+    "tool": "classify_eu_ai_act_system",
+    "arguments": {
+      "profile_json": "{\"name\": \"cv-screening-assistant\", \"roles\": [\"provider\"], \"annex_iii_area\": \"III.4.a\"}"
+    }
+  },
+  "expect": {
+    "isError": false,
+    "equals": {
+      "available": true
+    },
+    "present": [
+      "classification.risk_tier",
+      "classification.findings"
+    ],
+    "passthrough": "classify",
+    "requires": "classify"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "id": "changes-bad-date",
+  "description": "A malformed date is invalid_input.",
+  "setup": "fixtures",
+  "call": {
+    "tool": "micar_register_changes",
+    "arguments": {
+      "until": "yesterday"
+    }
+  },
+  "expect": {
+    "isError": true,
+    "equals": {
+      "code": "invalid_input"
+    }
+  }
+}

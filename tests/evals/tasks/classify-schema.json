@@ -1,0 +1,18 @@
+{
+  "id": "classify-schema",
+  "description": "An empty profile returns the SystemProfile schema.",
+  "setup": "fixtures",
+  "call": {
+    "tool": "classify_eu_ai_act_system",
+    "arguments": {
+      "profile_json": ""
+    }
+  },
+  "expect": {
+    "isError": false,
+    "present": [
+      "profile_schema"
+    ],
+    "requires": "classify"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "id": "search-fresh-snapshot",
+  "description": "A snapshot dated today is not stale.",
+  "setup": "fresh",
+  "call": {
+    "tool": "search_micar_register",
+    "arguments": {
+      "query": ""
+    }
+  },
+  "expect": {
+    "isError": false,
+    "equals": {
+      "stale": false,
+      "data_age_days": 0
+    }
+  }
+}

@@ -1,0 +1,158 @@
+[
+ {
+  "query": "orbit",
+  "expected": [
+   "r02"
+  ],
+  "kind": "partial"
+ },
+ {
+  "query": "quartz",
+  "expected": [
+   "r04"
+  ],
+  "kind": "partial"
+ },
+ {
+  "query": "peak",
+  "expected": [
+   "r06"
+  ],
+  "kind": "partial"
+ },
+ {
+  "query": "harbour blue",
+  "expected": [
+   "r09"
+  ],
+  "kind": "partial"
+ },
+ {
+  "query": "blue harbour token",
+  "expected": [
+   "r08"
+  ],
+  "kind": "partial"
+ },
+ {
+  "query": "kestrel",
+  "expected": [
+   "r21",
+   "r22"
+  ],
+  "kind": "partial"
+ },
+ {
+  "query": "societe exemple",
+  "expected": [
+   "r17"
+  ],
+  "kind": "accent"
+ },
+ {
+  "query": "529900EXAMPLE0000022",
+  "expected": [
+   "r22"
+  ],
+  "kind": "lei"
+ },
+ {
+  "query": "nordlict digital",
+  "expected": [
+   "r12",
+   "r13"
+  ],
+  "kind": "misspelt"
+ },
+ {
+  "query": "blue harbor token",
+  "expected": [
+   "r08"
+  ],
+  "kind": "misspelt"
+ },
+ {
+  "query": "kestral coin",
+  "expected": [
+   "r22"
+  ],
+  "kind": "misspelt"
+ },
+ {
+  "query": "granit peak exchange",
+  "expected": [
+   "r05"
+  ],
+  "kind": "misspelt"
+ },
+ {
+  "query": "quarts ledger",
+  "expected": [
+   "r04"
+  ],
+  "kind": "misspelt"
+ },
+ {
+  "query": "tesselate finance",
+  "expected": [
+   "r27"
+  ],
+  "kind": "misspelt"
+ },
+ {
+  "query": "saltmarch digital",
+  "expected": [
+   "r28"
+  ],
+  "kind": "misspelt"
+ },
+ {
+  "query": "fjord token issuence",
+  "expected": [
+   "r30"
+  ],
+  "kind": "misspelt"
+ },
+ {
+  "query": "meridan token platform",
+  "expected": [
+   "r26"
+  ],
+  "kind": "misspelt"
+ },
+ {
+  "query": "lumen stabel eur",
+  "expected": [
+   "r24"
+  ],
+  "kind": "misspelt"
+ },
+ {
+  "query": "Tessellate Finance Ltd",
+  "expected": [
+   "r27"
+  ],
+  "kind": "legal_form"
+ },
+ {
+  "query": "Saltmarsh Digital GmbH",
+  "expected": [
+   "r28"
+  ],
+  "kind": "legal_form"
+ },
+ {
+  "query": "Cobalt River Capital Limited",
+  "expected": [
+   "r29"
+  ],
+  "kind": "legal_form"
+ },
+ {
+  "query": "Example Issuer AG",
+  "expected": [
+   "r16"
+  ],
+  "kind": "legal_form"
+ }
+]

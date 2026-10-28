@@ -1,0 +1,17 @@
+{
+  "id": "prompt-register-status",
+  "description": "The status prompt asks for the date and carries the notice.",
+  "setup": "fixtures",
+  "call": {
+    "prompt": "check_register_status",
+    "arguments": {
+      "entity": "Example Issuer GmbH"
+    }
+  },
+  "expect": {
+    "contains": {
+      "text": "snapshot_date"
+    },
+    "contains_notice": true
+  }
+}

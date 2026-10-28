@@ -1,0 +1,17 @@
+{
+  "id": "lint-timeout",
+  "description": "A linter that hangs is a timeout error.",
+  "setup": "lint_timeout",
+  "call": {
+    "tool": "lint_micar_whitepaper",
+    "arguments": {
+      "whitepaper_json": "{\"type\": \"other\", \"sections\": {\"notification_date\": \"2026-09-01\", \"offeror\": \"Example Issuer GmbH is the offeror of the token described in this white paper.\"}}"
+    }
+  },
+  "expect": {
+    "isError": true,
+    "equals": {
+      "code": "timeout"
+    }
+  }
+}
