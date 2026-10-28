@@ -15,12 +15,12 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Topic :: Software Development :: Libraries",
 ]
-dependencies = ["mcp>=1.9,<2"]
+dependencies = ["mcp>=1.22,<2"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0", "ruff>=0.6", "mypy>=1.10"]
 lint = [
-    "micar-whitepaper-linter>=0.2.0",
+    "micar-whitepaper-linter>=0.2.1",
 ]
 classify = [
     "eu-ai-act-classifier>=0.2.2",

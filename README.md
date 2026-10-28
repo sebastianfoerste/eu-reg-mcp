@@ -62,13 +62,13 @@ For the extras, use `"args": ["--python", "3.13", "--from", "eu-reg-mcp[lint,cla
 If Claude Desktop cannot find `uvx`, put its absolute path (the output of `which uvx`) in `command`.
 </details>
 
-Without uv, run `pip install 'eu-reg-mcp[lint,classify]'` in a Python 3.13+ virtual environment and register its `eu-reg-mcp` by full path, e.g. `claude mcp add eu-reg -- /path/to/.venv/bin/eu-reg-mcp`; the environment need not be active. Install options and network use: [docs/tools.md](docs/tools.md#install).
+Without uv, run `pip install 'eu-reg-mcp[lint,classify]'` in a Python 3.13+ virtual environment and register its `eu-reg-mcp` by full path, e.g. `claude mcp add eu-reg -- /path/to/.venv/bin/eu-reg-mcp`; the environment need not be active. Install options and network use: [docs/tools.md](docs/tools.md#install). Zed, Gemini CLI, Continue and goose: [docs/clients.md](docs/clients.md).
 
 ## Example output
 
-> **Synthetic data.** Produced on 2026-10-23 by running this repo's register code (`register.search_entries`) against the **synthetic test fixtures** in `tests/fixtures/`, not the live register. The entity and its LEI are invented. Fields shown are what a live call returns; values are not.
+> **Synthetic data.** Produced on 2026-10-27 by calling this repo's `search_micar_register` tool function against the **synthetic test fixtures** in `tests/fixtures/`, not the live register. The entity and its LEI are invented. Output shape is what a live call returns; values are not.
 
-`search_micar_register(query="testnet")` (abridged: `entry_id`, `esma_source_url`, `data_age_days`, `stale`, `observatory_snapshot` and `offset` omitted):
+`search_micar_register(query="testnet")`, abridged: the response also has `data_age_days`, `stale`, `observatory_snapshot`, `offset`, `similar_names` and `warnings`, and each result `entry_id` and `esma_source_url`:
 
 ```json
 {
@@ -83,15 +83,20 @@ Without uv, run `pip install 'eu-reg-mcp[lint,classify]'` in a Python 3.13+ virt
       "authority": "CSSF",
       "whitepaper_url": "WWW.EXAMPLE-TESTNET.EXAMPLE",
       "format_class": "unspecified",
-      "register_last_update": "01/01/2026"
+      "register_last_update": "01/01/2026",
+      "match": {
+        "score": 0.85,
+        "basis": "whole_words"
+      }
     }
   ],
   "truncated": false,
+  "next_offset": null,
   "notice": "Facts from the public ESMA interim MiCAR register (Art. 109 MiCAR) as mirrored by the MiCAR Register Observatory. No legal assessment of any entity; not legal advice."
 }
 ```
 
-`micar_register_changes(change_type="removed")` returns the same kind of cited record (snapshot date, register, entity) and notes that *"the register itself does not state why"* an entry was removed. With the extras installed, the lint and classify tools cite the provision behind each finding, for example `Anhang I Teil A MiCAR` (MiCAR Annex I, Part A), `Art. 5(1)(f) AIA`, `Annex III(4)(a) AIA`, and `Art. 51 AIA` for a general-purpose AI model with systemic risk. Sample output from synthetic inputs: [docs/tools.md](docs/tools.md#sample-lint-and-classify-output).
+`match` says how the query string matched the name or LEI; it says nothing about the entity. `micar_register_changes(change_type="removed")` returns the same kind of cited record (snapshot date, register, entity) and notes that *"the register itself does not state why"* an entry was removed. With the extras installed, the lint and classify tools cite the provision behind each finding, for example `Anhang I Teil A MiCAR` (MiCAR Annex I, Part A), `Art. 5(1)(f) AIA`, `Annex III(4)(a) AIA`, and `Art. 51 AIA` for a general-purpose AI model with systemic risk. Sample output from synthetic inputs: [docs/tools.md](docs/tools.md#sample-lint-and-classify-output).
 
 ## Tools and data sources
 
@@ -117,7 +122,7 @@ An ungrounded model can invent register entries or provisions. Here, register an
 
 - PyPI: [eu-reg-mcp](https://pypi.org/project/eu-reg-mcp/), [micar-whitepaper-linter](https://pypi.org/project/micar-whitepaper-linter/), [eu-ai-act-classifier](https://pypi.org/project/eu-ai-act-classifier/)
 - Register data: [micar-register-observatory](https://github.com/sebastianfoerste/micar-register-observatory) (weekly snapshots of ESMA's public interim MiCAR register under Art. 109 of Regulation (EU) 2023/1114, covering white papers and authorised CASPs, plus the list of non-compliant entities)
-- Linter: [micar-whitepaper-linter](https://github.com/sebastianfoerste/micar-whitepaper-linter) (36 rules mapped to Annex I–III) · Classifier: [eu-ai-act-classifier](https://github.com/sebastianfoerste/eu-ai-act-classifier) — both MIT-licensed
+- Linter: [micar-whitepaper-linter](https://github.com/sebastianfoerste/micar-whitepaper-linter) (rules mapped to Annexes I to III) · Classifier: [eu-ai-act-classifier](https://github.com/sebastianfoerste/eu-ai-act-classifier) (both MIT-licensed)
 - Development and tests: [docs/development.md](docs/development.md)
 
 ## Part of the EU regulation as code suite
