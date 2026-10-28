@@ -148,6 +148,10 @@ def test_classify_empty_profile_example_reaches_the_client():
     assert json.loads(result.content[0].text) == result.structuredContent
     body = result.structuredContent
     assert body["example_profile"] == integrations.EXAMPLE_PROFILE
+    json_schema = body["profile_json_schema"]
+    assert json_schema["required"] == ["name"]
+    assert json_schema["additionalProperties"] is False
+    assert "derogation" in json_schema["properties"]
     assert "Required fields: name;" in body["hint"]
     assert {"artifacts", "dossier_schema", "review_posture"} <= set(
         body["profile_schema"]
@@ -169,6 +173,41 @@ def test_classify_rejected_profile_is_invalid_input_with_validation_errors():
     assert {"field", "message", "type"} == set(body["validation_errors"][0])
     assert body["hint"] == integrations.SCHEMA_HINT
     assert "classification" not in body
+
+
+def _other_model_error():
+    from pydantic import BaseModel, ValidationError
+
+    class ClassificationReport(BaseModel):
+        risk_tier: str
+
+    try:
+        ClassificationReport.model_validate({})
+    except ValidationError as error:
+        return error
+    raise AssertionError("expected a ValidationError")
+
+
+@pytest.mark.parametrize(
+    "error",
+    [ValueError("injected"), _other_model_error()],
+    ids=["value-error", "other-model-validation-error"],
+)
+def test_classifier_errors_other_than_the_profile_are_upstream_failed(
+    monkeypatch, error
+):
+    # Only a SystemProfile ValidationError is the caller's input; anything else
+    # the classifier raises is the server's problem, not invalid_input.
+    pytest.importorskip("eu_ai_act_classifier.local_api")
+
+    def boom(_payload):
+        raise error
+
+    monkeypatch.setattr("eu_ai_act_classifier.local_api.classify_payload", boom)
+    _, result = call("classify_eu_ai_act_system", {"profile_json": '{"name": "x"}'})
+    body = assert_error(result, "upstream_failed")
+    assert body["error"].startswith(f"Unexpected {type(error).__name__}: ")
+    assert "validation_errors" not in body
 
 
 def test_error_codes_are_the_documented_set():
