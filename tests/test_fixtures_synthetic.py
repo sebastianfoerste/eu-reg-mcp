@@ -1,7 +1,8 @@
 """Guards that keep the fixtures invented and self-consistent.
 
 A row copied from the live register would still pass the other tests, so
-these check the fixture data itself.
+these check the fixture data itself, and the search ranking benchmark's
+snapshot in tests/evals/.
 """
 
 import json
@@ -18,6 +19,13 @@ CHANGELOG = [
     if line.strip()
 ]
 ENTRIES = [entry for reg in SNAPSHOT["registers"] for entry in reg.get("entries", [])]
+
+RANKING = json.loads(
+    (Path(__file__).parent / "evals" / "ranking_snapshot.json").read_text("utf-8")
+)
+RANKING_ENTRIES = [
+    entry for reg in RANKING["registers"] for entry in reg.get("entries", [])
+]
 
 # Reserved for documentation and testing (RFC 2606, RFC 6761).
 RESERVED_HOST_SUFFIXES = (".example", ".test", ".example.com")
@@ -55,6 +63,22 @@ def test_fixture_urls_use_reserved_hosts():
     urls = [reg["source_url"] for reg in SNAPSHOT["registers"]]
     urls += [entry.get("wp_url", "") for entry in ENTRIES]
     urls += [record.get("wp_url", "") for record in CHANGELOG]
+    for url in filter(None, urls):
+        assert f".{_host(url)}".endswith(RESERVED_HOST_SUFFIXES), url
+
+
+def test_ranking_leis_are_marked_and_fail_the_check_digits():
+    leis = [entry["lei"] for entry in RANKING_ENTRIES if entry.get("lei")]
+    assert len(leis) == len(RANKING_ENTRIES)
+    for lei in leis:
+        assert len(lei) == 20 and "EXAMPLE" in lei, lei
+        assert not _lei_check_digits_ok(lei), lei
+
+
+def test_ranking_urls_use_reserved_hosts():
+    urls = [reg["source_url"] for reg in RANKING["registers"]]
+    urls += [entry.get("wp_url", "") for entry in RANKING_ENTRIES]
+    assert any(urls)
     for url in filter(None, urls):
         assert f".{_host(url)}".endswith(RESERVED_HOST_SUFFIXES), url
 
