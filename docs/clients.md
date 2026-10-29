@@ -18,7 +18,7 @@ documentation at the URL given, read on 2026-10-21.
 | Client | Where the config lives | Source (read 2026-10-21) |
 | --- | --- | --- |
 | Claude Code | `claude mcp add`, or `.mcp.json` with `--scope project` | [code.claude.com/docs/en/mcp](https://code.claude.com/docs/en/mcp) |
-| Claude Desktop | `claude_desktop_config.json` | see the [README](../README.md#quick-start) |
+| Claude Desktop | `claude_desktop_config.json` | see [Claude Desktop](#claude-desktop) below |
 | Zed | settings file, `context_servers` | [zed docs/src/ai/mcp.md](https://github.com/zed-industries/zed/blob/main/docs/src/ai/mcp.md) |
 | Gemini CLI | `~/.gemini/settings.json` or `.gemini/settings.json`, `mcpServers`; or `gemini mcp add` | [gemini-cli docs/tools/mcp-server.md](https://github.com/google-gemini/gemini-cli/blob/main/docs/tools/mcp-server.md) |
 | Continue | `.continue/mcpServers/*.yaml` | [continue docs/customize/deep-dives/mcp.mdx](https://github.com/continuedev/continue/blob/main/docs/customize/deep-dives/mcp.mdx) |
@@ -36,6 +36,23 @@ claude mcp add eu-reg -- uvx eu-reg-mcp
 # shared with the team through .mcp.json:
 claude mcp add --scope project eu-reg -- uvx eu-reg-mcp
 ```
+
+## Claude Desktop
+
+`claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "eu-reg": {
+      "command": "uvx",
+      "args": ["eu-reg-mcp"]
+    }
+  }
+}
+```
+
+For the extras, use `"args": ["--python", "3.13", "--from", "eu-reg-mcp[lint,classify]", "eu-reg-mcp"]`.
 
 ## Zed
 
