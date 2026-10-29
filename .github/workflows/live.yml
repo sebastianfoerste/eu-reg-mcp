@@ -24,3 +24,13 @@ jobs:
     steps:
       - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
       - run: uvx --python 3.13 --from "eu-reg-mcp[lint,classify]" eu-reg-mcp --help
+
+  extras-evals:
+    # Contract evals against the newest linter and classifier releases, which
+    # users get but the lockfile may lag behind (mcp stays below 2 via pyproject).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+      - run: uv sync --extra dev --extra lint --extra classify --upgrade
+      - run: uv run pytest -q tests/evals

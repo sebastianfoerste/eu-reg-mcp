@@ -165,7 +165,10 @@ def classify_ai_system(profile_json: str) -> dict[str, Any]:
         return {
             "available": True,
             "profile_schema": schema_payload(),
-            "notice": "Empty profile: returning the expected SystemProfile schema.",
+            "notice": (
+                "Empty profile: returning the expected SystemProfile schema. "
+                f"{REVIEW_NOTICE}"
+            ),
         }
     payload = _parse_object(profile_json, "profile_json")
     try:
