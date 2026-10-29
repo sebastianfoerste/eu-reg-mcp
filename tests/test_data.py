@@ -6,6 +6,7 @@ import pytest
 from eu_reg_mcp import data
 
 GOOD = json.dumps({"snapshot_date": "2026-07-07", "registers": []}).encode()
+NEWER = json.dumps({"snapshot_date": "2026-07-14", "registers": []}).encode()
 
 
 @pytest.fixture(autouse=True)
@@ -15,6 +16,13 @@ def isolated(monkeypatch, tmp_path):
     data.clear_cache()
     yield
     data.clear_cache()
+
+
+@pytest.fixture
+def clock(monkeypatch):
+    now = [1000.0]
+    monkeypatch.setattr(data.time, "monotonic", lambda: now[0])
+    return now
 
 
 def fake_get(monkeypatch, responses):
@@ -133,3 +141,56 @@ def test_unwritable_cache_dir_does_not_break_fetch(monkeypatch, tmp_path):
     monkeypatch.setenv("EU_REG_MCP_CACHE_DIR", str(blocker / "sub"))
     fake_get(monkeypatch, [GOOD])
     assert data.load_snapshot()["registers"] == []
+
+
+def fall_back_to_disk(monkeypatch):
+    """A good copy on disk, then a fresh process whose refresh fails."""
+    fake_get(monkeypatch, [GOOD])
+    data.load_snapshot()
+    data.clear_cache()
+    calls = fake_get(monkeypatch, [TimeoutError("slow")])
+    assert data.load_snapshot()["snapshot_date"] == "2026-07-07"
+    assert len(calls) == data.FETCH_ATTEMPTS
+    return calls
+
+
+def test_fallback_is_served_without_fetching_inside_the_window(monkeypatch, clock):
+    calls = fall_back_to_disk(monkeypatch)
+    warnings = data.fallback_warnings([data.SNAPSHOT_FILE])
+    assert len(warnings) == 1 and "last good cached copy" in warnings[0]
+    clock[0] += data.FALLBACK_RETRY_SECONDS - 1
+    assert data.load_snapshot()["snapshot_date"] == "2026-07-07"
+    assert len(calls) == data.FETCH_ATTEMPTS  # no fetch at all
+    assert data.fallback_warnings([data.SNAPSHOT_FILE]) == warnings
+
+
+def test_fallback_fetches_again_after_the_window(monkeypatch, clock):
+    calls = fall_back_to_disk(monkeypatch)
+    warnings = data.fallback_warnings([data.SNAPSHOT_FILE])
+    clock[0] += data.FALLBACK_RETRY_SECONDS
+    assert data.load_snapshot()["snapshot_date"] == "2026-07-07"
+    assert len(calls) == 2 * data.FETCH_ATTEMPTS
+    assert data.fallback_warnings([data.SNAPSHOT_FILE]) == warnings
+
+
+def test_successful_fetch_ends_the_fallback(monkeypatch, clock):
+    fall_back_to_disk(monkeypatch)
+    clock[0] += data.FALLBACK_RETRY_SECONDS
+    calls = fake_get(monkeypatch, [NEWER])
+    assert data.load_snapshot()["snapshot_date"] == "2026-07-14"
+    assert data.fallback_warnings([data.SNAPSHOT_FILE]) == []
+    # Once the fresh copy expires the next call fetches: the old fallback copy
+    # is never served again, however long the window.
+    monkeypatch.setattr(data, "FALLBACK_RETRY_SECONDS", 10 * data.CACHE_TTL_SECONDS)
+    clock[0] += data.CACHE_TTL_SECONDS
+    assert data.load_snapshot()["snapshot_date"] == "2026-07-14"
+    assert len(calls) == 2
+
+
+def test_clear_cache_resets_the_fallback_window(monkeypatch, clock):
+    calls = fall_back_to_disk(monkeypatch)
+    data.clear_cache()
+    assert data.fallback_warnings([data.SNAPSHOT_FILE]) == []
+    assert data.load_snapshot()["snapshot_date"] == "2026-07-07"
+    assert len(calls) == 2 * data.FETCH_ATTEMPTS
+    assert len(data.fallback_warnings([data.SNAPSHOT_FILE])) == 1
