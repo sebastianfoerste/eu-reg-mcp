@@ -53,7 +53,7 @@ def test_summary_and_changes_tools():
 def test_cli_search_prints_json(capsys):
     server.main(["search", "testnet"])
     out = json.loads(capsys.readouterr().out)
-    assert out["total_matches"] >= 1
+    assert out["total_matches"] == 1
     assert out["results"][0]["entry_id"]
 
 
@@ -100,9 +100,8 @@ def test_tools_declare_read_only_and_enums():
 def test_search_paging():
     first = dump(server.search_micar_register("", offset=0))
     second = dump(server.search_micar_register("", offset=1))
-    assert first["total_matches"] == second["total_matches"]
-    if first["total_matches"] > 1:
-        assert first["results"][1] == second["results"][0]
+    assert first["total_matches"] == second["total_matches"] == 3
+    assert first["results"][1] == second["results"][0]
     assert second["offset"] == 1
 
 

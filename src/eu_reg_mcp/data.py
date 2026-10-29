@@ -34,12 +34,17 @@ CACHE_TTL_SECONDS = 3600  # register moves weekly; an hour is generous
 FETCH_ATTEMPTS = 3
 BACKOFF_SECONDS = 1.0  # doubled after each failed attempt
 FETCH_TIMEOUT_SECONDS = 30
+# After a failed refresh, serve the last good copy this long before fetching
+# again, so an outage does not add the retries to every call.
+FALLBACK_RETRY_SECONDS = 300
 
 log = logging.getLogger(__name__)
 
 _cache: dict[str, tuple[float, Any]] = {}
 # Files currently served from the last good copy after a failed refresh.
 _fallbacks: dict[str, str] = {}
+# That copy and when its refresh failed, for FALLBACK_RETRY_SECONDS.
+_fallback_copies: dict[str, tuple[float, Any]] = {}
 
 
 class DataError(RuntimeError):
@@ -134,6 +139,9 @@ def _cached(key: str, url: str, parse: Callable[[bytes], Any]) -> Any:
     hit = _cache.get(key)
     if hit is not None and now - hit[0] < CACHE_TTL_SECONDS:
         return hit[1]
+    held = _fallback_copies.get(key)
+    if held is not None and now - held[0] < FALLBACK_RETRY_SECONDS:
+        return held[1]
     path = cache_dir() / key
     try:
         raw = _get_with_retry(url)
@@ -144,6 +152,7 @@ def _cached(key: str, url: str, parse: Callable[[bytes], Any]) -> Any:
             raise DataError(f"could not load {url}: {exc}") from exc
         log.warning("using stale cached %s after fetch failure: %s", key, exc)
         _fallbacks[key] = str(exc)
+        _fallback_copies[key] = (time.monotonic(), stale)
         return stale
     try:
         _write_atomic(path, raw)
@@ -151,6 +160,7 @@ def _cached(key: str, url: str, parse: Callable[[bytes], Any]) -> Any:
         log.warning("could not write cache file %s: %s", path, exc)
     _cache[key] = (now, value)
     _fallbacks.pop(key, None)
+    _fallback_copies.pop(key, None)
     return value
 
 
@@ -193,6 +203,8 @@ def fallback_warnings(keys: Iterable[str]) -> list[str]:
 
 
 def clear_cache() -> None:
-    """Drop the in-memory cache (the on-disk stale fallback is kept)."""
+    """Drop the in-memory cache and any fallback window (the on-disk stale
+    fallback is kept)."""
     _cache.clear()
     _fallbacks.clear()
+    _fallback_copies.clear()

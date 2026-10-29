@@ -181,17 +181,17 @@ Line numbers as of the audit follow-up commit (2026-10-21):
 
 ## 10. Needs owner decision
 
-1. **Publish 0.2.0** (CHANGELOG heading proposed) to PyPI and as a new version of the existing MCP Registry entry. As of 2026-10-27, PyPI has 0.1.2 (released 2026-10-23 on `main`) but the registry still lists 0.1.1 as latest (0.1.0 and 0.1.1, both published 2026-10-15), so 0.1.2 never reached the registry; optionally move both to CI with Trusted Publishing per §5. `uvx eu-reg-mcp` still runs 0.1.1.
+1. **Publish 0.2.0** (CHANGELOG heading proposed) to PyPI and as a new version of the existing MCP Registry entry. As of 2026-10-27, PyPI has 0.1.2 (released 2026-10-23 on `main`) but the registry still lists 0.1.1 as latest (0.1.0 and 0.1.1, both published 2026-10-15), so 0.1.2 never reached the registry; optionally move both to CI with Trusted Publishing per §5. A fresh `uvx eu-reg-mcp` installs 0.1.2 from PyPI; an older cached install refreshes with `uvx eu-reg-mcp@latest`.
 2. **Behaviour change in 0.2.0**: missing extras and invalid JSON now return `isError: true`; register order of search results is now ranked.
-3. ~~**Lock bump** to micar-whitepaper-linter 0.2.1 and eu-ai-act-classifier 0.2.1~~: done on 2026-10-21 at the owner's request, with the `lint`/`classify` extras floors raised to `>=0.2.1`; lint and classify output on the eval inputs is unchanged. H4 can follow.
+3. ~~**Lock bump** to micar-whitepaper-linter 0.2.1 and eu-ai-act-classifier 0.2.1~~: done on 2026-10-21 at the owner's request, with the `lint`/`classify` extras floors raised to `>=0.2.1`; lint and classify output on the eval inputs is unchanged. H4 can follow. `main` then raised the `classify` floor to `>=0.2.2` (#23, 2026-10-23), which the #18 merge kept.
 4. **Merge or keep** the two MCP surfaces for the classifier (this server's tool and the classifier's own server).
 5. **Truncation** of lint (19 KB) and classify (41 KB) responses: a cap would rewrite sibling output (rule 6) unless done as paging the sibling exposes.
 6. **Tool renaming** for consistent verb-first names (breaking; would need aliases).
 7. **H7** Docker image and authenticated remote HTTP; **D5** MCP Apps view; the **`mcp` 2.x port** (2026-07-28 features).
-8. **mcp 1.30.0** is available on 1.x (locked 1.28.1); Dependabot should pick it up.
+8. ~~**mcp 1.30.0** is available on 1.x (locked 1.28.1)~~: done by Dependabot #15 (2026-10-23), which the #18 merge kept.
 
 ## 11. Sibling follow-ups (record only; not done here)
 
 - **micar-register-observatory:** publish `data/snapshots/index.json` (dates and file names) so `as_of` can pick the latest snapshot on or before a date without listing the repo. (An earlier version also asked for `lei` on changelog records; they already carry it from the 2026-10-19 snapshot on, so that follow-up was withdrawn.)
 - **micar-whitepaper-linter:** a rule-catalogue export (JSON) that this server could expose as a resource; its PR #30 adds `--sarif-output`, `--summary-output` and `--annotations-output`, which a later wrapper could pass through once released.
-- **eu-ai-act-classifier:** its PR #31 adds human-readable labels (`catalog.py`) and a guided intake (`intake.py`); once released, the wrapper could expose the intake schema as a resource. Until then eu-reg-mcp keeps working against 0.2.0/0.2.1 from PyPI.
+- **eu-ai-act-classifier:** its PR #31 adds human-readable labels (`catalog.py`) and a guided intake (`intake.py`); once released, the wrapper could expose the intake schema as a resource. Until then eu-reg-mcp keeps working against the released classifier on PyPI (0.2.2 or newer, the `classify` floor since #23).

@@ -13,6 +13,9 @@
     "present": [
       "profile_schema"
     ],
+    "contains": {
+      "notice": "Not legal advice"
+    },
     "requires": "classify"
   }
 }
