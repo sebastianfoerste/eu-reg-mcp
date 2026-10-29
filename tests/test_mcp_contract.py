@@ -188,17 +188,15 @@ def _other_model_error():
     raise AssertionError("expected a ValidationError")
 
 
-@pytest.mark.parametrize(
-    "error",
-    [ValueError("injected"), _other_model_error()],
-    ids=["value-error", "other-model-validation-error"],
-)
-def test_classifier_errors_other_than_the_profile_are_upstream_failed(
-    monkeypatch, error
+def test_classifier_validation_error_from_another_model_is_upstream_failed(
+    monkeypatch,
 ):
-    # Only a SystemProfile ValidationError is the caller's input; anything else
-    # the classifier raises is the server's problem, not invalid_input.
+    # Only a SystemProfile ValidationError is the caller's input; one raised for
+    # another model is the server's problem, not invalid_input. A plain
+    # ValueError is covered by
+    # test_classifier_value_error_is_upstream_failed_not_invalid_input below.
     pytest.importorskip("eu_ai_act_classifier.local_api")
+    error = _other_model_error()
 
     def boom(_payload):
         raise error
@@ -206,7 +204,7 @@ def test_classifier_errors_other_than_the_profile_are_upstream_failed(
     monkeypatch.setattr("eu_ai_act_classifier.local_api.classify_payload", boom)
     _, result = call("classify_eu_ai_act_system", {"profile_json": '{"name": "x"}'})
     body = assert_error(result, "upstream_failed")
-    assert body["error"].startswith(f"Unexpected {type(error).__name__}: ")
+    assert body["error"].startswith("Unexpected ValidationError: ")
     assert "validation_errors" not in body
 
 
@@ -292,6 +290,20 @@ def test_unexpected_exception_keeps_the_error_shape(
     _, result = call(name, arguments)
     body = assert_error(result, "upstream_failed")
     assert "RuntimeError: injected" in body["error"]
+
+
+def test_classifier_value_error_is_upstream_failed_not_invalid_input(
+    offline_data, monkeypatch
+):
+    pytest.importorskip("eu_ai_act_classifier.local_api")
+
+    def boom(_payload):
+        raise ValueError("classifier bug")
+
+    monkeypatch.setattr("eu_ai_act_classifier.local_api.classify_payload", boom)
+    _, result = call("classify_eu_ai_act_system", {"profile_json": '{"name": "x"}'})
+    body = assert_error(result, "upstream_failed")
+    assert "classifier bug" in body["error"]
 
 
 ERROR_CALLS = [
