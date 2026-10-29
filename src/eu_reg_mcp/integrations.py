@@ -18,6 +18,8 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
+from pydantic import ValidationError
+
 from eu_reg_mcp.errors import ToolFailure
 
 REVIEW_NOTICE = (
@@ -168,7 +170,7 @@ def classify_ai_system(profile_json: str) -> dict[str, Any]:
     payload = _parse_object(profile_json, "profile_json")
     try:
         classification = classify_payload(payload)
-    except ValueError as error:  # pydantic ValidationError: the profile is invalid
+    except ValidationError as error:  # the profile is invalid
         raise ToolFailure(
             "invalid_input",
             f"profile_json is not a valid SystemProfile: {error}"[:2000],
