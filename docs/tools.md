@@ -1,5 +1,7 @@
 # Tools reference
 
+Features listed under 0.2.0 in [CHANGELOG.md](../CHANGELOG.md) are on `main` and not yet on PyPI (the latest PyPI release is 0.1.2); to run `main`, use `uvx --from git+https://github.com/sebastianfoerste/eu-reg-mcp eu-reg-mcp`.
+
 | Tool | What it does | Needs |
 | --- | --- | --- |
 | `search_micar_register` | Look up an entity by name or LEI in the ESMA interim MiCAR register: white papers (Titles II–IV), authorised CASPs, non-compliant entities | — |
