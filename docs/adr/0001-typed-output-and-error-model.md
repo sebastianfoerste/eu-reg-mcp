@@ -1,6 +1,6 @@
 # 0001. Typed tool output and one structured error model
 
-- **Status:** Accepted, built on `feat/competitive-adaptation-2026-10`.
+- **Status:** Accepted, built.
 - **Date:** 2026-10-20
 
 ## Context
