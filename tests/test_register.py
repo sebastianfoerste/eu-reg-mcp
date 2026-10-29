@@ -127,6 +127,21 @@ def test_change_filters():
     assert ids(since=date(2026, 7, 7), until=date(2026, 7, 7)) == newest_first
     assert ids(until=date(2026, 7, 6)) == []
     assert ids(since=date(2026, 7, 8)) == []
+    # Every fixture change shares one snapshot date, so move two of them a week
+    # earlier to check that since/until split the log rather than all-or-nothing.
+    spread = [
+        {**record, "snapshot_date": "2026-06-30"}
+        if record["entry_id"] in {"a2", "a3"}
+        else record
+        for record in CHANGELOG
+    ]
+
+    def spread_ids(**filters):
+        return [c["entry_id"] for c in recent_changes(spread, **filters)["changes"]]
+
+    assert spread_ids(until=date(2026, 6, 30)) == ["a3", "a2"]
+    assert spread_ids(since=date(2026, 7, 1)) == ["a4", "a1"]
+    assert spread_ids(since=date(2026, 6, 30), until=date(2026, 6, 30)) == ["a3", "a2"]
     assert ids(member_state="mt") == ["a3"]
     assert ids(entity="example withdrawn") == ["a3"]
     assert ids(entry_id="a2") == ["a2"]
@@ -140,8 +155,10 @@ def test_change_lei_filter_is_exact_and_skips_records_without_lei():
 
     assert ids("529900example lei0001".replace(" ", "")) == ["a1"]
     assert ids("529900EXAMPLELEI000") == []  # no prefix matching
-    # The 2026-07-14 records predate the observatory's `lei` field.
     assert ids("529900EXAMPLELEI0004") == ["a4"]
+    # a2 has this LEI in the snapshot, but its change record carries no `lei`
+    # (records from before the observatory added the field), so it never matches.
+    assert ids("529900EXAMPLELEI0002") == []
 
 
 def test_change_paging_reports_next_offset():

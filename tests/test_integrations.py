@@ -189,6 +189,19 @@ def test_classify_rejects_invalid_profile_as_invalid_input():
 
 
 @requires_classifier
+def test_classify_passes_other_value_errors_through(monkeypatch):
+    # Only a pydantic ValidationError means the profile is invalid. Any other
+    # ValueError is the classifier's own failure; the server reports it as
+    # upstream_failed (see test_mcp_contract.py).
+    def boom(_payload):
+        raise ValueError("classifier bug")
+
+    monkeypatch.setattr("eu_ai_act_classifier.local_api.classify_payload", boom)
+    with pytest.raises(ValueError, match="classifier bug"):
+        classify_ai_system(json.dumps({"name": "x", "roles": ["provider"]}))
+
+
+@requires_classifier
 @pytest.mark.parametrize("profile_json", ["[]", "123", '"x"', "null"])
 def test_classify_rejects_non_object_json_as_invalid_input(profile_json):
     with pytest.raises(ToolFailure) as failure:

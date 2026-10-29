@@ -222,6 +222,20 @@ def test_unexpected_exception_keeps_the_error_shape(
     assert "RuntimeError: injected" in body["error"]
 
 
+def test_classifier_value_error_is_upstream_failed_not_invalid_input(
+    offline_data, monkeypatch
+):
+    pytest.importorskip("eu_ai_act_classifier.local_api")
+
+    def boom(_payload):
+        raise ValueError("classifier bug")
+
+    monkeypatch.setattr("eu_ai_act_classifier.local_api.classify_payload", boom)
+    _, result = call("classify_eu_ai_act_system", {"profile_json": '{"name": "x"}'})
+    body = assert_error(result, "upstream_failed")
+    assert "classifier bug" in body["error"]
+
+
 ERROR_CALLS = [
     ("search_micar_register", {"query": "x", "register_slug": "nope"}),
     ("micar_register_changes", {"since": "soon"}),
