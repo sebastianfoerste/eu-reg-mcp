@@ -5,7 +5,7 @@
 
 ## Context
 
-`micar-lint` 0.2.0 reads PDF, DOCX, XHTML and Markdown and has `--type`, `--lang`, `--strict` and remediation, coverage and review-table outputs; the tool accepts only a JSON string. DOCX needs `python-docx`, which `eu-reg-mcp[lint]` does not install. Over HTTP, a path argument would let a remote client read server files.
+`micar-lint` 0.2.0 (locked when this ADR was written) reads PDF, DOCX, XHTML and Markdown and has `--type`, `--lang`, `--strict` and remediation, coverage and review-table outputs, as does 1.2.1, which `uv.lock` has pinned since 2026-10-29; the tool accepts only a JSON string. DOCX needs `python-docx`, which `eu-reg-mcp[lint]` does not install. Over HTTP, a path argument would let a remote client read server files.
 
 ## Decision (proposed)
 

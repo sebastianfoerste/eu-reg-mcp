@@ -5,7 +5,7 @@
 
 ## Context
 
-None of the eight torn-down products ships an MCP Apps view. mcp 1.28.1 can register a resource at any URI and attach `meta` to tools, so a `ui://` resource is technically servable on 1.x; client support was not verified (client docs unreachable).
+None of the eight torn-down products ships an MCP Apps view. mcp 1.28.1 (locked when this ADR was written) can register a resource at any URI and attach `meta` to tools, as can 1.30.0 (locked since 2026-10-23), so a `ui://` resource is technically servable on 1.x; client support was not verified (client docs unreachable).
 
 ## Decision (proposed)
 

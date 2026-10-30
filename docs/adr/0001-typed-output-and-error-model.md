@@ -5,7 +5,7 @@
 
 ## Context
 
-With mcp 1.28.1 each `dict[str, Any]` tool already advertised a permissive `outputSchema` (`{"type": "object", "additionalProperties": true}`), so clients could not validate fields. Failures came in four shapes: plain-text `isError` from exceptions, Pydantic validation text, and ordinary results carrying `{"available": false, "hint"}` or `{"error": "…"}`. Lex derives MCP output from Pydantic response models; cyanheads eur-lex-mcp-server returns typed error codes; Légifrance returns errors as ordinary text (see `docs/research/design-teardown.md`).
+With mcp 1.28.1 (locked when this ADR was written; `uv.lock` has pinned 1.30.0 since 2026-10-23) each `dict[str, Any]` tool already advertised a permissive `outputSchema` (`{"type": "object", "additionalProperties": true}`), so clients could not validate fields. Failures came in four shapes: plain-text `isError` from exceptions, Pydantic validation text, and ordinary results carrying `{"available": false, "hint"}` or `{"error": "…"}`. Lex derives MCP output from Pydantic response models; cyanheads eur-lex-mcp-server returns typed error codes; Légifrance returns errors as ordinary text (see `docs/research/design-teardown.md`).
 
 ## Decision
 
