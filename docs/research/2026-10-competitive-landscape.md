@@ -16,7 +16,7 @@ Companion documents: [feature matrix](feature-matrix.csv) · [design teardown](d
 | Measure | Value |
 | --- | --- |
 | Tests | 39 passed (`uv run pytest -q`); ruff, ruff format, mypy clean |
-| Negotiated protocol | `2025-11-25` (mcp 1.28.1 locked; PyPI has 1.30.0 on 1.x and 2.3.0 on 2.x) |
+| Negotiated protocol | `2025-11-25` (mcp 1.28.1 locked; PyPI has 1.30.0 on 1.x and 2.3.0 on 2.x). Update 2026-10-30: `uv.lock` has pinned mcp 1.30.0 since 2026-10-23 (Dependabot #15); it negotiates `2025-11-25` too |
 | `tools/list` | 5 tools, 3,425 bytes compact JSON (~856 tokens); no `title`; each `outputSchema` is a permissive `{"type":"object","additionalProperties":true}` |
 | `resources/list`, `resources/templates/list`, `prompts/list` | all empty |
 | Response bytes (MCP `CallToolResult`, fixtures) | search 1,739 · summary 1,737 · changes 2,292 · lint 19,165 · classify 41,038 · classify schema 2,694 |
@@ -113,9 +113,9 @@ Owner's awesome-lists: reused from [L] §A.3 (Observed there): `awesome-eu-finte
 ## 6. Context, verified where reachable
 
 - **MCP 2026-07-28** (Observed, [changelog](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/docs/specification/2026-07-28/changelog.mdx)): stateless protocol (no `initialize`; version and capabilities per request); `inputSchema`/`outputSchema` accept any JSON Schema 2020-12; Roots, Sampling and Logging deprecated; multi-round-trip requests replace server-initiated requests.
-- **Python SDK** (Observed, PyPI): `mcp` 2.3.0 is current; 1.x continues (1.30.0). This repo locks 1.28.1 and negotiates `2025-11-25`.
+- **Python SDK** (Observed, PyPI): `mcp` 2.3.0 is current; 1.x continues (1.30.0). This repo locked 1.28.1 on 2026-10-20 and negotiates `2025-11-25`. Update 2026-10-30: `uv.lock` has pinned 1.30.0 since 2026-10-23 (Dependabot #15), which negotiates the same version.
 - **Observatory** (Observed, git tree): `data/snapshots/` holds 16 dated files from 2026-07-07 to 2026-10-19, **not all on a 7-day rhythm** (2026-07-13); there is no index file, so a client cannot discover dated snapshots without listing the repo.
-- **Sibling releases** (Observed, PyPI): micar-whitepaper-linter 0.2.1 and eu-ai-act-classifier 0.2.1; this repo locks 0.2.0 of both.
+- **Sibling releases** (Observed, PyPI): micar-whitepaper-linter 0.2.1 and eu-ai-act-classifier 0.2.1; this repo locked 0.2.0 of both on 2026-10-20. Update 2026-10-30: `uv.lock` pins micar-whitepaper-linter 1.2.1 (since 2026-10-29, #29) and eu-ai-act-classifier 0.2.2 (since 2026-10-23, #23).
 - **MiCAR identifiers** (Claimed, search #10): CELEX `32023R1114`, ELI `http://data.europa.eu/eli/reg/2023/1114/oj`. **Not verified** against EUR-Lex (unreachable), so no link ships (rule: unverifiable means no link).
 - **GLEIF** (Claimed, search #11): data under CC0; throttling exists (HTTP 429) but no documented rate was found; API unreachable.
 
