@@ -5,7 +5,7 @@
 
 ## Context
 
-HTTP transport has no auth and is localhost-only in practice: FastMCP 1.28.1 fixes a localhost Host/Origin allow-list at construction, so `--host 0.0.0.0` binds but refuses non-local Host headers. Exa offers an anonymous rate-limited remote; GitHub and cyanheads offer OAuth or bearer auth; Ansvar is hosted-only behind OAuth.
+HTTP transport has no auth and is localhost-only in practice: FastMCP 1.28.1 (locked when this ADR was written; 1.30.0, locked since 2026-10-23, does the same) fixes a localhost Host/Origin allow-list at construction, so `--host 0.0.0.0` binds but refuses non-local Host headers. Exa offers an anonymous rate-limited remote; GitHub and cyanheads offer OAuth or bearer auth; Ansvar is hosted-only behind OAuth.
 
 ## Decision (proposed)
 
