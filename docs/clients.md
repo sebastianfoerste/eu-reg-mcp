@@ -54,6 +54,8 @@ claude mcp add --scope project eu-reg -- uvx eu-reg-mcp
 
 For the extras, use `"args": ["--python", "3.13", "--from", "eu-reg-mcp[lint,classify]", "eu-reg-mcp"]`.
 
+If Claude Desktop cannot find `uvx`, put its absolute path (the output of `which uvx`) in `command`.
+
 ## Zed
 
 ```json
