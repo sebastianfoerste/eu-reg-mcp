@@ -44,6 +44,6 @@ Register results are public-register facts with extraction artifacts possible; l
 - [Overview](https://github.com/sebastianfoerste/eu-reg-mcp/blob/main/docs/overview.md): who it's for, example output, why not just ask an LLM
 - [Tools reference](https://github.com/sebastianfoerste/eu-reg-mcp/blob/main/docs/tools.md): parameters, data sources, caching, network use, errors
 - [Guardrails](https://github.com/sebastianfoerste/eu-reg-mcp/blob/main/docs/guardrails.md) · [Development and tests](https://github.com/sebastianfoerste/eu-reg-mcp/blob/main/docs/development.md)
-- Register data: [micar-register-observatory](https://github.com/sebastianfoerste/micar-register-observatory) (weekly snapshots of the public ESMA register, Art. 109 VO (EU) 2023/1114)
+- Register data: [micar-register-observatory](https://github.com/sebastianfoerste/micar-register-observatory) (weekly snapshots of the public ESMA register, Arts. 109 and 110 VO (EU) 2023/1114)
 - Linter: [micar-whitepaper-linter](https://github.com/sebastianfoerste/micar-whitepaper-linter) (rules mapped to Annex I–III) · Classifier: [eu-ai-act-classifier](https://github.com/sebastianfoerste/eu-ai-act-classifier) — both MIT-licensed
 - PyPI: [eu-reg-mcp](https://pypi.org/project/eu-reg-mcp/), [micar-whitepaper-linter](https://pypi.org/project/micar-whitepaper-linter/), [eu-ai-act-classifier](https://pypi.org/project/eu-ai-act-classifier/)
