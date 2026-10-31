@@ -1,7 +1,7 @@
 .PHONY: install test lint run
 
 install:
-	uv sync --extra dev --extra lint --extra classify
+	uv sync --extra lint --extra classify
 
 test:
 	uv run pytest -q
