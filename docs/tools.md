@@ -196,7 +196,7 @@ a code, and a missing extra or invalid JSON returned an ordinary result with
 
 | URI or name | Kind | What it returns |
 | --- | --- | --- |
-| `eu-reg://about` | resource | Server version, the observatory files read, outbound hosts, the staleness threshold, which extras are installed, the error codes and both notices |
+| `eu-reg://about` | resource | Server version, the observatory files read, `legal_sources` (verified CELEX and ELI identifiers of MiCAR, the AI Act with its 27 July 2026 consolidation, and Regulation (EU) 2026/1744, each with the date it was verified; static data, see [Legal currency](#legal-currency)), outbound hosts, the staleness threshold, which extras are installed, the error codes and both notices |
 | `micar://summary` | resource | The same answer as `micar_register_summary` |
 | `micar://changes` | resource | The 50 newest changes, as `micar_register_changes` returns them |
 | `micar://entry/{entry_id}` | resource template | One entry by the `entry_id` that search results carry, with `snapshot_date`, `data_age_days`, `stale`, `warnings` and `notice`; an unknown id is an error |

@@ -13,7 +13,7 @@ from mcp.server.fastmcp.exceptions import ToolError
 from mcp.types import CallToolResult, ContentBlock, ToolAnnotations
 from pydantic import BaseModel, ValidationError
 
-from eu_reg_mcp import __version__, data, integrations, models, register
+from eu_reg_mcp import __version__, data, integrations, models, register, sources
 from eu_reg_mcp.errors import ERROR_CODES, ToolFailure
 from eu_reg_mcp.integrations import REVIEW_NOTICE
 
@@ -252,7 +252,10 @@ def _resource_load[T](loader: Callable[[], T]) -> T:
 @mcp.resource(
     "eu-reg://about",
     title="About this server",
-    description="Version, data sources, network use, error codes and notices.",
+    description=(
+        "Version, data sources, verified legal-source identifiers, network use, "
+        "error codes and notices."
+    ),
     mime_type="application/json",
 )
 def about() -> str:
@@ -264,6 +267,8 @@ def about() -> str:
                 "snapshot": data.LATEST_URL,
                 "changelog": data.CHANGELOG_URL,
             },
+            # Static, verified identifiers; nothing is fetched for them.
+            "legal_sources": list(sources.LEGAL_SOURCES),
             "outbound_hosts": ["raw.githubusercontent.com"],
             "stale_after_days": register.STALE_AFTER_DAYS,
             "extras": {
