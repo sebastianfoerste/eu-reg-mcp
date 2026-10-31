@@ -12,9 +12,9 @@ Features listed under 0.2.0 in [CHANGELOG.md](../CHANGELOG.md) are on `main` and
 
 ## Parameters
 
-- `search_micar_register(query, register_slug="all", member_state="", offset=0)`: `query` is a case- and accent-insensitive entity-name substring or an exact LEI; `register_slug` is one of `all | other-wp | emt-wp | art-wp | casps | ncasp`; `member_state` is an optional two-letter code (DE, IE, MT, …); `offset` skips that many matches (results come 25 at a time; `truncated` says whether more follow and `next_offset` gives the next page, `null` on the last). Results are ranked, and each carries `match`: a `score` and its `basis` (`exact_lei` and `exact_name` 1.0, `name_without_legal_form` 0.95, `name_prefix_words` 0.9, `whole_words` 0.85, `name_prefix` 0.8, `word_start` 0.7, `substring` 0.6; equal scores keep register order). The score describes how the query string matched the name or LEI, nothing about the entity. When nothing matches, `similar_names` lists up to five names spelt similarly to the query (`similarity` ≥ 0.8, a `difflib` ratio after dropping legal-form suffixes such as GmbH or Ltd), each labelled `"not a match"`; LEI-shaped queries get none.
+- `search_micar_register(query, register_slug="all", member_state="", offset=0)`: `query` is a case- and accent-insensitive entity-name substring or an exact LEI; `register_slug` is one of `all | other-wp | emt-wp | art-wp | casps | ncasp`; `member_state` is an optional two-letter country code (DE, IE, MT, …; GR for Greece, as ESMA's files write it): anything else, such as a country name, is an `invalid_input` error rather than an empty answer, and entries whose published `member_state` is an English country name (the live register writes CYPRUS and FRANCE for two white papers) are matched by their code while the value is shown as published; `offset` skips that many matches (0 or more; a negative value is `invalid_input`; results come 25 at a time; `truncated` says whether more follow and `next_offset` gives the next page, `null` on the last). Results are ranked, and each carries `match`: a `score` and its `basis` (`exact_lei` and `exact_name` 1.0, `name_without_legal_form` 0.95, `name_prefix_words` 0.9, `whole_words` 0.85, `name_prefix` 0.8, `word_start` 0.7, `substring` 0.6; equal scores keep register order). The score describes how the query string matched the name or LEI, nothing about the entity. When nothing matches, `similar_names` lists up to five names spelt similarly to the query (`similarity` ≥ 0.8, a `difflib` ratio after dropping legal-form suffixes such as GmbH or Ltd), each labelled `"not a match"`; LEI-shaped queries get none.
 - `micar_register_summary()`: no parameters.
-- `micar_register_changes(limit=50, change_type="all", since=None, until=None, register_slug="all", member_state="", entity="", entry_id="", lei="", offset=0)`: newest first. `change_type` is `all | added | changed | removed | missing`. A `missing` record is provisional: the observatory saw the entry absent from one export and records it as `removed` only if the next export also lacks it, so it is not a removal. `since` and `until` are snapshot dates (`YYYY-MM-DD`, inclusive); `entity` is a case- and accent-insensitive name substring; `lei` is an exact LEI. Only change records from the 2026-10-19 snapshot on carry an `lei` field (with `record_version`, `row_key`, `changed_fields` and others, passed through as published), so an LEI filter cannot find older changes; use `entry_id` for those. `limit` is capped at 200; page with `offset` and `next_offset`. The CLI mirrors these as `changes --type --since --until --register --member-state --entity --entry-id --lei --offset` (default `--limit` is now 50, as in the tool).
+- `micar_register_changes(limit=50, change_type="all", since=None, until=None, register_slug="all", member_state="", entity="", entry_id="", lei="", offset=0)`: newest first. `change_type` is `all | added | changed | removed | missing`. A `missing` record is provisional: the observatory saw the entry absent from one export and records it as `removed` only if the next export also lacks it, so it is not a removal. `since` and `until` are snapshot dates (`YYYY-MM-DD`, inclusive); `entity` is a case- and accent-insensitive name substring; `lei` is an exact LEI. Only change records from the 2026-10-19 snapshot on carry an `lei` field (with `record_version`, `row_key`, `changed_fields` and others, passed through as published), so an LEI filter cannot find older changes; use `entry_id` for those. `limit` is 1 to 200 (larger values are capped at 200; 0 or less is `invalid_input`); page with `offset` (0 or more) and `next_offset`; `member_state` is validated and matched as in search. The CLI mirrors these as `changes --type --since --until --register --member-state --entity --entry-id --lei --offset` (default `--limit` is now 50, as in the tool).
 - `lint_micar_whitepaper(whitepaper_json)`: a draft white paper as a JSON string.
 - `classify_eu_ai_act_system(profile_json="")`: a SystemProfile as JSON; an empty string returns the schema.
 
@@ -106,7 +106,12 @@ uvx eu-reg-mcp search "<20-character LEI>"     # exact LEI
 uvx eu-reg-mcp search "<entity name>" --offset 25   # next page of 25
 uvx eu-reg-mcp summary
 uvx eu-reg-mcp changes --type removed --limit 10
+uvx eu-reg-mcp --version                       # eu-reg-mcp <version>
 ```
+
+Bad inputs fail the same way as any other error: `--member-state germany`, a
+negative `--offset` or `--limit 0` print the `invalid_input` JSON (with its
+`hint`) and exit with status 1, instead of printing an empty result.
 
 To serve MCP over HTTP instead of stdio (for clients that connect by URL), run
 `uvx eu-reg-mcp --transport streamable-http --host 127.0.0.1 --port 8000`; the
@@ -159,7 +164,7 @@ typescript-sdk 1.x, read 2026-10-21). Clients should parse the text block:
 | --- | --- |
 | `data_unavailable` | Register data could not be fetched and no cached copy exists |
 | `extra_missing` | The `lint` or `classify` extra is not installed; `hint` says how to add it, `available` is `false` |
-| `invalid_input` | Arguments failed validation (e.g. an unknown `register_slug`), the JSON did not parse or is not an object, or the SystemProfile is invalid |
+| `invalid_input` | Arguments failed validation (an unknown `register_slug`, a `member_state` that is not two letters, a negative `offset`, a `limit` below 1, a bad date), the JSON did not parse or is not an object, or the SystemProfile is invalid |
 | `upstream_failed` | The linter failed or printed something other than JSON (`raw_output` holds the first 5,000 characters), or any other unexpected failure inside a tool (the message names the exception) |
 | `timeout` | The linter did not finish within 120 seconds |
 

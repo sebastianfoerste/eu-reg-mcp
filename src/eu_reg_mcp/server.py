@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from collections.abc import Callable, Sequence
 from datetime import date
 from typing import Any, Literal
@@ -23,6 +24,7 @@ REGISTER_TOOLS = frozenset(
 ALL_TOOLS = REGISTER_TOOLS | {"lint_micar_whitepaper", "classify_eu_ai_act_system"}
 # Register errors answer without a snapshot; they say so instead of omitting it.
 NO_SNAPSHOT = {"snapshot_date": None, "data_age_days": None, "stale": None}
+MEMBER_STATE_HINT = "Use a two-letter country code such as DE, FR or GR."
 
 
 class _Server(FastMCP):
@@ -124,6 +126,36 @@ SNAPSHOT_ONLY = (data.SNAPSHOT_FILE,)
 SNAPSHOT_AND_CHANGELOG = (data.SNAPSHOT_FILE, data.CHANGELOG_FILE)
 
 
+def _check_inputs(member_state: str, offset: int, limit: int = 1) -> None:
+    """Reject inputs that would otherwise answer with a silent empty set, which
+    a reader could take for "not on the register". Checked before any fetch."""
+    state = member_state.strip()
+    if state and not re.fullmatch(r"[A-Za-z]{2}", state):
+        raise ToolFailure(
+            "invalid_input",
+            f"member_state {member_state!r} is not a two-letter country code.",
+            hint=MEMBER_STATE_HINT,
+            notice=register.NOTICE,
+            extra=NO_SNAPSHOT,
+        )
+    if offset < 0:
+        raise ToolFailure(
+            "invalid_input",
+            f"offset must be 0 or more, not {offset}.",
+            hint="Page with the next_offset a previous answer gave.",
+            notice=register.NOTICE,
+            extra=NO_SNAPSHOT,
+        )
+    if limit < 1:
+        raise ToolFailure(
+            "invalid_input",
+            f"limit must be at least 1, not {limit}.",
+            hint=f"Use 1 to {register.MAX_CHANGES}; larger values are capped.",
+            notice=register.NOTICE,
+            extra=NO_SNAPSHOT,
+        )
+
+
 def _with_warnings(result: dict[str, Any], files: Sequence[str]) -> dict[str, Any]:
     """Add fallback warnings for the files this answer read; `notice` stays last."""
     body = {key: value for key, value in result.items() if key != "notice"}
@@ -145,6 +177,7 @@ def search_micar_register(
     similar_names lists close spellings (not matches). member_state: two-letter
     code. 25 per page: offset, next_offset.
     """
+    _check_inputs(member_state, offset)
     snapshot = _load(data.load_snapshot)
     result = register.search_entries(
         snapshot, query, register_slug, member_state, offset=offset
@@ -183,6 +216,7 @@ def micar_register_changes(
     member_state, entity, entry_id, lei. Pages: offset, next_offset.
     still_listed: in latest snapshot. missing: provisional, not a removal.
     """
+    _check_inputs(member_state, offset, limit)
     result = register.recent_changes(
         _load(data.load_changelog),
         limit,
@@ -375,6 +409,9 @@ def main(argv: list[str] | None = None) -> None:
             "serves MCP (stdio by default); the subcommands query the MiCAR "
             "register directly and print JSON."
         ),
+    )
+    parser.add_argument(
+        "--version", action="version", version=f"eu-reg-mcp {__version__}"
     )
     parser.add_argument(
         "--transport",

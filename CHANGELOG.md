@@ -2,6 +2,7 @@
 
 ## 0.2.0 (unreleased)
 
+- Register tools validate their inputs instead of answering an empty set that reads like "not on the register": a `member_state` that is not two ASCII letters (such as `germany`), a negative `offset` or a `limit` below 1 is an `invalid_input` error result with a `hint` and null provenance, checked before any fetch; the CLI prints it and exits 1. Member-state filters now also match entries whose published `member_state` is an English country name (the live 2026-10-19 snapshot writes `CYPRUS` and `FRANCE` for two white papers, which `CY` and `FR` filters missed); values are still shown as published. New CLI flag `--version`.
 - `micar_register_changes` now states `snapshot_date`, `data_age_days`, `stale` and `observatory_snapshot`, like search and summary.
 - CLI `search --offset` pages through matches.
 - Typed output: every tool declares a field-level `outputSchema` and a `title`; register answers add `warnings` (cached-fallback notes).
