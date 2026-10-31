@@ -2,6 +2,7 @@
 
 ## 0.2.0 (unreleased)
 
+- `docs/clients.md` adds VS Code (GitHub Copilot; the `.vscode/mcp.json` `servers` format, `code --add-mcp`, and the portable `mcp-config.json` `mcpServers` format) and Cursor (`.cursor/mcp.json`), each from the client's own documentation read on 2026-10-31; only Cline and OpenAI Codex remain uncovered.
 - Tool calls and the `micar://` resource reads run in a worker thread instead of inline on the event loop (FastMCP 1.x calls sync functions inline), so one slow observatory refresh (up to about 93 seconds of retries) or linter run (up to 120 seconds) no longer stalls every other request, including other HTTP clients' `tools/list`. The tool list is byte-identical; the sync functions still serve the CLI. Concurrent cache misses fetch each data file once.
 - Register tools validate their inputs instead of answering an empty set that reads like "not on the register": a `member_state` that is not two ASCII letters (such as `germany`), a negative `offset` or a `limit` below 1 is an `invalid_input` error result with a `hint` and null provenance, checked before any fetch; the CLI prints it and exits 1. Member-state filters now also match entries whose published `member_state` is an English country name (the live 2026-10-19 snapshot writes `CYPRUS` and `FRANCE` for two white papers, which `CY` and `FR` filters missed); values are still shown as published. New CLI flag `--version`.
 - `micar_register_changes` now states `snapshot_date`, `data_age_days`, `stale` and `observatory_snapshot`, like search and summary.
