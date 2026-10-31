@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import argparse
+import functools
 import json
-from collections.abc import Callable, Sequence
+import re
+from collections.abc import Awaitable, Callable, Sequence
 from datetime import date
 from typing import Any, Literal
 
+import anyio
 from mcp.server.fastmcp import FastMCP
 from mcp.server.fastmcp.exceptions import ToolError
 from mcp.types import CallToolResult, ContentBlock, ToolAnnotations
@@ -23,6 +26,7 @@ REGISTER_TOOLS = frozenset(
 ALL_TOOLS = REGISTER_TOOLS | {"lint_micar_whitepaper", "classify_eu_ai_act_system"}
 # Register errors answer without a snapshot; they say so instead of omitting it.
 NO_SNAPSHOT = {"snapshot_date": None, "data_age_days": None, "stale": None}
+MEMBER_STATE_HINT = "Use a two-letter country code such as DE, FR or GR."
 
 
 class _Server(FastMCP):
@@ -104,6 +108,23 @@ LOCAL_READ_ONLY = ToolAnnotations(
 )
 
 
+def _in_thread[**P, T](fn: Callable[P, T]) -> Callable[P, Awaitable[T]]:
+    """An async wrapper that runs `fn` in a worker thread.
+
+    FastMCP calls sync tools and resources inline on the event loop, so one
+    slow upstream fetch (up to three 30-second attempts) or linter run (up to
+    120 seconds) would stall every other request. The wrapper keeps `fn`'s
+    name, docstring and signature, so tools/list is unchanged, while the sync
+    function stays available to the CLI and to tests.
+    """
+
+    @functools.wraps(fn)
+    async def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+        return await anyio.to_thread.run_sync(functools.partial(fn, *args, **kwargs))
+
+    return wrapper
+
+
 def _load[T](loader: Callable[[], T]) -> T:
     try:
         return loader()
@@ -124,6 +145,36 @@ SNAPSHOT_ONLY = (data.SNAPSHOT_FILE,)
 SNAPSHOT_AND_CHANGELOG = (data.SNAPSHOT_FILE, data.CHANGELOG_FILE)
 
 
+def _check_inputs(member_state: str, offset: int, limit: int = 1) -> None:
+    """Reject inputs that would otherwise answer with a silent empty set, which
+    a reader could take for "not on the register". Checked before any fetch."""
+    state = member_state.strip()
+    if state and not re.fullmatch(r"[A-Za-z]{2}", state):
+        raise ToolFailure(
+            "invalid_input",
+            f"member_state {member_state!r} is not a two-letter country code.",
+            hint=MEMBER_STATE_HINT,
+            notice=register.NOTICE,
+            extra=NO_SNAPSHOT,
+        )
+    if offset < 0:
+        raise ToolFailure(
+            "invalid_input",
+            f"offset must be 0 or more, not {offset}.",
+            hint="Page with the next_offset a previous answer gave.",
+            notice=register.NOTICE,
+            extra=NO_SNAPSHOT,
+        )
+    if limit < 1:
+        raise ToolFailure(
+            "invalid_input",
+            f"limit must be at least 1, not {limit}.",
+            hint=f"Use 1 to {register.MAX_CHANGES}; larger values are capped.",
+            notice=register.NOTICE,
+            extra=NO_SNAPSHOT,
+        )
+
+
 def _with_warnings(result: dict[str, Any], files: Sequence[str]) -> dict[str, Any]:
     """Add fallback warnings for the files this answer read; `notice` stays last."""
     body = {key: value for key, value in result.items() if key != "notice"}
@@ -131,7 +182,6 @@ def _with_warnings(result: dict[str, Any], files: Sequence[str]) -> dict[str, An
     return {**body, "warnings": warnings, "notice": result["notice"]}
 
 
-@mcp.tool(title="Search the MiCAR register", annotations=READ_ONLY)
 def search_micar_register(
     query: str,
     register_slug: RegisterSlug = "all",
@@ -145,6 +195,7 @@ def search_micar_register(
     similar_names lists close spellings (not matches). member_state: two-letter
     code. 25 per page: offset, next_offset.
     """
+    _check_inputs(member_state, offset)
     snapshot = _load(data.load_snapshot)
     result = register.search_entries(
         snapshot, query, register_slug, member_state, offset=offset
@@ -152,7 +203,6 @@ def search_micar_register(
     return models.SearchResponse.model_validate(_with_warnings(result, SNAPSHOT_ONLY))
 
 
-@mcp.tool(title="MiCAR register summary", annotations=READ_ONLY)
 def micar_register_summary() -> models.SummaryResponse:
     """Totals per MiCAR register and white paper format coverage."""
     result = register.summarize(_load(data.load_snapshot))
@@ -164,7 +214,6 @@ def _summary_answer() -> models.SummaryResponse:
     return models.SummaryResponse.model_validate(_with_warnings(result, SNAPSHOT_ONLY))
 
 
-@mcp.tool(title="MiCAR register changes", annotations=READ_ONLY)
 def micar_register_changes(
     limit: int = 50,
     change_type: ChangeType = "all",
@@ -183,6 +232,7 @@ def micar_register_changes(
     member_state, entity, entry_id, lei. Pages: offset, next_offset.
     still_listed: in latest snapshot. missing: provisional, not a removal.
     """
+    _check_inputs(member_state, offset, limit)
     result = register.recent_changes(
         _load(data.load_changelog),
         limit,
@@ -202,7 +252,6 @@ def micar_register_changes(
     )
 
 
-@mcp.tool(title="Lint a MiCAR white paper", annotations=LOCAL_READ_ONLY)
 def lint_micar_whitepaper(whitepaper_json: str) -> models.LintResponse:
     """Lint a draft MiCAR white paper (JSON) against Annex I-III rules.
 
@@ -214,7 +263,6 @@ def lint_micar_whitepaper(whitepaper_json: str) -> models.LintResponse:
     )
 
 
-@mcp.tool(title="Classify an AI system (AI Act)", annotations=LOCAL_READ_ONLY)
 def classify_eu_ai_act_system(profile_json: str = "") -> models.ClassifyResponse:
     """Classify an AI system's EU AI Act risk tier with pinpoint citations.
 
@@ -224,6 +272,18 @@ def classify_eu_ai_act_system(profile_json: str = "") -> models.ClassifyResponse
     return models.ClassifyResponse.model_validate(
         integrations.classify_ai_system(profile_json)
     )
+
+
+# Registration order is the tools/list order. Each tool runs in a worker
+# thread (see _in_thread); the plain functions above serve the CLI and tests.
+for _fn, _title, _annotations in (
+    (search_micar_register, "Search the MiCAR register", READ_ONLY),
+    (micar_register_summary, "MiCAR register summary", READ_ONLY),
+    (micar_register_changes, "MiCAR register changes", READ_ONLY),
+    (lint_micar_whitepaper, "Lint a MiCAR white paper", LOCAL_READ_ONLY),
+    (classify_eu_ai_act_system, "Classify an AI system (AI Act)", LOCAL_READ_ONLY),
+):
+    mcp.add_tool(_in_thread(_fn), title=_title, annotations=_annotations)
 
 
 def _json(result: BaseModel | dict[str, Any]) -> str:
@@ -278,6 +338,7 @@ def about() -> str:
     description="Same answer as micar_register_summary.",
     mime_type="application/json",
 )
+@_in_thread
 def summary_resource() -> str:
     return _json(_summary_answer())
 
@@ -288,6 +349,7 @@ def summary_resource() -> str:
     description="The 50 newest changes; micar_register_changes filters and pages.",
     mime_type="application/json",
 )
+@_in_thread
 def changes_resource() -> str:
     result = register.recent_changes(
         _resource_load(data.load_changelog),
@@ -306,6 +368,7 @@ def changes_resource() -> str:
     description="One entry by the entry_id that search results carry.",
     mime_type="application/json",
 )
+@_in_thread
 def entry_resource(entry_id: str) -> str:
     found = register.get_entry(_resource_load(data.load_snapshot), entry_id)
     if found is None:
@@ -375,6 +438,9 @@ def main(argv: list[str] | None = None) -> None:
             "serves MCP (stdio by default); the subcommands query the MiCAR "
             "register directly and print JSON."
         ),
+    )
+    parser.add_argument(
+        "--version", action="version", version=f"eu-reg-mcp {__version__}"
     )
     parser.add_argument(
         "--transport",

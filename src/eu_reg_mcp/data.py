@@ -11,6 +11,7 @@ import json
 import logging
 import os
 import tempfile
+import threading
 import time
 import urllib.error
 import urllib.request
@@ -41,6 +42,10 @@ FALLBACK_RETRY_SECONDS = 300
 log = logging.getLogger(__name__)
 
 _cache: dict[str, tuple[float, Any]] = {}
+# One load per file at a time: tool calls run in worker threads, and two
+# concurrent misses must not fetch the same file twice.
+_locks: dict[str, threading.Lock] = {}
+_locks_guard = threading.Lock()
 # Files currently served from the last good copy after a failed refresh.
 _fallbacks: dict[str, str] = {}
 # That copy and when its refresh failed, for FALLBACK_RETRY_SECONDS.
@@ -134,7 +139,17 @@ def _parse_changelog(raw: bytes) -> list[dict[str, Any]]:
     return records
 
 
+def _lock_for(key: str) -> threading.Lock:
+    with _locks_guard:
+        return _locks.setdefault(key, threading.Lock())
+
+
 def _cached(key: str, url: str, parse: Callable[[bytes], Any]) -> Any:
+    with _lock_for(key):
+        return _cached_locked(key, url, parse)
+
+
+def _cached_locked(key: str, url: str, parse: Callable[[bytes], Any]) -> Any:
     now = time.monotonic()
     hit = _cache.get(key)
     if hit is not None and now - hit[0] < CACHE_TTL_SECONDS:

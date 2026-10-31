@@ -23,6 +23,8 @@ documentation at the URL given, read on 2026-10-21.
 | Gemini CLI | `~/.gemini/settings.json` or `.gemini/settings.json`, `mcpServers`; or `gemini mcp add` | [gemini-cli docs/tools/mcp-server.md](https://github.com/google-gemini/gemini-cli/blob/main/docs/tools/mcp-server.md) |
 | Continue | `.continue/mcpServers/*.yaml` | [continue docs/customize/deep-dives/mcp.mdx](https://github.com/continuedev/continue/blob/main/docs/customize/deep-dives/mcp.mdx) |
 | goose | `~/.config/goose/config.yaml`, `extensions` | [goose using-extensions.md](https://github.com/block/goose/blob/main/documentation/docs/getting-started/using-extensions.md) |
+| VS Code (GitHub Copilot) | `.vscode/mcp.json` or the user-profile `mcp.json` (VS Code format, `servers`); or the portable `.mcp.json` / `~/.copilot/mcp-config.json` (`mcpServers`); or `code --add-mcp` | [code.visualstudio.com, MCP configuration reference](https://code.visualstudio.com/docs/agents/reference/mcp-configuration) (read 2026-10-31) |
+| Cursor | `.cursor/mcp.json` in the project or `~/.cursor/mcp.json`, `mcpServers` | [cursor.com/docs/mcp](https://cursor.com/docs/mcp) (read 2026-10-31) |
 
 Tested command and args (both, 2026-10-21 and 2026-10-27):
 
@@ -117,17 +119,63 @@ extensions:
     timeout: 300
 ```
 
+## VS Code (GitHub Copilot)
+
+VS Code documents two formats (reference read 2026-10-31). The VS Code format
+lives in `.vscode/mcp.json` in the workspace or in the user-profile `mcp.json`
+and defines servers in a top-level `servers` object with a `type`:
+
+```json
+{
+  "servers": {
+    "eu-reg": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": ["eu-reg-mcp"]
+    }
+  }
+}
+```
+
+The same entry from the command line, which adds it to the user profile:
+
+```bash
+code --add-mcp '{"name":"eu-reg","type":"stdio","command":"uvx","args":["eu-reg-mcp"]}'
+```
+
+The portable Copilot format lives in `.mcp.json` at the workspace root or in
+`$COPILOT_HOME/mcp-config.json` (fallback `~/.copilot/mcp-config.json`) and
+uses a top-level `mcpServers` object, like the Claude Desktop example above.
+VS Code says not to copy a configuration between the two formats without
+checking its capability reference.
+
+## Cursor
+
+`.cursor/mcp.json` in the project, or `~/.cursor/mcp.json` for every project
+(docs read 2026-10-31):
+
+```json
+{
+  "mcpServers": {
+    "eu-reg": {
+      "command": "uvx",
+      "args": ["eu-reg-mcp"]
+    }
+  }
+}
+```
+
 For the `lint` and `classify` extras, replace the args with
 `["--python", "3.13", "--from", "eu-reg-mcp[lint,classify]", "eu-reg-mcp"]`
 in any of the formats above.
 
-## Not covered (docs not readable on 2026-10-21)
+## Not covered
 
 | Client | Tried |
 | --- | --- |
-| VS Code (GitHub Copilot) | code.visualstudio.com (DNS failure); `microsoft/vscode-docs` raw paths returned 404 |
-| Cursor | docs.cursor.com (DNS failure) |
-| Cline | `cline/cline` docs raw path returned 404 |
-| OpenAI Codex | `openai/codex` `docs/config.md` only links to developers.openai.com, not read |
+| Cline | `cline/cline` docs raw path returned 404 (2026-10-21) |
+| OpenAI Codex | `openai/codex` `docs/config.md` only links to developers.openai.com, not read (2026-10-21) |
 
 No config is given for these until their own documentation can be checked.
+VS Code and Cursor were in this table until 2026-10-31, when their
+documentation could be read (sources in the table above).
