@@ -137,13 +137,22 @@ Each tool declares a field-level `outputSchema` for its successful answers; a
 successful call returns the same object as `structuredContent` and as a JSON
 text block, so clients that
 read only text see the same data. `notice` is always the last key. Register
-answers also carry `warnings`: empty normally, one line per data file served
-from the last good cached copy after a failed refresh.
+answers also carry `warnings`: empty normally; one line per data file served
+from the last good cached copy after a failed refresh, then, when the snapshot
+is stale or undated, one line saying so (see [Verifiable answers](#verifiable-answers)).
 
 A failed call returns `isError: true` with this object as JSON in its text
 block. It carries no `structuredContent`: the MCP spec requires
 `structuredContent` to match the tool's `outputSchema`, which describes
 successes, and the TypeScript SDK client checks it even on errors (`Client.callTool`,
+- when `stale` is true, the answer's `warnings` end with a line that says so
+  in words: the snapshot date, its age in days, the 10-day threshold, that a
+  weekly observatory refresh was missed and the ESMA register may have changed
+  since, and to check ESMA's current file before relying on the answer; when
+  the snapshot date is missing or unparsable (`stale` null), a line says the
+  age is unknown. A fresh snapshot adds no line, so `warnings` is empty unless
+  a cached fallback is in use. The wording is `STALE_WARNING` and
+  `AGE_UNKNOWN_WARNING` in `register.py`, next to `NOTICE`.
 typescript-sdk 1.x, read 2026-10-21). Clients should parse the text block:
 
 ```json

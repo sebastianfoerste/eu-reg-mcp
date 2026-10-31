@@ -2,6 +2,7 @@
 
 ## 0.2.0 (unreleased)
 
+- Register answers say in-band when their data is stale: when `stale` is true, `warnings` ends with a line giving the snapshot date, its age, the 10-day threshold, that a weekly observatory refresh was missed and the ESMA register may have changed since, and to check ESMA's current file first; when the snapshot date is missing or unparsable (`stale` null), a line says the age is unknown. Cached-fallback lines keep coming first, and a fresh snapshot adds nothing. The wording (`STALE_WARNING`, `AGE_UNKNOWN_WARNING`) sits next to `NOTICE` in `register.py`. `scripts/live_check.py` now states the snapshot date, age and threshold and links the observatory's Actions page when it fails; its exit codes are unchanged.
 - `micar_register_changes` now states `snapshot_date`, `data_age_days`, `stale` and `observatory_snapshot`, like search and summary.
 - CLI `search --offset` pages through matches.
 - Typed output: every tool declares a field-level `outputSchema` and a `title`; register answers add `warnings` (cached-fallback notes).

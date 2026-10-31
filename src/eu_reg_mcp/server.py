@@ -125,9 +125,13 @@ SNAPSHOT_AND_CHANGELOG = (data.SNAPSHOT_FILE, data.CHANGELOG_FILE)
 
 
 def _with_warnings(result: dict[str, Any], files: Sequence[str]) -> dict[str, Any]:
-    """Add fallback warnings for the files this answer read; `notice` stays last."""
+    """Add the fallback warnings for the files this answer read, then the
+    staleness line when the snapshot is stale or undated; `notice` stays last."""
     body = {key: value for key, value in result.items() if key != "notice"}
     warnings = data.fallback_warnings(files)
+    staleness = register.staleness_warning(result)
+    if staleness is not None:
+        warnings.append(staleness)
     return {**body, "warnings": warnings, "notice": result["notice"]}
 
 

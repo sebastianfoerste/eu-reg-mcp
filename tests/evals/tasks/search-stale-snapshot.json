@@ -15,6 +15,9 @@
     },
     "greater": {
       "data_age_days": 10
+    },
+    "contains": {
+      "warnings.0": "days old"
     }
   }
 }

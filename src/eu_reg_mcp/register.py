@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 import unicodedata
 from collections import Counter
+from collections.abc import Mapping
 from datetime import date
 from difflib import SequenceMatcher
 from typing import Any
@@ -22,6 +23,23 @@ NOTICE = (
     "Facts from the public ESMA interim MiCAR register (Art. 109 MiCAR) as "
     "mirrored by the MiCAR Register Observatory. No legal assessment of any "
     "entity; not legal advice."
+)
+
+# In-band staleness lines, appended to `warnings` by the server; legal-effect
+# wording like NOTICE, so it lives here and is reviewed the same way.
+STALE_WARNING = (
+    "Register data may be out of date: this snapshot is {age} days old "
+    "(snapshot_date {snapshot_date}; answers are flagged stale after {threshold} "
+    "days). The observatory refreshes weekly, so a refresh was missed and the "
+    "ESMA register may have changed since. Check ESMA's current register file "
+    "(esma_source_url in search and summary answers) before relying on this "
+    "answer."
+)
+AGE_UNKNOWN_WARNING = (
+    "Register data age is unknown: the snapshot date is missing or unparsable "
+    "(snapshot_date {snapshot_date}), so this answer cannot be checked against "
+    "the {threshold}-day staleness threshold. Check ESMA's current register file "
+    "before relying on this answer."
 )
 
 
@@ -46,6 +64,21 @@ def data_freshness(
         "data_age_days": age,
         "stale": age > STALE_AFTER_DAYS,
     }
+
+
+def staleness_warning(result: Mapping[str, Any]) -> str | None:
+    """The warning line a stale or undated answer carries; None when fresh."""
+    if result.get("stale") is True:
+        return STALE_WARNING.format(
+            age=result.get("data_age_days"),
+            snapshot_date=result.get("snapshot_date"),
+            threshold=STALE_AFTER_DAYS,
+        )
+    if result.get("stale") is None:
+        return AGE_UNKNOWN_WARNING.format(
+            snapshot_date=result.get("snapshot_date"), threshold=STALE_AFTER_DAYS
+        )
+    return None
 
 
 def _provenance(snapshot: dict[str, Any], today: date | None = None) -> dict[str, Any]:

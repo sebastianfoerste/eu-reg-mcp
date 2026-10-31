@@ -3,6 +3,7 @@
 import json
 import sys
 import urllib.error
+from datetime import date
 from pathlib import Path
 
 import anyio
@@ -267,7 +268,9 @@ def test_fallback_warning_names_only_files_the_answer_read(monkeypatch, tmp_path
     (tmp_path / "changelog.jsonl").write_bytes(
         (FIXTURES / "changelog.jsonl").read_bytes()
     )
-    fresh = (FIXTURES / "latest.json").read_bytes()
+    # A fresh-dated copy of the fixture, so no staleness line joins warnings.
+    snapshot = json.loads((FIXTURES / "latest.json").read_text("utf-8"))
+    fresh = json.dumps({**snapshot, "snapshot_date": date.today().isoformat()}).encode()
 
     def changelog_down(url):
         if url.endswith("changelog.jsonl"):
