@@ -2,6 +2,7 @@
 
 ## 0.2.0 (unreleased)
 
+- Locked transitive dependencies refreshed to clear known vulnerabilities: anyio 4.15.1, certifi 2026.10.23, cryptography 50.0.2, pyjwt 2.15.1 and pypdf 6.21.4 (the linter's PDF path). `pip-audit` 2.10.1 reported 56 known vulnerabilities in those five packages on the previous lock and none on this one.
 - `micar_register_changes` now states `snapshot_date`, `data_age_days`, `stale` and `observatory_snapshot`, like search and summary.
 - CLI `search --offset` pages through matches.
 - Typed output: every tool declares a field-level `outputSchema` and a `title`; register answers add `warnings` (cached-fallback notes).
