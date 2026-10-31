@@ -29,4 +29,4 @@ jobs:
       - run: uv run ruff check .
       - run: uv run ruff format --check .
       - run: uv run mypy
-      - run: uv run pytest -q
+      - run: uv run pytest -q --cov=eu_reg_mcp --cov-report=term-missing --cov-fail-under=95
