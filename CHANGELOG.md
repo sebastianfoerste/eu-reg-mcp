@@ -7,6 +7,7 @@
 - A new `audit` workflow runs `pip-audit` 2.10.1 over the locked dependencies with all extras and `zizmor` 1.31.1 over the workflows: weekly, on demand, and on changes to `uv.lock`, `pyproject.toml` or the workflows. SECURITY.md says so.
 - CI fails below 95 % statement coverage (`pytest-cov`, added to the `dev` extra; 96.6 % measured on 2026-10-31, and CI shows the per-file table). `.coverage`, `htmlcov/` and `coverage.xml` are git-ignored, so hatchling leaves them out of the sdist.
 - PyPI classifiers add Python 3.14, the legal and the financial and insurance audiences, `Topic :: Office/Business :: Financial` and `Operating System :: OS Independent` (all valid in trove-classifiers 2026.9.21.13).
+- Development tools (pytest, pytest-cov, ruff, mypy) move from a `dev` extra to a PEP 735 `[dependency-groups]` group, which `uv sync` installs by default, so PyPI no longer advertises a `dev` extra (`Provides-Extra: dev` is gone from the wheel metadata); the development install is `uv sync --extra lint --extra classify`. The sdist is now an explicit list (`src/`, `tests/`, `docs/` without `docs/research/`, `scripts/`, the top-level Markdown files, `server.json`, `pyproject.toml`), so `.github/`, `uv.lock` and stray local files no longer ship.
 - `micar_register_changes` now states `snapshot_date`, `data_age_days`, `stale` and `observatory_snapshot`, like search and summary.
 - CLI `search --offset` pages through matches.
 - Typed output: every tool declares a field-level `outputSchema` and a `title`; register answers add `warnings` (cached-fallback notes).

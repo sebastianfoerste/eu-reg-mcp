@@ -391,14 +391,16 @@ dependencies = [
 classify = [
     { name = "eu-ai-act-classifier" },
 ]
+lint = [
+    { name = "micar-whitepaper-linter" },
+]
+
+[package.dev-dependencies]
 dev = [
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-cov" },
     { name = "ruff" },
-]
-lint = [
-    { name = "micar-whitepaper-linter" },
 ]
 
 [package.metadata]
@@ -406,12 +408,16 @@ requires-dist = [
     { name = "eu-ai-act-classifier", marker = "extra == 'classify'", specifier = ">=0.2.2" },
     { name = "mcp", specifier = ">=1.30.0,<2" },
     { name = "micar-whitepaper-linter", marker = "extra == 'lint'", specifier = ">=0.2.1" },
-    { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.10" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
-    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=5.0" },
-    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.6" },
 ]
-provides-extras = ["dev", "lint", "classify"]
+provides-extras = ["lint", "classify"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "mypy", specifier = ">=1.10" },
+    { name = "pytest", specifier = ">=8.0" },
+    { name = "pytest-cov", specifier = ">=5.0" },
+    { name = "ruff", specifier = ">=0.6" },
+]
 
 [[package]]
 name = "h11"
