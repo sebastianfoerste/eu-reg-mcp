@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import argparse
+import functools
 import json
 import re
-from collections.abc import Callable, Sequence
+from collections.abc import Awaitable, Callable, Sequence
 from datetime import date
 from typing import Any, Literal
 
+import anyio
 from mcp.server.fastmcp import FastMCP
 from mcp.server.fastmcp.exceptions import ToolError
 from mcp.types import CallToolResult, ContentBlock, ToolAnnotations
@@ -106,6 +108,23 @@ LOCAL_READ_ONLY = ToolAnnotations(
 )
 
 
+def _in_thread[**P, T](fn: Callable[P, T]) -> Callable[P, Awaitable[T]]:
+    """An async wrapper that runs `fn` in a worker thread.
+
+    FastMCP calls sync tools and resources inline on the event loop, so one
+    slow upstream fetch (up to three 30-second attempts) or linter run (up to
+    120 seconds) would stall every other request. The wrapper keeps `fn`'s
+    name, docstring and signature, so tools/list is unchanged, while the sync
+    function stays available to the CLI and to tests.
+    """
+
+    @functools.wraps(fn)
+    async def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+        return await anyio.to_thread.run_sync(functools.partial(fn, *args, **kwargs))
+
+    return wrapper
+
+
 def _load[T](loader: Callable[[], T]) -> T:
     try:
         return loader()
@@ -163,7 +182,6 @@ def _with_warnings(result: dict[str, Any], files: Sequence[str]) -> dict[str, An
     return {**body, "warnings": warnings, "notice": result["notice"]}
 
 
-@mcp.tool(title="Search the MiCAR register", annotations=READ_ONLY)
 def search_micar_register(
     query: str,
     register_slug: RegisterSlug = "all",
@@ -185,7 +203,6 @@ def search_micar_register(
     return models.SearchResponse.model_validate(_with_warnings(result, SNAPSHOT_ONLY))
 
 
-@mcp.tool(title="MiCAR register summary", annotations=READ_ONLY)
 def micar_register_summary() -> models.SummaryResponse:
     """Totals per MiCAR register and white paper format coverage."""
     result = register.summarize(_load(data.load_snapshot))
@@ -197,7 +214,6 @@ def _summary_answer() -> models.SummaryResponse:
     return models.SummaryResponse.model_validate(_with_warnings(result, SNAPSHOT_ONLY))
 
 
-@mcp.tool(title="MiCAR register changes", annotations=READ_ONLY)
 def micar_register_changes(
     limit: int = 50,
     change_type: ChangeType = "all",
@@ -236,7 +252,6 @@ def micar_register_changes(
     )
 
 
-@mcp.tool(title="Lint a MiCAR white paper", annotations=LOCAL_READ_ONLY)
 def lint_micar_whitepaper(whitepaper_json: str) -> models.LintResponse:
     """Lint a draft MiCAR white paper (JSON) against Annex I-III rules.
 
@@ -248,7 +263,6 @@ def lint_micar_whitepaper(whitepaper_json: str) -> models.LintResponse:
     )
 
 
-@mcp.tool(title="Classify an AI system (AI Act)", annotations=LOCAL_READ_ONLY)
 def classify_eu_ai_act_system(profile_json: str = "") -> models.ClassifyResponse:
     """Classify an AI system's EU AI Act risk tier with pinpoint citations.
 
@@ -258,6 +272,18 @@ def classify_eu_ai_act_system(profile_json: str = "") -> models.ClassifyResponse
     return models.ClassifyResponse.model_validate(
         integrations.classify_ai_system(profile_json)
     )
+
+
+# Registration order is the tools/list order. Each tool runs in a worker
+# thread (see _in_thread); the plain functions above serve the CLI and tests.
+for _fn, _title, _annotations in (
+    (search_micar_register, "Search the MiCAR register", READ_ONLY),
+    (micar_register_summary, "MiCAR register summary", READ_ONLY),
+    (micar_register_changes, "MiCAR register changes", READ_ONLY),
+    (lint_micar_whitepaper, "Lint a MiCAR white paper", LOCAL_READ_ONLY),
+    (classify_eu_ai_act_system, "Classify an AI system (AI Act)", LOCAL_READ_ONLY),
+):
+    mcp.add_tool(_in_thread(_fn), title=_title, annotations=_annotations)
 
 
 def _json(result: BaseModel | dict[str, Any]) -> str:
@@ -312,6 +338,7 @@ def about() -> str:
     description="Same answer as micar_register_summary.",
     mime_type="application/json",
 )
+@_in_thread
 def summary_resource() -> str:
     return _json(_summary_answer())
 
@@ -322,6 +349,7 @@ def summary_resource() -> str:
     description="The 50 newest changes; micar_register_changes filters and pages.",
     mime_type="application/json",
 )
+@_in_thread
 def changes_resource() -> str:
     result = register.recent_changes(
         _resource_load(data.load_changelog),
@@ -340,6 +368,7 @@ def changes_resource() -> str:
     description="One entry by the entry_id that search results carry.",
     mime_type="application/json",
 )
+@_in_thread
 def entry_resource(entry_id: str) -> str:
     found = register.get_entry(_resource_load(data.load_snapshot), entry_id)
     if found is None:
