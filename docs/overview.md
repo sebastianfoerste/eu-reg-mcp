@@ -22,9 +22,9 @@ The first two work without extras; the third needs the `classify` extra.
 
 ## Example output
 
-> **Synthetic data.** Produced on 2026-10-27 by calling this repo's `search_micar_register` tool function against the **synthetic test fixtures** in `tests/fixtures/`, not the live register. The entity and its LEI are invented. Output shape is what a live call returns; values are not.
+> **Synthetic data.** Produced on 2026-10-31 by calling this repo's `search_micar_register` tool function against the **synthetic test fixtures** in `tests/fixtures/`, not the live register. The entity and its LEI are invented. Output shape is what a live call returns; values are not.
 
-`search_micar_register(query="testnet")`, abridged: the response also has `data_age_days`, `stale`, `observatory_snapshot`, `offset`, `similar_names` and `warnings`, and each result `entry_id` and `esma_source_url`:
+`search_micar_register(query="testnet")`, abridged: the response also has `data_age_days`, `stale`, `observatory_snapshot`, `offset`, `similar_names` and `warnings` (here one line saying the fixture snapshot is stale), and each result `entry_id` and `esma_source_url`:
 
 ```json
 {
@@ -48,7 +48,7 @@ The first two work without extras; the third needs the `classify` extra.
   ],
   "truncated": false,
   "next_offset": null,
-  "notice": "Facts from the public ESMA interim MiCAR register (Art. 109 MiCAR) as mirrored by the MiCAR Register Observatory. No legal assessment of any entity; not legal advice."
+  "notice": "Facts from the public ESMA interim MiCAR register (Arts. 109 and 110 MiCAR) as mirrored by the MiCAR Register Observatory. No legal assessment of any entity; not legal advice."
 }
 ```
 

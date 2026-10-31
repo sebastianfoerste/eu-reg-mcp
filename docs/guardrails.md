@@ -2,7 +2,7 @@
 
 Every response carries its framing:
 
-- **Register results** are facts from a public register, returned with the snapshot date. A `removed` change record means the entry left the register export; the register does not state why.
+- **Register results** are facts from a public register, returned with the snapshot date. A `removed` change record means the entry left the register export; the register does not state why. When the mirrored snapshot is older than the 10-day staleness threshold or undated, every register answer also says so in words in `warnings`, so neither a model nor a hurried reader has to notice the `stale` flag on its own.
 - **Lint and classification outputs** are candidate flags from deterministic rules, **pending human legal review**. Extraction artifacts exist.
 
 The two prompts (`check_register_status`, `review_register_changes`) carry the same contract into the model's instructions: state the snapshot date, treat `similar_names` as non-matches, never guess why an entry was removed, and end with the register `notice`. Search `match` scores and `similar_names` similarities describe string matching only, never the entity.

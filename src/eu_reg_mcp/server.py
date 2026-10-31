@@ -13,7 +13,7 @@ from mcp.server.fastmcp.exceptions import ToolError
 from mcp.types import CallToolResult, ContentBlock, ToolAnnotations
 from pydantic import BaseModel, ValidationError
 
-from eu_reg_mcp import __version__, data, integrations, models, register
+from eu_reg_mcp import __version__, data, integrations, models, register, sources
 from eu_reg_mcp.errors import ERROR_CODES, ToolFailure
 from eu_reg_mcp.integrations import REVIEW_NOTICE
 
@@ -125,9 +125,13 @@ SNAPSHOT_AND_CHANGELOG = (data.SNAPSHOT_FILE, data.CHANGELOG_FILE)
 
 
 def _with_warnings(result: dict[str, Any], files: Sequence[str]) -> dict[str, Any]:
-    """Add fallback warnings for the files this answer read; `notice` stays last."""
+    """Add the fallback warnings for the files this answer read, then the
+    staleness line when the snapshot is stale or undated; `notice` stays last."""
     body = {key: value for key, value in result.items() if key != "notice"}
     warnings = data.fallback_warnings(files)
+    staleness = register.staleness_warning(result)
+    if staleness is not None:
+        warnings.append(staleness)
     return {**body, "warnings": warnings, "notice": result["notice"]}
 
 
@@ -248,7 +252,10 @@ def _resource_load[T](loader: Callable[[], T]) -> T:
 @mcp.resource(
     "eu-reg://about",
     title="About this server",
-    description="Version, data sources, network use, error codes and notices.",
+    description=(
+        "Version, data sources, verified legal-source identifiers, network use, "
+        "error codes and notices."
+    ),
     mime_type="application/json",
 )
 def about() -> str:
@@ -260,6 +267,8 @@ def about() -> str:
                 "snapshot": data.LATEST_URL,
                 "changelog": data.CHANGELOG_URL,
             },
+            # Static, verified identifiers; nothing is fetched for them.
+            "legal_sources": list(sources.LEGAL_SOURCES),
             "outbound_hosts": ["raw.githubusercontent.com"],
             "stale_after_days": register.STALE_AFTER_DAYS,
             "extras": {

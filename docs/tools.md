@@ -43,9 +43,23 @@ eu-reg-mcp                                # starts the server over stdio
 
 ## Data sources and network use
 
-Register data comes from the [MiCAR Register Observatory](https://github.com/sebastianfoerste/micar-register-observatory), which snapshots the public ESMA register weekly (Art. 109 VO (EU) 2023/1114). The server reads the observatory's `data/latest.json` and `data/changelog.jsonl` from GitHub raw (`src/eu_reg_mcp/data.py`) and caches them in memory for one hour. The three register tools therefore need network access to GitHub; they do not contact ESMA directly. A fetch that fails with a transient error (timeout, connection error, HTTP 429 or 5xx) is tried up to three times. Each fetched copy that passes validation is also saved to disk, in `$EU_REG_MCP_CACHE_DIR` if set, else `$XDG_CACHE_HOME/eu-reg-mcp` or `~/.cache/eu-reg-mcp`. If the observatory files are unreachable or invalid, the register tools fall back to the last good copy (in memory, then on disk) and raise an error only if there is none. After such a fallback, the server serves that copy without contacting GitHub for five minutes from the failed refresh (`FALLBACK_RETRY_SECONDS` in `data.py`), so an outage does not repeat the retries on every call; the first call after that tries to refresh again, and a successful refresh ends the fallback. Throughout, the answer's `warnings` name each file served this way. Before 0.1.1 a failed fetch raised an error at once, with no retry or fallback.
+Register data comes from the [MiCAR Register Observatory](https://github.com/sebastianfoerste/micar-register-observatory), which snapshots the public ESMA register weekly (Arts. 109 and 110 VO (EU) 2023/1114; see [Legal currency](#legal-currency)). The server reads the observatory's `data/latest.json` and `data/changelog.jsonl` from GitHub raw (`src/eu_reg_mcp/data.py`) and caches them in memory for one hour. The three register tools therefore need network access to GitHub; they do not contact ESMA directly. A fetch that fails with a transient error (timeout, connection error, HTTP 429 or 5xx) is tried up to three times. Each fetched copy that passes validation is also saved to disk, in `$EU_REG_MCP_CACHE_DIR` if set, else `$XDG_CACHE_HOME/eu-reg-mcp` or `~/.cache/eu-reg-mcp`. If the observatory files are unreachable or invalid, the register tools fall back to the last good copy (in memory, then on disk) and raise an error only if there is none. After such a fallback, the server serves that copy without contacting GitHub for five minutes from the failed refresh (`FALLBACK_RETRY_SECONDS` in `data.py`), so an outage does not repeat the retries on every call; the first call after that tries to refresh again, and a successful refresh ends the fallback. Throughout, the answer's `warnings` name each file served this way. Before 0.1.1 a failed fetch raised an error at once, with no retry or fallback.
 
-The linter is [micar-whitepaper-linter](https://github.com/sebastianfoerste/micar-whitepaper-linter) (rules mapped to Annexes I to III: 38 distinct rule IDs in version 1.2.1, which `uv.lock` pins, and 36 in 0.2.1, the oldest version the `lint` extra accepts); the classifier is [eu-ai-act-classifier](https://github.com/sebastianfoerste/eu-ai-act-classifier). Both are separate packages from their own repositories, MIT-licensed like this server. Without the extras, both tools return an `extra_missing` error whose `hint` says how to install them. The hint gives the `uvx --python 3.13 --from` form with both extras, the `claude mcp remove` and `claude mcp add` commands that re-register the server that way in Claude Code, and the `pip install` command for a virtual environment (see [Install](#install)).
+The linter is [micar-whitepaper-linter](https://github.com/sebastianfoerste/micar-whitepaper-linter) (rules mapped to Annexes I to III: 38 distinct rule IDs in version 1.2.1, which `uv.lock` pins, and 36 in 0.2.1, the oldest version the `lint` extra accepts); the classifier is [eu-ai-act-classifier](https://github.com/sebastianfoerste/eu-ai-act-classifier). Both are separate packages from their own repositories, MIT-licensed like this server. The lint tool checks a JSON representation of a draft; it does not validate the Inline XBRL (iXBRL) format that ESMA's MiCA page describes as the white paper format requirement under the MiCA technical standards, that is Commission Implementing Regulation (EU) 2024/2984 on forms, formats and templates for crypto-asset white papers (ESMA page and the regulation's title read 2026-10-31; see [Legal currency](#legal-currency)). Document input is an open decision ([ADR 0006](adr/0006-document-input-for-lint.md)). Without the extras, both tools return an `extra_missing` error whose `hint` says how to install them. The hint gives the `uvx --python 3.13 --from` form with both extras, the `claude mcp remove` and `claude mcp add` commands that re-register the server that way in Claude Code, and the `pip install` command for a virtual environment (see [Install](#install)).
+
+## Legal currency
+
+Each statement below was read from the official page named on the date given; re-check before relying on a date.
+
+- **MiCAR register status.** ESMA's MiCA page states that Articles 109 and 110 of MiCA empower ESMA to publish a central register of crypto-asset white papers, authorised crypto-asset service providers and non-compliant entities, and that the interim register is available "as a collection of csv files until mid-2026 when it will be formally integrated into ESMA's IT systems" ([esma.europa.eu, MiCA page](https://www.esma.europa.eu/esmas-activities/digital-finance-and-innovation/markets-crypto-assets-regulation-mica), read 2026-10-31, when the page still said so and showed "Last update: 30 October 2026"). The CSV file URLs may therefore change, and the observatory would then need updating. The register's legal basis is Art. 109 MiCAR (white papers, issuers of asset-referenced and e-money tokens, crypto-asset service providers) and Art. 110 MiCAR (non-compliant entities providing crypto-asset services): ESMA Interactive Single Rulebook, [Article 109](https://www.esma.europa.eu/publications-and-data/interactive-single-rulebook/mica/article-109-register-crypto-asset-white) and [Article 110](https://www.esma.europa.eu/publications-and-data/interactive-single-rulebook/mica/article-110-register-non-compliant-entities), read 2026-10-31. The `ncasp` register slug is the Art. 110 list.
+- **AI Act currency.** eu-ai-act-classifier 0.2.2, which the `classify` extra requires and `uv.lock` pins, applies Regulation (EU) 2024/1689 as amended by Regulation (EU) 2026/1744 (Digital Omnibus on AI), published in the Official Journal L series on 24 July 2026 and in force since 27 July 2026 (Publications Office metadata for CELEX 32026R1744, read 2026-10-31 through the SPARQL endpoint `https://publications.europa.eu/webapi/rdf/sparql`, because eur-lex.europa.eu answered this session's requests with challenge pages; the Commission's [AI policy page](https://digital-strategy.ec.europa.eu/en/policies/regulatory-framework-ai), read 2026-10-31, gives the same entry-into-force date). The application dates, as the consolidated Art. 113 shows them on the Commission's AI Act Service Desk ([Article 113](https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-113), "based on the EUR-Lex consolidated version of the AI Act as at 27 July 2026", read 2026-10-31):
+  - Annex III high-risk systems (Chapter III, Sections 1 to 3): from 2 December 2027 (Art. 113(c)(i));
+  - Annex I high-risk systems: from 2 August 2028 (Art. 113(c)(ii));
+  - the new prohibitions in Art. 5(1), first subparagraph, points (ba) and (bb), and Art. 5(1a) and (1b): from 2 December 2026 (Art. 113(a));
+  - Art. 50(2) marking for providers of AI systems, including general-purpose AI systems, generating synthetic content that were placed on the market before 2 August 2026: by 2 December 2026 (Art. 111(4), [Article 111](https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-111), read 2026-10-31).
+
+  Starting points: ELI `http://data.europa.eu/eli/reg/2026/1744/oj`, the consolidated AI Act `http://data.europa.eu/eli/reg/2024/1689/2026-07-27` (both resolved through the Publications Office on 2026-10-31) and the Service Desk [timeline](https://ai-act-service-desk.ec.europa.eu/en/ai-act/timeline/timeline-implementation-eu-ai-act). The `eu-reg://about` resource lists these identifiers under `legal_sources`.
+- **Lint scope.** Commission Implementing Regulation (EU) 2024/2984 lays down implementing technical standards under MiCAR "with regard to forms, formats and templates for the crypto-asset white papers" (title as recorded by the Publications Office for CELEX 32024R2984, ELI `http://data.europa.eu/eli/reg_impl/2024/2984/oj`, read 2026-10-31); ESMA's MiCA page links it as the technical standard behind the iXBRL format requirement for white papers (read 2026-10-31). `lint_micar_whitepaper` reads a JSON representation of a draft and does not validate that format.
 
 ## Sample lint and classify output
 
@@ -130,6 +144,14 @@ Every register answer carries what you need to check it:
 - change answers also carry `changelog_source`, the observatory change log file
   the server reads (on `main`), and per change record its `snapshot_date`,
   `entry_id` and `still_listed`: whether the entry is in the latest snapshot.
+- when `stale` is true, the answer's `warnings` end with a line that says so
+  in words: the snapshot date, its age in days, the 10-day threshold, that a
+  weekly observatory refresh was missed and the ESMA register may have changed
+  since, and to check ESMA's current file before relying on the answer; when
+  the snapshot date is missing or unparsable (`stale` null), a line says the
+  age is unknown. A fresh snapshot adds no line, so `warnings` is empty unless
+  a cached fallback is in use. The wording is `STALE_WARNING` and
+  `AGE_UNKNOWN_WARNING` in `register.py`, next to `NOTICE`.
 
 ## Typed output and errors
 
@@ -137,8 +159,9 @@ Each tool declares a field-level `outputSchema` for its successful answers; a
 successful call returns the same object as `structuredContent` and as a JSON
 text block, so clients that
 read only text see the same data. `notice` is always the last key. Register
-answers also carry `warnings`: empty normally, one line per data file served
-from the last good cached copy after a failed refresh.
+answers also carry `warnings`: empty normally; one line per data file served
+from the last good cached copy after a failed refresh, then, when the snapshot
+is stale or undated, one line saying so (see [Verifiable answers](#verifiable-answers)).
 
 A failed call returns `isError: true` with this object as JSON in its text
 block. It carries no `structuredContent`: the MCP spec requires
@@ -173,7 +196,7 @@ a code, and a missing extra or invalid JSON returned an ordinary result with
 
 | URI or name | Kind | What it returns |
 | --- | --- | --- |
-| `eu-reg://about` | resource | Server version, the observatory files read, outbound hosts, the staleness threshold, which extras are installed, the error codes and both notices |
+| `eu-reg://about` | resource | Server version, the observatory files read, `legal_sources` (verified CELEX and ELI identifiers of MiCAR, the AI Act with its 27 July 2026 consolidation, and Regulation (EU) 2026/1744, each with the date it was verified; static data, see [Legal currency](#legal-currency)), outbound hosts, the staleness threshold, which extras are installed, the error codes and both notices |
 | `micar://summary` | resource | The same answer as `micar_register_summary` |
 | `micar://changes` | resource | The 50 newest changes, as `micar_register_changes` returns them |
 | `micar://entry/{entry_id}` | resource template | One entry by the `entry_id` that search results carry, with `snapshot_date`, `data_age_days`, `stale`, `warnings` and `notice`; an unknown id is an error |
