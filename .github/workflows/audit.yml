@@ -1,0 +1,36 @@
+name: audit
+
+# Known vulnerabilities in the locked dependencies (all extras) and workflow
+# hygiene. Weekly, on demand, and whenever the lock, the project metadata or
+# a workflow changes.
+on:
+  schedule:
+    - cron: "45 6 * * 1" # Mondays
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - uv.lock
+      - pyproject.toml
+      - ".github/workflows/**"
+  push:
+    branches: [main]
+    paths:
+      - uv.lock
+      - pyproject.toml
+      - ".github/workflows/**"
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+      - run: uv export --frozen --no-hashes --all-extras --no-emit-project > audit-requirements.txt
+      - run: uvx pip-audit@2.10.1 -r audit-requirements.txt
+      - run: uvx zizmor@1.31.1 --offline .github/workflows/
