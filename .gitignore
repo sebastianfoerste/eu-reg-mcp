@@ -5,3 +5,6 @@ __pycache__/
 .DS_Store
 dist/
 research/_captures/
+.coverage
+htmlcov/
+coverage.xml

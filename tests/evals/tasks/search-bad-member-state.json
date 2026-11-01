@@ -1,0 +1,23 @@
+{
+  "id": "search-bad-member-state",
+  "description": "A member_state that is not a two-letter code is invalid_input, not an empty answer.",
+  "setup": "fixtures",
+  "call": {
+    "tool": "search_micar_register",
+    "arguments": {
+      "query": "bank",
+      "member_state": "germany"
+    }
+  },
+  "expect": {
+    "isError": true,
+    "equals": {
+      "code": "invalid_input",
+      "stale": null
+    },
+    "contains": {
+      "error": "member_state",
+      "hint": "two-letter"
+    }
+  }
+}
