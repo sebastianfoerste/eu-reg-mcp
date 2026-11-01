@@ -5,7 +5,7 @@ Issues and pull requests are welcome.
 ## Development
 
 ```bash
-uv sync --extra dev --extra lint --extra classify
+uv sync --extra lint --extra classify   # dev tools come with the default `dev` dependency group
 uv run ruff check . && uv run ruff format --check . && uv run mypy && uv run pytest -q
 ```
 

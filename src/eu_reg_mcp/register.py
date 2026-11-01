@@ -10,6 +10,7 @@ from difflib import SequenceMatcher
 from typing import Any
 
 MAX_RESULTS = 25
+MAX_CHANGES = 200  # most change records per page
 
 # The observatory refreshes weekly; older than this means a refresh was missed.
 STALE_AFTER_DAYS = 10
@@ -23,6 +24,51 @@ NOTICE = (
     "mirrored by the MiCAR Register Observatory. No legal assessment of any "
     "entity; not legal advice."
 )
+
+
+# ESMA's files mostly hold ISO 3166-1 alpha-2 codes (GR for Greece) but some
+# rows carry an English country name (CYPRUS, FRANCE in the 2026-10-19
+# snapshot), so member-state filters compare codes. Values are shown as published.
+COUNTRY_CODES = {
+    "AUSTRIA": "AT",
+    "BELGIUM": "BE",
+    "BULGARIA": "BG",
+    "CROATIA": "HR",
+    "CYPRUS": "CY",
+    "CZECHIA": "CZ",
+    "CZECH REPUBLIC": "CZ",
+    "DENMARK": "DK",
+    "ESTONIA": "EE",
+    "FINLAND": "FI",
+    "FRANCE": "FR",
+    "GERMANY": "DE",
+    "GREECE": "GR",
+    "HUNGARY": "HU",
+    "ICELAND": "IS",
+    "IRELAND": "IE",
+    "ITALY": "IT",
+    "LATVIA": "LV",
+    "LIECHTENSTEIN": "LI",
+    "LITHUANIA": "LT",
+    "LUXEMBOURG": "LU",
+    "MALTA": "MT",
+    "NETHERLANDS": "NL",
+    "THE NETHERLANDS": "NL",
+    "NORWAY": "NO",
+    "POLAND": "PL",
+    "PORTUGAL": "PT",
+    "ROMANIA": "RO",
+    "SLOVAKIA": "SK",
+    "SLOVENIA": "SI",
+    "SPAIN": "ES",
+    "SWEDEN": "SE",
+}
+
+
+def _state_code(value: Any) -> str:
+    """A published member_state as a code: 'CYPRUS' and 'cy' both give 'CY'."""
+    text = " ".join(str(value or "").upper().split())
+    return COUNTRY_CODES.get(text, text)
 
 
 def _fold(text: str) -> str:
@@ -182,7 +228,7 @@ def search_entries(
         entry
         for entry in _all_entries(snapshot)
         if (register == "all" or entry.get("register_slug") == register)
-        and (not state or entry.get("member_state", "").upper() == state)
+        and (not state or _state_code(entry.get("member_state")) == state)
     ]
     ranked: list[tuple[float, int, tuple[float, str] | None, dict[str, Any]]] = []
     for position, entry in enumerate(in_scope):
@@ -287,7 +333,7 @@ def recent_changes(
         if record.get("change") != "baseline"
         and (change_type == "all" or record.get("change") == change_type)
         and (register == "all" or record.get("register_slug") == register)
-        and (not state or str(record.get("member_state", "")).upper() == state)
+        and (not state or _state_code(record.get("member_state")) == state)
         and (not name or name in _fold(str(record.get("entity_name", ""))))
         and (not entry_id or record.get("entry_id") == entry_id)
         # Only records from 2026-10-19 on carry `lei`; older ones never match.
@@ -297,7 +343,7 @@ def recent_changes(
     ]
     records = list(reversed(records))  # newest snapshot entries last in file
     offset = max(0, offset)
-    size = max(1, min(limit, 200))
+    size = max(1, min(limit, MAX_CHANGES))
     page = [dict(record) for record in records[offset : offset + size]]
     if snapshot is not None:
         listed = {entry.get("entry_id") for entry in _all_entries(snapshot)}
