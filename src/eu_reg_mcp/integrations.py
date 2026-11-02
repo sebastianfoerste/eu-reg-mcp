@@ -78,13 +78,35 @@ def classifier_available() -> bool:
         return False
 
 
-def _parse_object(raw: str, argument: str) -> dict[str, Any]:
+SCHEMA_HINT = (
+    "Call with an empty profile_json to get the SystemProfile schema and an "
+    "example profile."
+)
+
+# Synthetic example, identical to examples/credit_scoring_deployer.json in
+# eu-ai-act-classifier: a bank deploying a credit scoring model (Annex III
+# point 5(b)). It shows the expected shape; it describes no real system.
+EXAMPLE_PROFILE: dict[str, Any] = {
+    "name": "BankCo loan underwriting",
+    "description": (
+        "A bank deploying a third-party credit scoring model for consumer "
+        "loan decisions."
+    ),
+    "roles": ["deployer"],
+    "purpose": "Loan underwriting",
+    "sector": "Banking",
+    "annex_iii_area": "III.5.b",
+}
+
+
+def _parse_object(raw: str, argument: str, hint: str | None = None) -> dict[str, Any]:
     try:
         payload = json.loads(raw)
     except json.JSONDecodeError as error:
         raise ToolFailure(
             "invalid_input",
             f"{argument} is not valid JSON: {error}",
+            hint=hint,
             notice=REVIEW_NOTICE,
             extra={"available": True},
         ) from error
@@ -92,10 +114,33 @@ def _parse_object(raw: str, argument: str) -> dict[str, Any]:
         raise ToolFailure(
             "invalid_input",
             f"{argument} must be a JSON object.",
+            hint=hint,
             notice=REVIEW_NOTICE,
             extra={"available": True},
         )
     return payload
+
+
+def _invalid_profile(error: ValidationError) -> ToolFailure:
+    """Name the failing fields; the details go in `validation_errors`."""
+    details = [
+        {
+            # An empty location is the profile itself, e.g. a non-object "profile".
+            "field": ".".join(str(part) for part in item["loc"]) or "profile_json",
+            "message": item["msg"],
+            "type": item["type"],
+        }
+        for item in error.errors()
+    ]
+    fields = ", ".join(detail["field"] for detail in details)
+    message = f"profile_json is not a valid SystemProfile. Invalid fields: {fields}."
+    return ToolFailure(
+        "invalid_input",
+        message[:2000],
+        hint=SCHEMA_HINT,
+        notice=REVIEW_NOTICE,
+        extra={"available": True, "validation_errors": details},
+    )
 
 
 def _missing_extra(package: str, extra: str) -> ToolFailure:
@@ -159,28 +204,33 @@ def lint_whitepaper(whitepaper_json: str) -> dict[str, Any]:
 def classify_ai_system(profile_json: str) -> dict[str, Any]:
     try:
         from eu_ai_act_classifier.local_api import classify_payload, schema_payload
+        from eu_ai_act_classifier.models import SystemProfile
     except ImportError as error:
         raise _missing_extra("eu-ai-act-classifier", "classify") from error
     if not profile_json.strip():
+        json_schema = SystemProfile.model_json_schema()
+        required = json_schema.get("required", [])
         return {
             "available": True,
             "profile_schema": schema_payload(),
-            "notice": (
-                "Empty profile: returning the expected SystemProfile schema. "
-                f"{REVIEW_NOTICE}"
+            "profile_json_schema": json_schema,
+            "example_profile": EXAMPLE_PROFILE,
+            "hint": (
+                "Empty profile: returning the SystemProfile JSON schema (every "
+                "field, in profile_json_schema), the classifier's allowed values "
+                "(in profile_schema) and one synthetic example profile. Pass a "
+                "profile as JSON to classify it. Required fields: "
+                f"{', '.join(required) or 'none'}; unknown fields are rejected."
             ),
+            "notice": REVIEW_NOTICE,
         }
-    payload = _parse_object(profile_json, "profile_json")
+    payload = _parse_object(profile_json, "profile_json", hint=SCHEMA_HINT)
     try:
         classification = classify_payload(payload)
-    except ValidationError as error:  # the profile is invalid
-        raise ToolFailure(
-            "invalid_input",
-            f"profile_json is not a valid SystemProfile: {error}"[:2000],
-            hint="Call with an empty profile_json to get the SystemProfile schema.",
-            notice=REVIEW_NOTICE,
-            extra={"available": True},
-        ) from error
+    except ValidationError as error:
+        if error.title != SystemProfile.__name__:
+            raise  # not the profile; the server reports it as upstream_failed
+        raise _invalid_profile(error) from error
     return {
         "available": True,
         "classification": classification,

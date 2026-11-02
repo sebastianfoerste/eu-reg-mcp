@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.1 (unreleased)
+
+- `classify_eu_ai_act_system`: for a profile the classifier rejects, `error` names the failing fields (without pydantic's documentation links) and `validation_errors` lists each one (`field`, `message`, `type`); that error, invalid JSON and a `profile_json` that is not an object carry the same `hint`, which points to the empty-profile call. An empty `profile_json` still returns the classifier's schema payload in `profile_schema` and now also the SystemProfile JSON schema in `profile_json_schema` (every field with its type and allowed values), a synthetic `example_profile` (a bank deploying a credit scoring model, Annex III point 5(b)) and a `hint` naming the required fields. Its `notice` is the review notice alone, like every other lint and classify answer; in 0.2.0 it gives "Empty profile: returning the expected SystemProfile schema." before the review notice, and a longer version of that explanation now opens the `hint`.
+- `classify_eu_ai_act_system`: only a pydantic `ValidationError` raised for the SystemProfile model is `invalid_input`. A `ValidationError` from any other model is now `upstream_failed`; in 0.2.0, every pydantic `ValidationError` is `invalid_input`.
+- CI installs the checkout with uvx, lists the five tools over MCP stdio and calls classify, lint and the register summary (`scripts/smoke_list_tools.py --check-register`); `make smoke` runs the same check without the register call. The weekly live-data workflow runs the check, register call included, against the PyPI release. Both smoke jobs check out without persisting the token, like the other jobs.
+
 ## 0.2.0 (unreleased)
 
 - `docs/clients.md` adds VS Code (GitHub Copilot; the `.vscode/mcp.json` `servers` format, `code --add-mcp`, and the portable `mcp-config.json` `mcpServers` format) and Cursor (`.cursor/mcp.json`), each from the client's own documentation read on 2026-10-31; only Cline and OpenAI Codex remain uncovered.

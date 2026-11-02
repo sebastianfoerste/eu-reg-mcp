@@ -10,7 +10,7 @@ import jsonschema
 import pytest
 from mcp.shared.memory import create_connected_server_and_client_session
 
-from eu_reg_mcp import data, server
+from eu_reg_mcp import data, integrations, server
 from eu_reg_mcp.errors import ERROR_CODES
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -136,6 +136,76 @@ def test_invalid_json_is_invalid_input(monkeypatch):
     )
     _, result = call("lint_micar_whitepaper", {"whitepaper_json": "{not json"})
     assert_error(result, "invalid_input")
+
+
+def test_classify_empty_profile_example_reaches_the_client():
+    # The response model, not the integration dict, decides what the client
+    # gets: a key missing from ClassifyResponse would be dropped silently.
+    pytest.importorskip("eu_ai_act_classifier.local_api")
+    tool, result = call("classify_eu_ai_act_system", {"profile_json": ""})
+    assert result.isError is False
+    jsonschema.validate(result.structuredContent, tool.outputSchema)
+    assert json.loads(result.content[0].text) == result.structuredContent
+    body = result.structuredContent
+    assert body["example_profile"] == integrations.EXAMPLE_PROFILE
+    json_schema = body["profile_json_schema"]
+    assert json_schema["required"] == ["name"]
+    assert json_schema["additionalProperties"] is False
+    assert "derogation" in json_schema["properties"]
+    assert "Required fields: name;" in body["hint"]
+    assert {"artifacts", "dossier_schema", "review_posture"} <= set(
+        body["profile_schema"]
+    )
+    assert body["notice"] == integrations.REVIEW_NOTICE
+    assert list(body)[-1] == "notice"
+
+
+def test_classify_rejected_profile_is_invalid_input_with_validation_errors():
+    pytest.importorskip("eu_ai_act_classifier.local_api")
+    profile = {"name": "x", "annex_iii_area": "III.99", "use_case": "credit"}
+    _, result = call("classify_eu_ai_act_system", {"profile_json": json.dumps(profile)})
+    body = assert_error(result, "invalid_input")
+    assert body["available"] is True
+    assert {error["field"] for error in body["validation_errors"]} == {
+        "annex_iii_area",
+        "use_case",
+    }
+    assert {"field", "message", "type"} == set(body["validation_errors"][0])
+    assert body["hint"] == integrations.SCHEMA_HINT
+    assert "classification" not in body
+
+
+def _other_model_error():
+    from pydantic import BaseModel, ValidationError
+
+    class ClassificationReport(BaseModel):
+        risk_tier: str
+
+    try:
+        ClassificationReport.model_validate({})
+    except ValidationError as error:
+        return error
+    raise AssertionError("expected a ValidationError")
+
+
+def test_classifier_validation_error_from_another_model_is_upstream_failed(
+    monkeypatch,
+):
+    # Only a SystemProfile ValidationError is the caller's input; one raised for
+    # another model is the server's problem, not invalid_input. A plain
+    # ValueError is covered by
+    # test_classifier_value_error_is_upstream_failed_not_invalid_input below.
+    pytest.importorskip("eu_ai_act_classifier.local_api")
+    error = _other_model_error()
+
+    def boom(_payload):
+        raise error
+
+    monkeypatch.setattr("eu_ai_act_classifier.local_api.classify_payload", boom)
+    _, result = call("classify_eu_ai_act_system", {"profile_json": '{"name": "x"}'})
+    body = assert_error(result, "upstream_failed")
+    assert body["error"].startswith("Unexpected ValidationError: ")
+    assert "validation_errors" not in body
 
 
 def test_error_codes_are_the_documented_set():
