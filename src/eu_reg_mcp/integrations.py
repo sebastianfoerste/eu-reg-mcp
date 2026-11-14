@@ -121,25 +121,39 @@ def _parse_object(raw: str, argument: str, hint: str | None = None) -> dict[str,
     return payload
 
 
+# An enum error's message lists every allowed value (303 characters for
+# annex_iii_area), and a list field yields one error per invalid item, so an
+# uncapped `validation_errors` grows with whatever the caller sends.
+MAX_VALIDATION_ERRORS = 20
+MAX_VALIDATION_MESSAGE_CHARS = 300
+
+
 def _invalid_profile(error: ValidationError) -> ToolFailure:
     """Name the failing fields; the details go in `validation_errors`."""
-    details = [
-        {
-            # An empty location is the profile itself, e.g. a non-object "profile".
-            "field": ".".join(str(part) for part in item["loc"]) or "profile_json",
-            "message": item["msg"],
-            "type": item["type"],
-        }
+    # An empty location is the profile itself, e.g. a non-object "profile".
+    items = [
+        (".".join(str(part) for part in item["loc"]) or "profile_json", item)
         for item in error.errors()
     ]
-    fields = ", ".join(detail["field"] for detail in details)
+    details = [
+        {
+            "field": field,
+            "message": item["msg"][:MAX_VALIDATION_MESSAGE_CHARS],
+            "type": item["type"],
+        }
+        for field, item in items[:MAX_VALIDATION_ERRORS]
+    ]
+    extra: dict[str, Any] = {"available": True, "validation_errors": details}
+    if len(items) > MAX_VALIDATION_ERRORS:
+        extra["validation_errors_omitted"] = len(items) - MAX_VALIDATION_ERRORS
+    fields = ", ".join(field for field, _ in items)
     message = f"profile_json is not a valid SystemProfile. Invalid fields: {fields}."
     return ToolFailure(
         "invalid_input",
         message[:2000],
         hint=SCHEMA_HINT,
         notice=REVIEW_NOTICE,
-        extra={"available": True, "validation_errors": details},
+        extra=extra,
     )
 
 

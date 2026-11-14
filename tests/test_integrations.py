@@ -4,12 +4,16 @@ import subprocess
 import sys
 
 import pytest
+from pydantic import BaseModel, ConfigDict, ValidationError, field_validator
 
 from eu_reg_mcp.errors import ToolFailure
 from eu_reg_mcp.integrations import (
     EXAMPLE_PROFILE,
+    MAX_VALIDATION_ERRORS,
+    MAX_VALIDATION_MESSAGE_CHARS,
     REVIEW_NOTICE,
     SCHEMA_HINT,
+    _invalid_profile,
     classify_ai_system,
     lint_whitepaper,
 )
@@ -313,6 +317,7 @@ def test_classify_unknown_field_returns_validation_errors():
             "type": "extra_forbidden",
         }
     ]
+    assert "validation_errors_omitted" not in body
     assert body["hint"] == SCHEMA_HINT
     assert body["notice"] == REVIEW_NOTICE
     assert "profile_schema" not in body
@@ -338,6 +343,84 @@ def test_classify_error_on_the_profile_itself_names_profile_json():
     body = failure.value.payload()
     assert body["validation_errors"][0]["field"] == "profile_json"
     assert body["error"].endswith("Invalid fields: profile_json.")
+
+
+class _StrictProfile(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    name: str
+
+    @field_validator("name")
+    @classmethod
+    def _short(cls, value: str) -> str:
+        if len(value) > 10:
+            raise ValueError("too long: " + value)
+        return value
+
+
+def _validation_error(data):
+    try:
+        _StrictProfile.model_validate(data)
+    except ValidationError as error:
+        return error
+    raise AssertionError("expected a ValidationError")
+
+
+def test_validation_errors_are_capped_and_the_rest_counted():
+    # Runs without the classify extra: the cap is ours, not the classifier's.
+    unknown = [f"field_{index:02d}" for index in range(MAX_VALIDATION_ERRORS + 5)]
+    error = _validation_error({"name": "x", **dict.fromkeys(unknown, 1)})
+    body = _invalid_profile(error).payload()
+    assert body["code"] == "invalid_input"
+    assert [item["field"] for item in body["validation_errors"]] == unknown[:20]
+    assert body["validation_errors_omitted"] == 5
+    # `error` still names every failing field.
+    assert body["error"].endswith(f"Invalid fields: {', '.join(unknown)}.")
+    assert list(body)[:3] == [
+        "available",
+        "validation_errors",
+        "validation_errors_omitted",
+    ]
+
+
+def test_validation_errors_at_the_cap_omit_nothing():
+    unknown = [f"field_{index:02d}" for index in range(MAX_VALIDATION_ERRORS)]
+    error = _validation_error({"name": "x", **dict.fromkeys(unknown, 1)})
+    body = _invalid_profile(error).payload()
+    assert len(body["validation_errors"]) == MAX_VALIDATION_ERRORS == 20
+    assert "validation_errors_omitted" not in body
+
+
+def test_validation_error_message_is_cut_at_300_characters():
+    error = _validation_error({"name": "y" * 1000})
+    full = error.errors()[0]["msg"]
+    assert len(full) > MAX_VALIDATION_MESSAGE_CHARS == 300
+    body = _invalid_profile(error).payload()
+    assert body["validation_errors"][0]["message"] == full[:300]
+    assert body["validation_errors"][0]["field"] == "name"
+
+
+@requires_classifier
+def test_classify_invalid_list_items_are_capped():
+    profile = {"name": "x", "roles": ["bogus"] * 25}
+    with pytest.raises(ToolFailure) as failure:
+        classify_ai_system(json.dumps(profile))
+    body = failure.value.payload()
+    fields = [item["field"] for item in body["validation_errors"]]
+    assert fields == [f"roles.{index}" for index in range(20)]
+    assert body["validation_errors_omitted"] == 5
+    assert "roles.24" in body["error"]
+
+
+@requires_classifier
+def test_classify_enum_message_is_cut_at_300_characters():
+    # The annex_iii_area message lists all 26 allowed values: 303 characters
+    # with eu-ai-act-classifier 0.2.2.
+    with pytest.raises(ToolFailure) as failure:
+        classify_ai_system(json.dumps({"name": "x", "annex_iii_area": "III.99"}))
+    (item,) = failure.value.payload()["validation_errors"]
+    assert item["field"] == "annex_iii_area" and item["type"] == "enum"
+    assert item["message"].startswith("Input should be 'III.1.a', ")
+    assert len(item["message"]) == 300
 
 
 @requires_classifier
