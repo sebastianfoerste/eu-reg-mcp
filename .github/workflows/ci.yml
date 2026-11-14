@@ -20,12 +20,16 @@ jobs:
       fail-fast: false
       matrix:
         python: ["3.13", "3.14"]
+    env:
+      # For every uv step, not only the sync: without it, `uv run` falls back
+      # to .python-version (3.13), replaces the 3.14 .venv and drops the extras.
+      UV_PYTHON: ${{ matrix.python }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
-      - run: uv sync --locked --python ${{ matrix.python }} --extra lint --extra classify
+      - run: uv sync --locked --extra lint --extra classify
       - run: uv run ruff check .
       - run: uv run ruff format --check .
       - run: uv run mypy
@@ -46,6 +50,6 @@ jobs:
       # fetch of the observatory's weekly snapshot). The weekly live-data
       # workflow runs the same check against the release on PyPI.
       - run: >-
-          uv run --isolated --no-project --with 'mcp>=1.2,<2'
+          uv run --isolated --no-project --with 'mcp>=1.30,<2'
           python scripts/smoke_list_tools.py --check-register --
           uvx --python 3.13 --refresh --from '.[lint,classify]' eu-reg-mcp

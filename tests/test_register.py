@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from eu_reg_mcp.register import recent_changes, search_entries, summarize
+from eu_reg_mcp.register import NOTICE, recent_changes, search_entries, summarize
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -11,6 +11,25 @@ CHANGELOG = [
     for line in (FIXTURES / "changelog.jsonl").read_text(encoding="utf-8").splitlines()
     if line.strip()
 ]
+
+
+def test_notice_cites_arts_109_and_110_micar():
+    # Art. 109 MiCAR: white papers, ART and EMT issuers, CASPs; Art. 110: the
+    # register of non-compliant entities (OJ L 150, 9.6.2023), which the
+    # observatory's snapshot holds as `ncasp`.
+    assert NOTICE == (
+        "Facts from the public ESMA interim MiCAR register (Arts. 109 and 110 "
+        "MiCAR) as mirrored by the MiCAR Register Observatory. No legal "
+        "assessment of any entity; not legal advice."
+    )
+
+
+def test_docs_quote_the_notice_and_cite_art_110():
+    docs = Path(__file__).parents[1] / "docs"
+    overview = (docs / "overview.md").read_text("utf-8")
+    assert f'"notice": "{NOTICE}"' in overview
+    tools = (docs / "tools.md").read_text("utf-8")
+    assert "non-compliant entities providing crypto-asset services (Art. 110" in tools
 
 
 def test_search_by_name_substring():

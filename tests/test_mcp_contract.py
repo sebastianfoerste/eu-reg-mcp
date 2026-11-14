@@ -171,8 +171,24 @@ def test_classify_rejected_profile_is_invalid_input_with_validation_errors():
         "use_case",
     }
     assert {"field", "message", "type"} == set(body["validation_errors"][0])
+    assert "validation_errors_omitted" not in body
     assert body["hint"] == integrations.SCHEMA_HINT
     assert "classification" not in body
+
+
+def test_classify_validation_errors_reach_the_client_capped():
+    pytest.importorskip("eu_ai_act_classifier.local_api")
+    profile = {"name": "x", "roles": ["bogus"] * 25, "annex_iii_area": "III.99"}
+    _, result = call("classify_eu_ai_act_system", {"profile_json": json.dumps(profile)})
+    body = assert_error(result, "invalid_input")
+    assert len(body["validation_errors"]) == integrations.MAX_VALIDATION_ERRORS
+    assert body["validation_errors_omitted"] == 6  # roles.20 to .24, annex_iii_area
+    assert body["error"].endswith("roles.24, annex_iii_area.")
+
+    profile = {"name": "x", "annex_iii_area": "III.99"}
+    _, result = call("classify_eu_ai_act_system", {"profile_json": json.dumps(profile)})
+    (item,) = assert_error(result, "invalid_input")["validation_errors"]
+    assert len(item["message"]) == integrations.MAX_VALIDATION_MESSAGE_CHARS
 
 
 def _other_model_error():
