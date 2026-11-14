@@ -10,6 +10,7 @@ from eu_reg_mcp.errors import ToolFailure
 from eu_reg_mcp.integrations import (
     EXAMPLE_PROFILE,
     MAX_VALIDATION_ERRORS,
+    MAX_VALIDATION_FIELD_CHARS,
     MAX_VALIDATION_MESSAGE_CHARS,
     REVIEW_NOTICE,
     SCHEMA_HINT,
@@ -397,6 +398,18 @@ def test_validation_error_message_is_cut_at_300_characters():
     body = _invalid_profile(error).payload()
     assert body["validation_errors"][0]["message"] == full[:300]
     assert body["validation_errors"][0]["field"] == "name"
+
+
+def test_validation_error_field_is_cut_at_300_characters():
+    # An unknown key is the field name itself, as long as the caller sends it.
+    key = "k" * 10_000
+    body = _invalid_profile(_validation_error({"name": "x", key: 1})).payload()
+    (item,) = body["validation_errors"]
+    assert MAX_VALIDATION_FIELD_CHARS == 300
+    assert item["field"] == key[:300]
+    assert item["type"] == "extra_forbidden"
+    # `error` keeps its own 2,000-character cut.
+    assert len(body["error"]) == 2000
 
 
 @requires_classifier
