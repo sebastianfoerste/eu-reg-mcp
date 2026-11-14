@@ -145,6 +145,8 @@ read only text see the same data. `notice` is always the last key. Register
 answers also carry `warnings`: empty normally, one line per data file served
 from the last good cached copy after a failed refresh.
 
+Lint and classify answers are not truncated, so their size depends on the input. Measured on 2026-11-14 through an in-memory MCP client session with the versions `uv.lock` pins (mcp 1.30.0, eu-ai-act-classifier 0.2.2, micar-whitepaper-linter 1.2.1), the JSON text block of a classify answer was 13,975 bytes for an empty `profile_json`, 14,355 bytes for `example_profile` (a deployer, Annex III point 5(b)) and 29,574 bytes for a provider profile under Annex III point 4(a), which lists the provider obligations; a lint answer for the three-field synthetic draft in `scripts/smoke_list_tools.py` was 14,797 bytes. A successful result carries the same object again as `structuredContent`, so the whole result is about twice that: 56,350 bytes as JSON for the provider answer. A rejected profile with 26 failing fields gave a 4,604-byte error, with `validation_errors` capped as described under [Parameters](#parameters).
+
 A failed call returns `isError: true` with this object as JSON in its text
 block. It carries no `structuredContent`: the MCP spec requires
 `structuredContent` to match the tool's `outputSchema`, which describes
