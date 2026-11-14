@@ -123,9 +123,11 @@ def _parse_object(raw: str, argument: str, hint: str | None = None) -> dict[str,
 
 # An enum error's message lists every allowed value (303 characters for
 # annex_iii_area), and a list field yields one error per invalid item, so an
-# uncapped `validation_errors` grows with whatever the caller sends.
+# uncapped `validation_errors` grows with whatever the caller sends. An unknown
+# key is its own field name, so `field` is cut as well.
 MAX_VALIDATION_ERRORS = 20
 MAX_VALIDATION_MESSAGE_CHARS = 300
+MAX_VALIDATION_FIELD_CHARS = 300
 
 
 def _invalid_profile(error: ValidationError) -> ToolFailure:
@@ -137,7 +139,7 @@ def _invalid_profile(error: ValidationError) -> ToolFailure:
     ]
     details = [
         {
-            "field": field,
+            "field": field[:MAX_VALIDATION_FIELD_CHARS],
             "message": item["msg"][:MAX_VALIDATION_MESSAGE_CHARS],
             "type": item["type"],
         }
