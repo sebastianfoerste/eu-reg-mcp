@@ -33,7 +33,7 @@ jobs:
       # The checkout's smoke client against the release: lists the five tools
       # over MCP stdio and calls classify, lint and the register summary.
       - run: >-
-          uv run --isolated --no-project --with 'mcp>=1.2,<2'
+          uv run --isolated --no-project --with 'mcp>=1.30,<2'
           python scripts/smoke_list_tools.py --check-register --
           uvx --python 3.13 --refresh --from 'eu-reg-mcp[lint,classify]' eu-reg-mcp
 

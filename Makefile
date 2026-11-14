@@ -12,7 +12,7 @@ lint:
 	uv run mypy
 
 smoke:
-	uv run --isolated --no-project --with 'mcp>=1.2,<2' python scripts/smoke_list_tools.py -- \
+	uv run --isolated --no-project --with 'mcp>=1.30,<2' python scripts/smoke_list_tools.py -- \
 		uvx --python 3.13 --refresh --from '.[lint,classify]' eu-reg-mcp
 
 run:
