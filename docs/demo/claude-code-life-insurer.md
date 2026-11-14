@@ -1,6 +1,6 @@
 # Claude Code demo: a life insurer's pricing model
 
-> **Status:** script and recording protocol only. No run has been recorded yet. The metadata, characterisation, transcript and review sections below stay empty until the first run is pasted in, unchanged. This script and protocol were drafted with AI assistance (Claude). Their adoption by the user is still open (date of adoption: [date]).
+> **Status:** script and recording protocol only. No run has been recorded yet. The metadata, characterisation, transcript and review sections below stay empty until the first run is pasted in, unchanged. This script and protocol were drafted with AI assistance (Claude). Their adoption by the user is still open.
 
 ## Purpose
 
@@ -22,7 +22,7 @@ To check, run:
 uvx --python 3.13 --from 'eu-reg-mcp[lint,classify]' python -c 'import importlib.metadata as m; print(m.version("eu-reg-mcp"), m.requires("eu-reg-mcp"))'
 ```
 
-It prints the eu-reg-mcp version that uvx installs, then that version's requirements. Look for two things. The version must be 0.2.0 or later, and its release tag on GitHub (`v` and the version) must contain the merge commit of pull request #4 (in a clone, `git merge-base --is-ancestor <merge commit of #4> v0.2.0` exits 0). The requirements must include an `mcp` requirement with the upper bound `<2`; 0.1.0 and 0.1.1 list `mcp<2,>=1.2` and 0.1.2 lists `mcp<2,>=1.9`, which is how the package metadata writes `mcp>=1.2,<2` and `mcp>=1.9,<2`. If the version is 0.1.0, 0.1.1 or 0.1.2, or its tag does not contain the merge commit of #4, do not record.
+It prints the eu-reg-mcp version that uvx installs, then that version's requirements. Look for two things. The version must be 0.2.0 or later, and its release tag on GitHub (`v` and the version) must contain the merge commit of pull request #4 (in a clone, `git merge-base --is-ancestor <merge commit of #4> v<version>` exits 0, where `<version>` is the version the command printed). The requirements must include an `mcp` requirement with the upper bound `<2`; 0.1.0 and 0.1.1 list `mcp<2,>=1.2` and 0.1.2 lists `mcp<2,>=1.9`, which is how the package metadata writes `mcp>=1.2,<2` and `mcp>=1.9,<2`. If the version is 0.1.0, 0.1.1 or 0.1.2, or its tag does not contain the merge commit of #4, do not record.
 
 Run on 23 October 2026 at 15:21 UTC, the command printed:
 
@@ -90,7 +90,7 @@ A German life insurer will price term-life premiums with an in-house gradient-bo
 
 ### Pre-commitment
 
-Before recording, the user fills in the date below and in the status block, then commits the change to `main` and pushes it, directly or through a merged pull request, so the commit stays reachable from `main`. Its SHA goes in the metadata table. The evidence that the commitment came first is the time GitHub recorded the push or the merge (in the repository's activity view, or on the pull request), not the commit date, which can be set locally.
+Before recording, the user adopts the script and protocol: in the status block, the user replaces the sentence saying that their adoption is still open with a sentence giving the date of adoption, and fills in the date below. The user then commits the change to `main` and pushes it, directly or through a merged pull request, so the commit stays reachable from `main`. Its SHA goes in the metadata table. The evidence that the commitment came first is the time GitHub recorded the push or the merge (in the repository's activity view, or on the pull request), not the commit date, which can be set locally.
 
 > The user will publish the first run of this prompt verbatim, whether it completes or fails. If it fails, each later run is published below it, numbered in order, until one completes, and no run replaces another. Committed on [date].
 
