@@ -19,13 +19,10 @@ OBSERVATORY_DATA_URL = (
     "https://github.com/sebastianfoerste/micar-register-observatory/blob/main/data"
 )
 
-# Art. 109 MiCAR is ESMA's register of white papers, ART and EMT issuers and
-# CASPs; Art. 110 is its register of non-compliant entities, which the
-# observatory mirrors as the `ncasp` register.
 NOTICE = (
-    "Facts from the public ESMA interim MiCAR register (Arts. 109 and 110 "
-    "MiCAR) as mirrored by the MiCAR Register Observatory. No legal "
-    "assessment of any entity; not legal advice."
+    "Facts from the public ESMA interim MiCAR register (Arts. 109 and 110 MiCAR) "
+    "as mirrored by the MiCAR Register Observatory. No legal assessment of any "
+    "entity; not legal advice."
 )
 
 
