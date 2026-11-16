@@ -20,6 +20,8 @@ There is no hosted playground. eu-reg-mcp is a [Model Context Protocol](https://
 
 The first two work without extras; the third needs the `classify` extra.
 
+For a scripted Claude Code session on a life insurer's pricing model, with its recording protocol, see [demo/claude-code-life-insurer.md](demo/claude-code-life-insurer.md) (script and protocol; run not yet recorded).
+
 ## Example output
 
 > **Synthetic data.** Produced on 2026-10-27 by calling this repo's `search_micar_register` tool function against the **synthetic test fixtures** in `tests/fixtures/`, not the live register. The entity and its LEI are invented. Output shape is what a live call returns; values are not.
