@@ -10,7 +10,7 @@
 | [0006](0006-document-input-for-lint.md) | PDF, DOCX and XHTML input for the linter | Proposed (owner decision) |
 | [0007](0007-docker-and-authenticated-http.md) | Docker image and authenticated remote HTTP | Proposed (owner decision) |
 | [0008](0008-citation-links.md) | Verified EUR-Lex citation links | Proposed (blocked: unverifiable) |
-| [0009](0009-release-workflow.md) | Release workflow with Trusted Publishing | Proposed (owner decision) |
+| [0009](0009-release-workflow.md) | Release workflow with Trusted Publishing | Accepted (workflow added; owner setup pending) |
 | [0010](0010-mcp-apps-view.md) | MCP Apps register view | Proposed (owner decision) |
 
 Research behind them: [`docs/research/`](../research/).

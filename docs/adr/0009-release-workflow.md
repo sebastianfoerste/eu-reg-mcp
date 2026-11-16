@@ -1,6 +1,6 @@
 # 0009. Release workflow with Trusted Publishing
 
-- **Status:** Proposed; owner decision.
+- **Status:** Accepted; `.github/workflows/release.yml` added for 0.2.0 (owner environments and PyPI Trusted Publisher pending).
 - **Date:** 2026-10-20
 
 ## Context
@@ -14,4 +14,4 @@ The CHANGELOG's unreleased items (CLI, HTTP, provenance and now this branch) are
 
 ## Consequences
 
-- Owner actions: PyPI Trusted Publisher and the two environments. The `io.github.sebastianfoerste` namespace already publishes (0.1.0 and 0.1.1 went out on 2026-10-15), so the registry job only has to publish 0.2.0 to the existing entry, now from CI via GitHub OIDC rather than by hand. This branch adds no workflow.
+- Owner actions: PyPI Trusted Publisher and the two environments. The `io.github.sebastianfoerste` namespace already publishes (0.1.0 and 0.1.1 went out on 2026-10-15), so the registry job only has to publish 0.2.0 to the existing entry, now from CI via GitHub OIDC rather than by hand. Added `.github/workflows/release.yml` on the 0.2.0 release branch; create the Trusted Publisher and environments before tagging `v0.2.0`.

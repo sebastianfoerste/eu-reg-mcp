@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.2.0 (unreleased)
+## 0.2.0 (2026-11-16)
 
 - `classify_eu_ai_act_system`: for a profile the classifier rejects, `error` names the failing fields (without pydantic's documentation links) and `validation_errors` lists each one (`field`, `message`, `type`), at most 20 entries with each `message` and `field` cut at 300 characters, and `validation_errors_omitted` counts the entries left out; that error, invalid JSON and a `profile_json` that is not an object carry the same `hint`, which points to the empty-profile call. An empty `profile_json` still returns the classifier's schema payload in `profile_schema` and now also the SystemProfile JSON schema in `profile_json_schema` (every field with its type and allowed values), a synthetic `example_profile` (a bank deploying a credit scoring model, Annex III point 5(b)) and a `hint` naming the required fields.
 - CI installs the checkout with uvx, lists the five tools over MCP stdio and calls classify, lint and the register summary (`scripts/smoke_list_tools.py --check-register`); `make smoke` runs the same check without the register call. The weekly live-data workflow runs the check, register call included, against the PyPI release. Both smoke jobs check out without persisting the token, like the other jobs. The smoke client runs on mcp 1.30 or newer below 2, the range the server requires.
