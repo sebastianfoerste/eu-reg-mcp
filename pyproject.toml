@@ -74,6 +74,11 @@ exclude = ["docs/research/"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 
+# --cov-fail-under compares the total rounded to this many decimals. With the
+# default of 0, a total of 94.68 rounds to 95 and passes the 95 % gate.
+[tool.coverage.report]
+precision = 2
+
 [tool.ruff]
 line-length = 88
 
