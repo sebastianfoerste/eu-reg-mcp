@@ -48,7 +48,7 @@ The first two work without extras; the third needs the `classify` extra.
   ],
   "truncated": false,
   "next_offset": null,
-  "notice": "Facts from the public ESMA interim MiCAR register (Art. 109 MiCAR) as mirrored by the MiCAR Register Observatory. No legal assessment of any entity; not legal advice."
+  "notice": "Facts from the public ESMA interim MiCAR register (Arts. 109 and 110 MiCAR) as mirrored by the MiCAR Register Observatory. No legal assessment of any entity; not legal advice."
 }
 ```
 

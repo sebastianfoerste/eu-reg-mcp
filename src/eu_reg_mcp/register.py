@@ -20,8 +20,8 @@ OBSERVATORY_DATA_URL = (
 )
 
 NOTICE = (
-    "Facts from the public ESMA interim MiCAR register (Art. 109 MiCAR) as "
-    "mirrored by the MiCAR Register Observatory. No legal assessment of any "
+    "Facts from the public ESMA interim MiCAR register (Arts. 109 and 110 MiCAR) "
+    "as mirrored by the MiCAR Register Observatory. No legal assessment of any "
     "entity; not legal advice."
 )
 
