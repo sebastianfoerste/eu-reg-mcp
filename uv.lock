@@ -685,15 +685,15 @@ wheels = [
 
 [[package]]
 name = "micar-whitepaper-linter"
-version = "1.2.1"
+version = "1.3.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "lxml" },
     { name = "pypdf" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/09/ab/fe9b66cc8b2e87f27c4df318cfe48f976a975fe7e952bfe87f9748d9e088/micar_whitepaper_linter-1.2.1.tar.gz", hash = "sha256:1eddbd415c6326b4e191fe23730f6f009168ca18c738b4298435e24e15867cb8", size = 1523862, upload-time = "2026-10-27T12:55:56.859Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/e6/bb/2531f78d0fd4a3d053dd38da8cf84e6da6484932ecc2cf95ea79674dbbca/micar_whitepaper_linter-1.3.0.tar.gz", hash = "sha256:7f3d805c4aee3f5312656bb2e63efd2690a4918a59829ae6ae6bf3fbc8183837", size = 2258113, upload-time = "2026-11-13T13:57:18.355Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b5/84/9a37b175bb8c057b897e9bf20788c910b290f552854ba8648ef7397ac31a/micar_whitepaper_linter-1.2.1-py3-none-any.whl", hash = "sha256:bf261b20c6a11e94402570504e1de75dea19c0b34895c997cbefb442c9301338", size = 97821, upload-time = "2026-10-27T12:55:54.958Z" },
+    { url = "https://files.pythonhosted.org/packages/76/0b/09c5007e01e54cd4008c70acd568c3ddef47159a808cfa22508f568a9972/micar_whitepaper_linter-1.3.0-py3-none-any.whl", hash = "sha256:da4db9339b8da516e5ed0ca2983c5d282e80027937ade459810b5aafc3d0dc9a", size = 238798, upload-time = "2026-11-13T13:57:16.374Z" },
 ]
 
 [[package]]
