@@ -1,6 +1,6 @@
 # Claude Code demo: a life insurer's pricing model
 
-> **Status:** script and recording protocol only. No run has been recorded yet. The metadata, characterisation, transcript and review sections below stay empty until the first run is pasted in, unchanged. This script and protocol were drafted with AI assistance (Claude). Their adoption by the user is still open.
+> **Status:** script and recording protocol only. No run has been recorded yet. The metadata, characterisation, transcript and review sections below stay empty until the first run is pasted in, unchanged. This script and protocol were drafted with AI assistance (Claude). The user adopted them on 27 November 2026.
 
 ## Purpose
 
@@ -92,7 +92,7 @@ A German life insurer will price term-life premiums with an in-house gradient-bo
 
 Before recording, the user adopts the script and protocol: in the status block, the user replaces the sentence saying that their adoption is still open with a sentence giving the date of adoption, and fills in the date below. The user then commits the change to `main` and pushes it, directly or through a merged pull request, so the commit stays reachable from `main`. Its SHA goes in the metadata table. The evidence that the commitment came first is the time GitHub recorded the push or the merge (in the repository's activity view, or on the pull request), not the commit date, which can be set locally.
 
-> The user will publish the first run of this prompt verbatim, whether it completes or fails. If it fails, each later run is published below it, numbered in order, until one completes, and no run replaces another. Committed on [date].
+> The user will publish the first run of this prompt verbatim, whether it completes or fails. If it fails, each later run is published below it, numbered in order, until one completes, and no run replaces another. Committed on 27 November 2026.
 
 ### Rules for the run
 
